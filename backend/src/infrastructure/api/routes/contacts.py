@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from src.infrastructure.database.db import get_db
 from src.infrastructure.repositories.sqlalchemy_contact_repository import SqlAlchemyContactRepository
 from src.application.use_cases.list_contacts_use_case import ListContactsUseCase
-from src.application.dtos.contact_dto import ContactReadDTO
+from src.application.use_cases.get_contact_use_case import GetContactUseCase
+from src.application.use_cases.create_contact_use_case import CreateContactUseCase
+from src.application.use_cases.update_contact_use_case import UpdateContactUseCase
+from src.application.use_cases.delete_contact_use_case import DeleteContactUseCase
+from src.application.dtos.contact_dto import ContactReadDTO, ContactCreateDTO, ContactUpdateDTO
 from typing import List
 
 router = APIRouter(prefix="/contacts", tags=["Contacts"])
@@ -13,3 +17,36 @@ def list_contacts(db: Session = Depends(get_db)):
     repository = SqlAlchemyContactRepository(db)
     use_case = ListContactsUseCase(repository)
     return use_case.execute()
+
+@router.get("/{contact_id}", response_model=ContactReadDTO)
+def get_contact(contact_id: int, db: Session = Depends(get_db)):
+    repository = SqlAlchemyContactRepository(db)
+    use_case = GetContactUseCase(repository)
+    contact = use_case.execute(contact_id)
+    if not contact:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contato não encontrado")
+    return contact
+
+@router.post("/", response_model=ContactReadDTO, status_code=status.HTTP_201_CREATED)
+def create_contact(contact_dto: ContactCreateDTO, db: Session = Depends(get_db)):
+    repository = SqlAlchemyContactRepository(db)
+    use_case = CreateContactUseCase(repository)
+    return use_case.execute(contact_dto)
+
+@router.put("/{contact_id}", response_model=ContactReadDTO)
+def update_contact(contact_id: int, contact_dto: ContactUpdateDTO, db: Session = Depends(get_db)):
+    repository = SqlAlchemyContactRepository(db)
+    use_case = UpdateContactUseCase(repository)
+    updated_contact = use_case.execute(contact_id, contact_dto)
+    if not updated_contact:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contato não encontrado")
+    return updated_contact
+
+@router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_contact(contact_id: int, db: Session = Depends(get_db)):
+    repository = SqlAlchemyContactRepository(db)
+    use_case = DeleteContactUseCase(repository)
+    success = use_case.execute(contact_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contato não encontrado")
+    return None

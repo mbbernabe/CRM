@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from src.domain.entities.contact import Contact
 from src.domain.repositories.contact_repository import IContactRepository
@@ -22,6 +22,19 @@ class SqlAlchemyContactRepository(IContactRepository):
             for c in db_contacts
         ]
 
+    def get_by_id(self, contact_id: int) -> Optional[Contact]:
+        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact_id).first()
+        if not db_contact:
+            return None
+        return Contact(
+            id=db_contact.id,
+            name=db_contact.name,
+            email=db_contact.email,
+            phone=db_contact.phone,
+            status=db_contact.status,
+            created_at=db_contact.created_at
+        )
+
     def save(self, contact: Contact) -> Contact:
         db_contact = ContactModel(
             name=contact.name,
@@ -35,3 +48,22 @@ class SqlAlchemyContactRepository(IContactRepository):
         self.db.refresh(db_contact)
         contact.id = db_contact.id
         return contact
+
+    def update(self, contact: Contact) -> Contact:
+        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact.id).first()
+        if db_contact:
+            db_contact.name = contact.name
+            db_contact.email = contact.email
+            db_contact.phone = contact.phone
+            db_contact.status = contact.status
+            self.db.commit()
+            self.db.refresh(db_contact)
+        return contact
+
+    def delete(self, contact_id: int) -> bool:
+        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact_id).first()
+        if db_contact:
+            self.db.delete(db_contact)
+            self.db.commit()
+            return True
+        return False
