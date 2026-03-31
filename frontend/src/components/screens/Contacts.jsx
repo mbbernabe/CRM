@@ -1,14 +1,67 @@
-import React from 'react';
-import { Search, Filter, MoreHorizontal, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, MoreHorizontal, User, RefreshCw } from 'lucide-react';
 
 const Contacts = () => {
-  const contacts = [
-    { name: 'João Silva', email: 'joao.silva@acme.com', phone: '(11) 98888-7777', status: 'Ativo', owner: 'Eu' },
-    { name: 'Maria Souza', email: 'm.souza@globex.corp', phone: '(21) 97777-6666', status: 'Ativo', owner: 'Eu' },
-    { name: 'Roberto Alves', email: 'roberto@initech.net', phone: '(31) 96666-5555', status: 'Inativo', owner: 'André Lima' },
-    { name: 'Ana Oliveira', email: 'ana.o@stark.com', phone: '(11) 95555-4444', status: 'Ativo', owner: 'Eu' },
-    { name: 'Carlos Santos', email: 'c.santos@wayne.com', phone: '(11) 94444-3333', status: 'Em Prospecção', owner: 'Eu' },
-  ];
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/contacts/');
+      if (!response.ok) throw new Error('Falha ao bscar contatos');
+      const data = await response.json();
+      setContacts(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  if (loading) return (
+    <div className="loading-container">
+      <RefreshCw size={40} className="spinner" />
+      <p>Carregando contatos...</p>
+      <style jsx>{`
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          gap: 16px;
+          color: var(--hs-text-secondary);
+        }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+
+  if (error) return (
+    <div className="error-container">
+      <p>Erro: {error}</p>
+      <button onClick={fetchContacts} className="hs-button-secondary">Tentar Novamente</button>
+      <style jsx>{`
+        .error-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          gap: 16px;
+          color: #ef4444;
+        }
+      `}</style>
+    </div>
+  );
 
   return (
     <div className="contacts-container">
@@ -39,22 +92,22 @@ const Contacts = () => {
             </tr>
           </thead>
           <tbody>
-            {contacts.map((contact, i) => (
-              <tr key={i}>
+            {contacts.map((contact) => (
+              <tr key={contact.id}>
                 <td>
                   <div className="contact-cell">
-                    <div className="avatar">{contact.name[0]}</div>
+                    <div className="avatar">{contact.name ? contact.name[0] : 'U'}</div>
                     {contact.name}
                   </div>
                 </td>
                 <td>{contact.email}</td>
-                <td>{contact.phone}</td>
+                <td>{contact.phone || '-'}</td>
                 <td>
                   <span className={`status-badge ${contact.status.toLowerCase().replace(' ', '-')}`}>
-                    {contact.status}
+                    {contact.status === 'active' ? 'Ativo' : contact.status}
                   </span>
                 </td>
-                <td>{contact.owner}</td>
+                <td>{contact.owner || 'Eu'}</td>
                 <td><MoreHorizontal size={16} className="more-icon" /></td>
               </tr>
             ))}
