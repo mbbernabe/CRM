@@ -1,7 +1,7 @@
 from typing import List
 from sqlalchemy.orm import Session
-from src.domain.contact import Contact
-from src.domain.contact_repository import IContactRepository
+from src.domain.entities.contact import Contact
+from src.domain.repositories.contact_repository import IContactRepository
 from src.infrastructure.database.models import ContactModel
 
 class SqlAlchemyContactRepository(IContactRepository):

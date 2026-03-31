@@ -1,5 +1,5 @@
 from typing import List
-from src.domain.contact_repository import IContactRepository
+from src.domain.repositories.contact_repository import IContactRepository
 from src.application.dtos.contact_dto import ContactReadDTO
 
 class ListContactsUseCase:

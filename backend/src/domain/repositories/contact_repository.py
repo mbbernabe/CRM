@@ -1,5 +1,5 @@
 from typing import List, Protocol
-from src.domain.contact import Contact
+from src.domain.entities.contact import Contact
 
 class IContactRepository(Protocol):
     def list_all(self) -> List[Contact]:
