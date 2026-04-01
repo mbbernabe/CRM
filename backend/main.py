@@ -9,7 +9,7 @@ app = FastAPI(title="CRM API", version="1.0.0")
 # Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Especificando a URL exata do seu frontend
+    allow_origins=["*"],  # Permitir tudo durante desenvolvimento para evitar problemas com portas dinâmicas do Vite
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

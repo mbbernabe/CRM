@@ -1,31 +1,168 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Plus, Edit, Trash2, Shield, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Settings, Plus, Edit, Trash2, Shield, RefreshCw, AlertCircle, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Modal from '../common/Modal';
+
+// --- Sortable Components ---
+
+const SortableItem = ({ id, children, isSystem }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+    background: isDragging ? '#f5f8fa' : (isSystem ? '#fafbfc' : 'white')
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className={isSystem ? 'system-prop' : ''}>
+      <td className="drag-handle-cell">
+        <button className="drag-handle" {...attributes} {...listeners}>
+          <GripVertical size={14} />
+        </button>
+      </td>
+      {children}
+    </tr>
+  );
+};
+
+const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  return (
+    <div ref={setNodeRef} style={style} className="property-group-card">
+      <div className="group-header">
+        <div className="group-title-area">
+          <button className="group-drag-handle" {...attributes} {...listeners}>
+            <GripVertical size={16} />
+          </button>
+          <h3>{group}</h3>
+          <span className="count-badge">{props.length} campos</span>
+        </div>
+      </div>
+      <div className="props-table-wrapper">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndProps}>
+          <SortableContext items={props.map(p => p.id)} strategy={verticalListSortingStrategy}>
+            <table className="props-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '30px' }}></th>
+                  <th>Rótulo (Label)</th>
+                  <th>Nome Interno</th>
+                  <th>Tipo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {props.map(prop => (
+                  <SortableItem key={prop.id} id={prop.id} isSystem={prop.is_system}>
+                    <td>
+                      <div className="label-cell">
+                        {prop.label}
+                        {prop.is_system && <Shield size={12} className="system-icon" title="Propriedade de Sistema" />}
+                      </div>
+                    </td>
+                    <td><code>{prop.name}</code></td>
+                    <td>
+                      <span className={`type-badge ${prop.type}`}>
+                        {prop.type}
+                      </span>
+                    </td>
+                    <td className="actions-cell">
+                      <button className="icon-btn edit" onClick={() => onEdit(prop)} title="Editar">
+                        <Edit size={14} />
+                      </button>
+                      {!prop.is_system && (
+                        <button className="icon-btn delete" onClick={() => onDelete(prop)} title="Excluir">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </td>
+                  </SortableItem>
+                ))}
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Component ---
 
 const PropertySettings = () => {
   const [properties, setProperties] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('create'); // 'create' | 'edit'
+  const [modalType, setModalType] = useState('create');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    label: '',
-    type: 'text',
-    group: 'Outros',
-    options: ''
+    name: '', label: '', type: 'text', group: 'Outros', group_id: null, options: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchProperties = async () => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const fetchAll = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/properties/');
-      if (!response.ok) throw new Error('Falha ao buscar propriedades');
-      const data = await response.json();
-      setProperties(data);
+      const [propsRes, groupsRes] = await Promise.all([
+        fetch('http://localhost:8000/properties/'),
+        fetch('http://localhost:8000/properties/groups')
+      ]);
+      const propsData = await propsRes.json();
+      const groupsData = await groupsRes.json();
+      setProperties(propsData);
+      setGroups(groupsData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -33,13 +170,12 @@ const PropertySettings = () => {
     }
   };
 
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const handleOpenCreate = () => {
     setModalType('create');
-    setFormData({ name: '', label: '', type: 'text', group: 'Outros', options: '' });
+    const defaultGroup = groups[0] || { name: 'Outros', id: null };
+    setFormData({ name: '', label: '', type: 'text', group: defaultGroup.name, group_id: defaultGroup.id, options: '' });
     setSelectedProperty(null);
     setIsModalOpen(true);
   };
@@ -47,25 +183,34 @@ const PropertySettings = () => {
   const handleOpenEdit = (prop) => {
     setModalType('edit');
     setFormData({
-      name: prop.name,
-      label: prop.label,
-      type: prop.type,
-      group: prop.group,
-      options: prop.options || ''
+      name: prop.name, label: prop.label, type: prop.type, group: prop.group, group_id: prop.group_id, options: prop.options || ''
     });
     setSelectedProperty(prop);
     setIsModalOpen(true);
-  };
-
-  const handleOpenDelete = (prop) => {
-    setSelectedProperty(prop);
-    setIsDeleteModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     try {
+      let finalGroupId = formData.group_id;
+      
+      // Se o nome do grupo mudou ou é novo, verificar se já existe ou criar
+      const existingGroup = groups.find(g => g.name === formData.group);
+      if (!existingGroup) {
+        const groupRes = await fetch('http://localhost:8000/properties/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: formData.group })
+        });
+        const newGroup = await groupRes.json();
+        finalGroupId = newGroup.id;
+        setGroups(prev => [...prev, newGroup]);
+      } else {
+        finalGroupId = existingGroup.id;
+      }
+
+      const submissionData = { ...formData, group_id: finalGroupId };
       const url = modalType === 'create' 
         ? 'http://localhost:8000/properties/' 
         : `http://localhost:8000/properties/${selectedProperty.id}`;
@@ -73,16 +218,12 @@ const PropertySettings = () => {
       const response = await fetch(url, {
         method: modalType === 'create' ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Falha ao salvar propriedade');
-      }
-
+      if (!response.ok) throw new Error('Falha ao salvar');
       setIsModalOpen(false);
-      fetchProperties();
+      fetchAll();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -90,295 +231,168 @@ const PropertySettings = () => {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!selectedProperty) return;
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`http://localhost:8000/properties/${selectedProperty.id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Falha ao excluir propriedade');
-      }
-      setIsDeleteModalOpen(false);
-      fetchProperties();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleDragEndGroups = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = groups.findIndex(g => g.id === active.id);
+    const newIndex = groups.findIndex(g => g.id === over.id);
+    const newGroups = arrayMove(groups, oldIndex, newIndex);
+    setGroups(newGroups);
+
+    // Persistir ordem
+    const orders = newGroups.map((g, index) => ({ id: g.id, order: index }));
+    await fetch('http://localhost:8000/properties/groups/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orders)
+    });
   };
 
-  // Agrupar e ordenar propriedades
-  const groupedProps = properties.reduce((acc, prop) => {
-    if (!acc[prop.group]) acc[prop.group] = [];
-    acc[prop.group].push(prop);
-    return acc;
-  }, {});
+  const handleDragEndProps = async (event, groupId) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  if (loading) return (
-    <div className="loading-container">
-      <RefreshCw size={40} className="spinner" />
-      <p>Carregando propriedades...</p>
-      <style jsx>{`
-        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: var(--hs-text-secondary); }
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  );
+    const gProps = properties.filter(p => p.group_id === groupId);
+    const otherProps = properties.filter(p => p.group_id !== groupId);
+    
+    const oldIndex = gProps.findIndex(p => p.id === active.id);
+    const newIndex = gProps.findIndex(p => p.id === over.id);
+    const reorderedGroupProps = arrayMove(gProps, oldIndex, newIndex);
+    
+    // Atualizar ordens locais para persistência
+    const reorderedWithOrders = reorderedGroupProps.map((p, i) => ({ ...p, order: i }));
+    const newProperties = [...otherProps, ...reorderedWithOrders];
+    setProperties(newProperties);
+
+    // Persistir ordem
+    const orders = reorderedWithOrders.map(p => ({ id: p.id, order: p.order }));
+    await fetch('http://localhost:8000/properties/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orders)
+    });
+  };
+
+  const groupedProps = useMemo(() => {
+    return groups.reduce((acc, g) => {
+      acc[g.id] = properties.filter(p => p.group_id === g.id).sort((a, b) => a.order - b.order);
+      return acc;
+    }, {});
+  }, [properties, groups]);
+
+  if (loading) return <div className="loading-container"><RefreshCw className="spinner" /><p>Carregando...</p></div>;
 
   return (
     <div className="settings-container">
       <div className="settings-header">
         <div className="header-info">
           <h2>Definições de Propriedades</h2>
-          <p>Gerencie os campos personalizados dos seus contatos.</p>
+          <p>Gerencie os campos personalizados. Arraste para reordenar grupos e campos.</p>
         </div>
         <button className="hs-button-primary" onClick={handleOpenCreate}>
-          <Plus size={16} style={{ marginRight: '8px' }} /> Nova Propriedade
+          <Plus size={16} /> Nova Propriedade
         </button>
       </div>
 
-      <div className="groups-list">
-        {Object.keys(groupedProps).sort().map(group => (
-          <div key={group} className="property-group-card">
-            <div className="group-header">
-              <h3>{group}</h3>
-              <span className="count-badge">{groupedProps[group].length} campos</span>
+      <div className="scroll-vessel">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndGroups}>
+          <SortableContext items={groups.map(g => g.id)} strategy={verticalListSortingStrategy}>
+            <div className="groups-list">
+              {groups.map(g => (
+                <SortableGroup 
+                  key={g.id} 
+                  id={g.id} 
+                  group={g.name} 
+                  props={groupedProps[g.id] || []}
+                  onEdit={handleOpenEdit}
+                  onDelete={(p) => { setSelectedProperty(p); setIsDeleteModalOpen(true); }}
+                  onDragEndProps={(e) => handleDragEndProps(e, g.id)}
+                />
+              ))}
             </div>
-            <div className="props-table-wrapper">
-              <table className="props-table">
-                <thead>
-                  <tr>
-                    <th>Rótulo (Label)</th>
-                    <th>Nome Interno</th>
-                    <th>Tipo</th>
-                    <th>Opções</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupedProps[group].map(prop => (
-                    <tr key={prop.id} className={prop.is_system ? 'system-prop' : ''}>
-                      <td>
-                        <div className="label-cell">
-                          {prop.label}
-                          {prop.is_system && <Shield size={12} className="system-icon" title="Propriedade de Sistema" />}
-                        </div>
-                      </td>
-                      <td><code>{prop.name}</code></td>
-                      <td>
-                        <span className={`type-badge ${prop.type}`}>
-                          {
-                            prop.type === 'email' ? 'E-mail' : 
-                            prop.type === 'text' ? 'Texto' : 
-                            prop.type === 'textarea' ? 'Texto Longo' :
-                            prop.type === 'boolean' ? 'Checkbox' :
-                            prop.type === 'currency' ? 'Moeda' :
-                            prop.type === 'select' ? 'Seleção' :
-                            prop.type === 'multiselect' ? 'Multi-seleção' :
-                            prop.type === 'date' ? 'Data' :
-                            prop.type === 'url' ? 'URL/Link' : prop.type
-                          }
-                        </span>
-                      </td>
-                      <td>
-                        <div className="options-preview">
-                          {prop.options ? prop.options.split(';').join(', ') : '-'}
-                        </div>
-                      </td>
-                      <td className="actions-cell">
-                        <button className="icon-btn edit" onClick={() => handleOpenEdit(prop)} title="Editar">
-                          <Edit size={14} />
-                        </button>
-                        {!prop.is_system && (
-                          <button className="icon-btn delete" onClick={() => handleOpenDelete(prop)} title="Excluir">
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
+          </SortableContext>
+        </DndContext>
       </div>
 
-      {/* Modal Criar/Editar */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={modalType === 'create' ? 'Nova Propriedade' : 'Editar Propriedade'}
-      >
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Propriedade">
         <form onSubmit={handleSubmit} className="prop-form">
           <div className="form-group">
-            <label>Nome Interno (ID)</label>
-            <input 
-              type="text" 
-              disabled={modalType === 'edit'}
-              required
-              placeholder="ex: cpf_contato"
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value.toLowerCase().replace(/\s/g, '_')})}
-            />
-            {modalType === 'create' && <small>Este nome é usado internamente e não pode ser mudado depois.</small>}
+            <label>Nome Interno</label>
+            <input type="text" disabled={modalType === 'edit'} required value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value.toLowerCase().replace(/\s/g, '_')})} />
           </div>
           <div className="form-group">
-            <label>Rótulo (O que aparece na tela)</label>
-            <input 
-              type="text" 
-              required
-              placeholder="ex: CPF"
-              value={formData.label}
-              onChange={e => setFormData({...formData, label: e.target.value})}
-            />
+            <label>Rótulo</label>
+            <input type="text" required value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})} />
           </div>
           <div className="form-group">
-            <label>Grupo / Categoria</label>
-            <input 
-              type="text" 
-              required
-              placeholder="ex: Documentos ou Endereço"
-              value={formData.group}
-              onChange={e => setFormData({...formData, group: e.target.value})}
-            />
+            <label>Grupo (Escolha ou digite um novo)</label>
+            <input list="group-options" type="text" required value={formData.group} 
+              onChange={e => setFormData({...formData, group: e.target.value})} />
+            <datalist id="group-options">
+              {groups.map(g => <option key={g.id} value={g.name} />)}
+            </datalist>
           </div>
           <div className="form-group">
             <label>Tipo de Dado</label>
-            <select 
-              value={formData.type}
-              onChange={e => setFormData({...formData, type: e.target.value})}
-            >
-              <optgroup label="Texto">
-                <option value="text">Texto Simples</option>
-                <option value="textarea">Texto Multilinha (Área de Texto)</option>
-              </optgroup>
-              <optgroup label="Seleção">
-                <option value="select">Lista de Seleção (Única)</option>
-                <option value="multiselect">Lista de Múltipla Seleção (Checkboxes)</option>
-                <option value="boolean">Checkbox Simples (Booleano)</option>
-              </optgroup>
-              <optgroup label="Especiais">
-                <option value="email">E-mail</option>
-                <option value="currency">Moeda (R$)</option>
-                <option value="number">Número</option>
-                <option value="date">Data</option>
-                <option value="url">URL / Link</option>
-              </optgroup>
+            <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+              <option value="text">Texto</option>
+              <option value="textarea">Texto Longo</option>
+              <option value="select">Seleção</option>
+              <option value="multiselect">Multi-seleção</option>
+              <option value="email">E-mail</option>
+              <option value="date">Data</option>
             </select>
           </div>
-
-          {(formData.type === 'select' || formData.type === 'multiselect') && (
-            <div className="form-group">
-              <label>Opções da Lista</label>
-              <textarea 
-                required
-                placeholder="Digite as opções separadas por ponto e vírgula (;). Ex: Ouro;Prata;Bronze"
-                value={formData.options}
-                onChange={e => setFormData({...formData, options: e.target.value})}
-                rows={3}
-              />
-              <small>Separe as opções usando <strong>;</strong></small>
-            </div>
-          )}
-          
           <div className="form-actions">
-            <button type="button" className="hs-button-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancelar
-            </button>
-            <button type="submit" className="hs-button-primary" disabled={isSaving}>
-              {isSaving ? 'Salvando...' : 'Salvar Propriedade'}
-            </button>
+            <button type="button" className="hs-button-secondary" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+            <button type="submit" className="hs-button-primary">{isSaving ? '...' : 'Salvar'}</button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal Deletar */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="Excluir Propriedade"
-      >
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir">
         <div className="delete-confirm">
-          <AlertCircle size={40} color="#dc2626" style={{ marginBottom: '16px' }} />
-          <p>Tem certeza que deseja excluir <strong>{selectedProperty?.label}</strong>?</p>
-          <p className="warning">Isso removerá os dados deste campo em TODOS os contatos.</p>
-          
+          <p>Excluir <strong>{selectedProperty?.label}</strong>?</p>
           <div className="form-actions">
-            <button type="button" className="hs-button-secondary" onClick={() => setIsDeleteModalOpen(false)}>
-              Cancelar
-            </button>
-            <button className="hs-button-danger" onClick={confirmDelete} disabled={isDeleting}>
-              {isDeleting ? 'Excluindo...' : 'Sim, Excluir'}
-            </button>
+            <button onClick={() => setIsDeleteModalOpen(false)}>Não</button>
+            <button onClick={async () => {
+              setIsDeleting(true);
+              await fetch(`http://localhost:8000/properties/${selectedProperty.id}`, { method: 'DELETE' });
+              setIsDeleteModalOpen(false);
+              setIsDeleting(false);
+              fetchAll();
+            }}>Sim, Excluir</button>
           </div>
         </div>
       </Modal>
 
       <style jsx>{`
-        .settings-container { padding: 32px; max-width: 1000px; margin: 0 auto; }
-        .settings-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
-        .header-info h2 { font-size: 24px; font-weight: 700; color: #2d3e50; margin-bottom: 4px; }
-        .header-info p { color: #516f90; font-size: 14px; }
-
-        .groups-list { display: flex; flex-direction: column; gap: 24px; }
-        .property-group-card { background: white; border: 1px solid #cbd6e2; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .group-header { background: #f5f8fa; padding: 12px 20px; border-bottom: 1px solid #cbd6e2; display: flex; justify-content: space-between; align-items: center; }
-        .group-header h3 { font-size: 16px; font-weight: 700; color: #2d3e50; }
-        .count-badge { font-size: 12px; color: #516f90; background: #eaf0f6; padding: 2px 8px; border-radius: 10px; }
-
+        .settings-container { padding: 32px; max-width: 1000px; margin: 0 auto; height: calc(100vh - 100px); display: flex; flex-direction: column; }
+        .settings-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-shrink: 0; }
+        .scroll-vessel { flex-grow: 1; overflow-y: auto; padding-right: 8px; }
+        .groups-list { display: flex; flex-direction: column; gap: 24px; padding-bottom: 40px; }
+        .property-group-card { background: white; border: 1px solid #cbd6e2; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .group-header { background: #f5f8fa; padding: 12px 20px; border-bottom: 1px solid #cbd6e2; transition: background 0.2s; }
+        .group-title-area { display: flex; align-items: center; gap: 12px; }
+        .group-drag-handle { background: none; border: none; color: #cbd6e2; cursor: grab; padding: 4px; border-radius: 4px; }
+        .group-drag-handle:hover { color: #516f90; background: #eaf0f6; }
+        .drag-handle { background: none; border: none; color: #cbd6e2; cursor: grab; display: flex; align-items: center; }
+        .drag-handle:hover { color: #516f90; }
         .props-table { width: 100%; border-collapse: collapse; }
-        .props-table th { text-align: left; padding: 12px 20px; font-size: 11px; text-transform: uppercase; color: #516f90; border-bottom: 1px solid #eaf0f6; }
-        .props-table td { padding: 12px 20px; font-size: 14px; border-bottom: 1px solid #eaf0f6; }
-        .props-table tr:last-child td { border-bottom: none; }
-        
-        .label-cell { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #0091ae; }
-        .system-icon { color: #516f90; opacity: 0.7; }
-        code { background: #f5f8fa; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #2d3e50; }
-        
-        .options-preview { font-size: 11px; color: #516f90; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-        .type-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .type-badge.text { background: #e0f2fe; color: #0369a1; }
-        .type-badge.email { background: #dcfce7; color: #15803d; }
-        .type-badge.number { background: #fef9c3; color: #854d0e; }
-        .type-badge.textarea { background: #f3f4f6; color: #374151; }
-        .type-badge.boolean { background: #fef3c7; color: #92400e; }
-        .type-badge.currency { background: #ecfdf5; color: #065f46; }
-        .type-badge.select, .type-badge.multiselect { background: #ede9fe; color: #5b21b6; }
-        .type-badge.date { background: #dbeafe; color: #1e40af; }
-        .type-badge.url { background: #fdf2f8; color: #9d174d; }
-
-        .actions-cell { display: flex; gap: 8px; }
-        .icon-btn { background: none; border: none; color: #516f90; cursor: pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
-        .icon-btn:hover { background: #f5f8fa; }
-        .icon-btn.edit:hover { color: #0091ae; }
-        .icon-btn.delete:hover { color: #dc2626; background: #fef2f2; }
-
-        .system-prop { background: #fafbfc; }
-
-        /* Forms */
-        .prop-form { display: flex; flex-direction: column; gap: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 14px; font-weight: 600; color: #2d3e50; }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid #cbd6e2; border-radius: 4px; font-size: 14px; }
-        .form-group textarea { font-family: inherit; resize: vertical; }
-        .form-group small { font-size: 12px; color: #516f90; margin-top: 4px; }
-        .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
-
-        .delete-confirm { text-align: center; }
-        .delete-confirm p { font-size: 16px; margin-bottom: 8px; }
-        .delete-confirm .warning { color: #dc2626; font-size: 14px; font-weight: 600; }
-
-        .hs-button-primary { background: #ff7a59; color: white; border: none; padding: 10px 20px; border-radius: 3px; font-weight: 600; cursor: pointer; display: flex; align-items: center; }
-        .hs-button-secondary { background: white; border: 1px solid #cbd6e2; padding: 10px 20px; border-radius: 3px; font-weight: 600; cursor: pointer; }
-        .hs-button-danger { background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 3px; font-weight: 600; cursor: pointer; }
-
+        .props-table th { text-align: left; padding: 12px 10px; font-size: 11px; text-transform: uppercase; color: #516f90; border-bottom: 1px solid #eaf0f6; }
+        .props-table td { padding: 10px; border-bottom: 1px solid #eaf0f6; font-size: 14px; }
+        .type-badge { font-size: 10px; background: #eaf0f6; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 700; }
+        .hs-button-primary { background: #ff7a59; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .hs-button-secondary { background: white; border: 1px solid #cbd6e2; padding: 8px 16px; border-radius: 3px; font-weight: 600; cursor: pointer; }
+        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; }
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-size: 0.9rem; font-weight: 600; color: #2d3e50; }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid #cbd6e2; border-radius: 4px; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
       `}</style>
     </div>
   );

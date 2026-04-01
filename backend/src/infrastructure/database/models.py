@@ -5,6 +5,13 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 class BaseModel(DeclarativeBase):
     pass
 
+class PropertyGroupModel(BaseModel):
+    __tablename__ = "property_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    order = Column(Integer, default=0)
+
 class PropertyDefinitionModel(BaseModel):
     __tablename__ = "property_definitions"
 
@@ -12,8 +19,10 @@ class PropertyDefinitionModel(BaseModel):
     name = Column(String, unique=True, index=True, nullable=False)  # slug: "personal_email"
     label = Column(String, nullable=False)                          # display: "E-mail Pessoal"
     type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
-    group = Column(String, default="Outros")                        # Endereço, Documentos, etc.
+    group = Column(String, default="Outros")                        # Mantido para compatibilidade inicial
+    group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
     options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
+    order = Column(Integer, default=0)
     is_system = Column(Boolean, default=False)
     is_required = Column(Boolean, default=False)
 
