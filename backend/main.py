@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.infrastructure.api.routes.contacts import router as contacts_router
 from src.infrastructure.api.routes.properties import router as properties_router
+from src.infrastructure.api.routes.companies import router as companies_router
 from src.infrastructure.database.db import init_db
 
 app = FastAPI(title="CRM API", version="1.0.0")
@@ -21,6 +22,7 @@ init_db()
 # Inclui as rotas
 app.include_router(contacts_router)
 app.include_router(properties_router)
+app.include_router(companies_router)
 
 @app.get("/")
 def read_root():

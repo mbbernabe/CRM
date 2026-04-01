@@ -134,6 +134,7 @@ const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps }) =
 // --- Main Component ---
 
 const PropertySettings = () => {
+  const [activeTab, setActiveTab] = useState('contact');
   const [properties, setProperties] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +157,7 @@ const PropertySettings = () => {
     try {
       setLoading(true);
       const [propsRes, groupsRes] = await Promise.all([
-        fetch('http://localhost:8000/properties/'),
+        fetch(`http://localhost:8000/properties/?entity_type=${activeTab}`),
         fetch('http://localhost:8000/properties/groups')
       ]);
       const propsData = await propsRes.json();
@@ -170,7 +171,7 @@ const PropertySettings = () => {
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [activeTab]);
 
   const handleOpenCreate = () => {
     setModalType('create');
@@ -210,7 +211,7 @@ const PropertySettings = () => {
         finalGroupId = existingGroup.id;
       }
 
-      const submissionData = { ...formData, group_id: finalGroupId };
+      const submissionData = { ...formData, group_id: finalGroupId, entity_type: activeTab };
       const url = modalType === 'create' 
         ? 'http://localhost:8000/properties/' 
         : `http://localhost:8000/properties/${selectedProperty.id}`;
@@ -295,6 +296,21 @@ const PropertySettings = () => {
         </button>
       </div>
 
+      <div className="tabs-container">
+        <button 
+          className={`tab-btn ${activeTab === 'contact' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('contact')}
+        >
+          Contatos
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'company' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('company')}
+        >
+          Empresas
+        </button>
+      </div>
+
       <div className="scroll-vessel">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndGroups}>
           <SortableContext items={groups.map(g => g.id)} strategy={verticalListSortingStrategy}>
@@ -371,6 +387,10 @@ const PropertySettings = () => {
       <style jsx>{`
         .settings-container { padding: 32px; max-width: 1000px; margin: 0 auto; height: calc(100vh - 100px); display: flex; flex-direction: column; }
         .settings-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-shrink: 0; }
+        .tabs-container { display: flex; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid #cbd6e2; padding-bottom: 8px; flex-shrink: 0; }
+        .tab-btn { background: none; border: none; font-size: 16px; font-weight: 500; color: #516f90; cursor: pointer; padding: 4px 8px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-btn:hover { color: #2d3e50; }
+        .tab-btn.active { color: #2d3e50; border-bottom-color: #ff7a59; }
         .scroll-vessel { flex-grow: 1; overflow-y: auto; padding-right: 8px; }
         .groups-list { display: flex; flex-direction: column; gap: 24px; padding-bottom: 40px; }
         .property-group-card { background: white; border: 1px solid #cbd6e2; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }

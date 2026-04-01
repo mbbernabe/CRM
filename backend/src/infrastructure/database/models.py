@@ -21,10 +21,34 @@ class PropertyDefinitionModel(BaseModel):
     type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
     group = Column(String, default="Outros")                        # Mantido para compatibilidade inicial
     group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
+    entity_type = Column(String, default="contact", index=True, nullable=False) # contact or company
     options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
     order = Column(Integer, default=0)
     is_system = Column(Boolean, default=False)
     is_required = Column(Boolean, default=False)
+
+class CompanyModel(BaseModel):
+    __tablename__ = "companies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    domain = Column(String, unique=True, index=True, nullable=True)
+    status = Column(String, default="active")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relacionamento com propriedades customizadas
+    property_values = relationship("CompanyPropertyValueModel", back_populates="company", cascade="all, delete-orphan")
+
+class CompanyPropertyValueModel(BaseModel):
+    __tablename__ = "company_property_values"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    property_id = Column(Integer, ForeignKey("property_definitions.id"), nullable=False)
+    value = Column(Text, nullable=True)
+
+    company = relationship("CompanyModel", back_populates="property_values")
+    property_def = relationship("PropertyDefinitionModel")
 
 class ContactModel(BaseModel):
     __tablename__ = "contacts"

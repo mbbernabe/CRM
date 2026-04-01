@@ -7,8 +7,8 @@ class SqlAlchemyPropertyRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list_all(self) -> List[PropertyDefinition]:
-        db_props = self.db.query(PropertyDefinitionModel).all()
+    def list_all(self, entity_type: str = "contact") -> List[PropertyDefinition]:
+        db_props = self.db.query(PropertyDefinitionModel).filter(PropertyDefinitionModel.entity_type == entity_type).all()
         return [
             PropertyDefinition(
                 id=p.id,
@@ -25,8 +25,8 @@ class SqlAlchemyPropertyRepository:
             for p in db_props
         ]
 
-    def list_all_ordered(self) -> List[PropertyDefinition]:
-        db_props = self.db.query(PropertyDefinitionModel).order_by(PropertyDefinitionModel.order).all()
+    def list_all_ordered(self, entity_type: str = "contact") -> List[PropertyDefinition]:
+        db_props = self.db.query(PropertyDefinitionModel).filter(PropertyDefinitionModel.entity_type == entity_type).order_by(PropertyDefinitionModel.order).all()
         return [
             PropertyDefinition(
                 id=p.id,
@@ -35,6 +35,7 @@ class SqlAlchemyPropertyRepository:
                 type=p.type,
                 group=p.group,
                 group_id=p.group_id,
+                entity_type=p.entity_type,
                 options=p.options,
                 order=p.order,
                 is_system=p.is_system,
@@ -70,6 +71,7 @@ class SqlAlchemyPropertyRepository:
             type=p.type,
             group=p.group,
             group_id=p.group_id,
+            entity_type=p.entity_type,
             options=p.options,
             is_system=p.is_system,
             is_required=p.is_required
@@ -82,6 +84,7 @@ class SqlAlchemyPropertyRepository:
             type=prop.type,
             group=prop.group,
             group_id=prop.group_id,
+            entity_type=prop.entity_type,
             options=prop.options,
             order=prop.order,
             is_system=prop.is_system,
@@ -101,6 +104,7 @@ class SqlAlchemyPropertyRepository:
         db_prop.label = prop.label
         db_prop.group = prop.group
         db_prop.group_id = prop.group_id
+        db_prop.entity_type = prop.entity_type
         db_prop.type = prop.type
         db_prop.options = prop.options
         db_prop.is_required = prop.is_required

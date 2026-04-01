@@ -2,8 +2,8 @@ from typing import List, Optional
 from src.domain.entities.property import PropertyDefinition, PropertyGroup
 
 class PropertyRepository:
-    def list_all(self) -> List[PropertyDefinition]: pass
-    def list_all_ordered(self) -> List[PropertyDefinition]: pass
+    def list_all(self, entity_type: str = "contact") -> List[PropertyDefinition]: pass
+    def list_all_ordered(self, entity_type: str = "contact") -> List[PropertyDefinition]: pass
     def save(self, prop: PropertyDefinition) -> PropertyDefinition: pass
     def get_by_name(self, name: str) -> Optional[PropertyDefinition]: pass
     def get_by_id(self, prop_id: int) -> Optional[PropertyDefinition]: pass
@@ -21,26 +21,26 @@ class ListPropertiesUseCase:
     def __init__(self, repository: PropertyRepository):
         self.repository = repository
         
-    def execute(self) -> List[PropertyDefinition]:
-        return self.repository.list_all_ordered()
+    def execute(self, entity_type: str = "contact") -> List[PropertyDefinition]:
+        return self.repository.list_all_ordered(entity_type=entity_type)
 
 class CreatePropertyUseCase:
     def __init__(self, repository: PropertyRepository):
         self.repository = repository
         
-    def execute(self, name: str, label: str, type: str = "text", group: str = "Outros", group_id: Optional[int] = None, options: Optional[str] = None) -> PropertyDefinition:
+    def execute(self, name: str, label: str, type: str = "text", group: str = "Outros", group_id: Optional[int] = None, entity_type: str = "contact", options: Optional[str] = None) -> PropertyDefinition:
         existing = self.repository.get_by_name(name)
         if existing:
             raise ValueError(f"Propriedade com nome '{name}' já existe")
             
-        new_prop = PropertyDefinition(name=name, label=label, type=type, group=group, group_id=group_id, options=options)
+        new_prop = PropertyDefinition(name=name, label=label, type=type, group=group, group_id=group_id, entity_type=entity_type, options=options)
         return self.repository.save(new_prop)
 
 class UpdatePropertyUseCase:
     def __init__(self, repository: PropertyRepository):
         self.repository = repository
         
-    def execute(self, prop_id: int, label: str, type: str, group: str, group_id: Optional[int] = None, options: Optional[str] = None) -> PropertyDefinition:
+    def execute(self, prop_id: int, label: str, type: str, group: str, group_id: Optional[int] = None, entity_type: str = "contact", options: Optional[str] = None) -> PropertyDefinition:
         prop = self.repository.get_by_id(prop_id)
         if not prop:
             raise ValueError("Propriedade não encontrada")
@@ -49,6 +49,7 @@ class UpdatePropertyUseCase:
         prop.type = type
         prop.group = group
         prop.group_id = group_id
+        prop.entity_type = entity_type
         prop.options = options
         
         return self.repository.update(prop)

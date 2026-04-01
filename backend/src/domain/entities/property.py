@@ -9,6 +9,7 @@ class PropertyDefinition:
     type: str = "text"      # text, number, date, email, select
     group: str = "Outros"
     group_id: Optional[int] = None
+    entity_type: str = "contact"
     options: Optional[str] = None
     order: int = 0
     is_system: bool = False
@@ -23,6 +24,13 @@ class PropertyGroup:
 @dataclass
 class ContactPropertyValue:
     contact_id: int
+    property_id: int
+    value: str
+    property_def: Optional[PropertyDefinition] = None
+
+@dataclass
+class CompanyPropertyValue:
+    company_id: int
     property_id: int
     value: str
     property_def: Optional[PropertyDefinition] = None
