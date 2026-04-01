@@ -7,6 +7,9 @@ const Contacts = () => {
   const [propertyDefinitions, setPropertyDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allCompanies, setAllCompanies] = useState([]);
+  const [selectedCompanyIdToLink, setSelectedCompanyIdToLink] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
   
   // Modals & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,13 +41,32 @@ const Contacts = () => {
 
   const fetchProperties = async () => {
     try {
-      const response = await fetch('http://localhost:8000/properties/');
+      const response = await fetch('http://localhost:8000/properties/entity/contact');
       if (!response.ok) throw new Error('Falha ao buscar definições de propriedades');
       const data = await response.json();
-      setPropertyDefinitions(data);
+      
+      const mappedProps = data.map(link => ({
+         ...link.property_def,
+         group: link.group ? link.group.name : 'Outros',
+         is_required: link.is_required
+      }));
+
+      setPropertyDefinitions(mappedProps);
       // Expandir todos os grupos por padrão
-      const groups = [...new Set(data.map(p => p.group))];
+      const groups = [...new Set(mappedProps.map(p => p.group))];
       setExpandedGroups(['Endereço', 'Documentos', 'E-mails', ...groups]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchCompaniesList = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/companies/');
+      if (response.ok) {
+        const data = await response.json();
+        setAllCompanies(data);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -52,7 +74,7 @@ const Contacts = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchContacts(), fetchProperties()]);
+    await Promise.all([fetchContacts(), fetchProperties(), fetchCompaniesList()]);
     setLoading(false);
   };
 
@@ -138,6 +160,49 @@ const Contacts = () => {
     }
   };
 
+  const handleLinkCompany = async () => {
+    if (!selectedCompanyIdToLink || !selectedContact) return;
+    setIsLinking(true);
+    try {
+      const response = await fetch(`http://localhost:8000/contacts/${selectedContact.id}/companies/${selectedCompanyIdToLink}`, {
+        method: 'POST'
+      });
+      if (!response.ok) throw new Error('Falha ao vincular empresa');
+      await fetchContacts();
+      
+      const updatedResponse = await fetch(`http://localhost:8000/contacts/${selectedContact.id}`);
+      if (updatedResponse.ok) {
+        const updatedContact = await updatedResponse.json();
+        setSelectedContact(updatedContact);
+      }
+      setSelectedCompanyIdToLink('');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  const handleUnlinkCompany = async (companyId) => {
+    if (!selectedContact) return;
+    if (!window.confirm('Tem certeza que deseja desvincular esta empresa?')) return;
+    try {
+      const response = await fetch(`http://localhost:8000/contacts/${selectedContact.id}/companies/${companyId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Falha ao desvincular empresa');
+      await fetchContacts();
+      
+      const updatedResponse = await fetch(`http://localhost:8000/contacts/${selectedContact.id}`);
+      if (updatedResponse.ok) {
+        const updatedContact = await updatedResponse.json();
+        setSelectedContact(updatedContact);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const handlePropertyChange = (propName, value) => {
     setFormData(prev => ({
       ...prev,
@@ -198,7 +263,7 @@ const Contacts = () => {
               <th>Nome</th>
               <th>Email Adicional</th>
               <th>Status</th>
-              <th>Cidade/UF</th>
+              <th>Empresas Vinculadas</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -223,7 +288,11 @@ const Contacts = () => {
                   </span>
                 </td>
                 <td>
-                  {contact.properties?.cidade ? `${contact.properties.cidade}${contact.properties.estado ? ' / ' + contact.properties.estado : ''}` : '-'}
+                  {contact.companies && contact.companies.length > 0 ? (
+                    <ul className="linked-list-table">
+                      {contact.companies.map(c => <li key={c.id}>{c.name}</li>)}
+                    </ul>
+                  ) : '-'}
                 </td>
                 <td className="actions-cell">
                   <div className="actions-menu-wrapper">
@@ -415,6 +484,57 @@ const Contacts = () => {
                 )}
               </div>
             ))}
+            
+            {modalType === 'edit' && selectedContact && (
+              <div className="form-section relations">
+                <h3 className="section-title">Empresas Vinculadas</h3>
+                <div className="relations-list">
+                  {selectedContact.companies && selectedContact.companies.length > 0 ? (
+                    selectedContact.companies.map(comp => (
+                      <div key={comp.id} className="relation-item">
+                        <div className="relation-info">
+                          <Building2 size={16} />
+                          <span>{comp.name}</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="unlink-btn" 
+                          onClick={() => handleUnlinkCompany(comp.id)}
+                        >
+                          Desvincular
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="no-relations">Nenhuma empresa vinculada a este contato ainda.</p>
+                  )}
+                </div>
+                
+                <div className="link-action">
+                  <select 
+                    value={selectedCompanyIdToLink} 
+                    onChange={e => setSelectedCompanyIdToLink(e.target.value)}
+                    className="link-select"
+                  >
+                    <option value="">Selecione uma empresa para vincular...</option>
+                    {allCompanies
+                      .filter(c => !(selectedContact.companies || []).some(linked => linked.id === c.id))
+                      .map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))
+                    }
+                  </select>
+                  <button 
+                    type="button" 
+                    className="hs-button-secondary link-btn"
+                    onClick={handleLinkCompany}
+                    disabled={!selectedCompanyIdToLink || isLinking}
+                  >
+                    {isLinking ? 'Vinculando...' : 'Vincular Empresa'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="form-actions sticky-footer">
@@ -479,6 +599,7 @@ const Contacts = () => {
         .hs-table { width: 100%; border-collapse: collapse; text-align: left; }
         .hs-table th { background: var(--hs-bg-main); padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--hs-text-secondary); border-bottom: 1px solid var(--hs-border-light); }
         .hs-table td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--hs-border-light); }
+        .hs-table td ul { margin: 0; padding-left: 16px; list-style-type: disc; }
         
         .contact-cell { display: flex; align-items: center; gap: 10px; }
         .name-stack { display: flex; flex-direction: column; }
@@ -519,6 +640,19 @@ const Contacts = () => {
         .currency-input-wrapper input { padding-left: 35px !important; width: 100%; }
         
         .multiselect-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; background: #f8fafc; padding: 12px; border-radius: 4px; border: 1px solid #cbd6e2; }
+        
+        /* Relationships Section */
+        .relations-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .relation-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #eaf0f6; border-radius: 4px; background: #fdfdfd; }
+        .relation-info { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--hs-text-primary); }
+        .unlink-btn { background: none; border: none; font-size: 12px; color: #dc2626; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .unlink-btn:hover { background: #fef2f2; }
+        .no-relations { font-size: 13px; color: #516f90; font-style: italic; }
+        .link-action { display: flex; gap: 8px; align-items: stretch; }
+        .link-select { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #cbd6e2; border-radius: 3px; font-size: 14px; background: white; }
+        .link-btn { white-space: nowrap; height: auto; }
+        .linked-list-table { list-style-type: none !important; padding: 0 !important; margin: 0 !important; display: flex; flex-direction: column; gap: 4px; }
+        .linked-list-table li { display: inline-flex; align-items: center; background: #eaf0f6; color: var(--hs-blue); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap;}
         
         .sticky-footer { position: sticky; bottom: 0; background: white; padding-top: 16px; border-top: 1px solid #eaf0f6; margin-top: 12px; display: flex; justify-content: flex-end; gap: 12px; }
 

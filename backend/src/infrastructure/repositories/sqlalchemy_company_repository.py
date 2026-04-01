@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from src.domain.entities.company import Company
-from src.infrastructure.database.models import CompanyModel, CompanyPropertyValueModel, PropertyDefinitionModel
+from src.infrastructure.database.models import CompanyModel, ContactModel, CompanyPropertyValueModel, PropertyDefinitionModel
 
 class SqlAlchemyCompanyRepository:
     def __init__(self, db: Session):
@@ -12,7 +12,11 @@ class SqlAlchemyCompanyRepository:
         return [self._map_to_entity(c) for c in db_companies]
 
     def get_by_id(self, company_id: int) -> Optional[Company]:
-        db_company = self.db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+        from sqlalchemy.orm import joinedload
+        db_company = self.db.query(CompanyModel).options(
+            joinedload(CompanyModel.property_values).joinedload(CompanyPropertyValueModel.property_def),
+            joinedload(CompanyModel.contacts)
+        ).filter(CompanyModel.id == company_id).first()
         if not db_company:
             return None
         return self._map_to_entity(db_company)
@@ -82,11 +86,34 @@ class SqlAlchemyCompanyRepository:
         self.db.commit()
         return True
 
+    def link_contact(self, company_id: int, contact_id: int) -> bool:
+        db_company = self.db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact_id).first()
+        if not db_company or not db_contact: return False
+        
+        if db_contact not in db_company.contacts:
+            db_company.contacts.append(db_contact)
+            self.db.commit()
+        return True
+
+    def unlink_contact(self, company_id: int, contact_id: int) -> bool:
+        db_company = self.db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+        if not db_company: return False
+        
+        db_contact = next((c for c in db_company.contacts if c.id == contact_id), None)
+        if db_contact:
+            db_company.contacts.remove(db_contact)
+            self.db.commit()
+            return True
+        return False
+
     def _map_to_entity(self, db_company: CompanyModel) -> Company:
         props = {}
         for pv in db_company.property_values:
             if pv.property_def:
                 props[pv.property_def.name] = pv.value
+
+        contacts = [{"id": c.id, "name": c.name} for c in db_company.contacts]
 
         return Company(
             id=db_company.id,
@@ -94,5 +121,6 @@ class SqlAlchemyCompanyRepository:
             domain=db_company.domain,
             status=db_company.status,
             properties=props,
+            contacts=contacts,
             created_at=db_company.created_at
         )

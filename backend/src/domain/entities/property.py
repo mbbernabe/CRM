@@ -7,19 +7,27 @@ class PropertyDefinition:
     name: str = ""          # slug: "personal_email"
     label: str = ""         # display: "E-mail Pessoal"
     type: str = "text"      # text, number, date, email, select
-    group: str = "Outros"
-    group_id: Optional[int] = None
-    entity_type: str = "contact"
     options: Optional[str] = None
-    order: int = 0
     is_system: bool = False
-    is_required: bool = False
 
 @dataclass
 class PropertyGroup:
     id: Optional[int] = None
     name: str = ""
     order: int = 0
+
+@dataclass
+class EntityPropertyLink:
+    id: Optional[int] = None
+    entity_type: str = "contact"
+    property_id: int = 0
+    group_id: Optional[int] = None
+    order: int = 0
+    is_required: bool = False
+    
+    # Relacionamentos para facilitar o trânsito de dados na UI
+    property_def: Optional[PropertyDefinition] = None
+    group: Optional[PropertyGroup] = None
 
 @dataclass
 class ContactPropertyValue:

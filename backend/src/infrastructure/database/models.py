@@ -19,13 +19,28 @@ class PropertyDefinitionModel(BaseModel):
     name = Column(String, unique=True, index=True, nullable=False)  # slug: "personal_email"
     label = Column(String, nullable=False)                          # display: "E-mail Pessoal"
     type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
-    group = Column(String, default="Outros")                        # Mantido para compatibilidade inicial
-    group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
-    entity_type = Column(String, default="contact", index=True, nullable=False) # contact or company
     options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
-    order = Column(Integer, default=0)
     is_system = Column(Boolean, default=False)
+    
+    links = relationship("EntityPropertyLinkModel", back_populates="property_def", cascade="all, delete-orphan")
+
+class EntityPropertyLinkModel(BaseModel):
+    __tablename__ = "entity_property_links"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    entity_type = Column(String, index=True, nullable=False) # contact or company
+    property_id = Column(Integer, ForeignKey("property_definitions.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
+    order = Column(Integer, default=0)
     is_required = Column(Boolean, default=False)
+    
+    property_def = relationship("PropertyDefinitionModel", back_populates="links")
+    group = relationship("PropertyGroupModel")
+
+class CompanyContactLinkModel(BaseModel):
+    __tablename__ = "company_contact_links"
+    company_id = Column(Integer, ForeignKey("companies.id"), primary_key=True)
+    contact_id = Column(Integer, ForeignKey("contacts.id"), primary_key=True)
 
 class CompanyModel(BaseModel):
     __tablename__ = "companies"
@@ -36,8 +51,9 @@ class CompanyModel(BaseModel):
     status = Column(String, default="active")
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Relacionamento com propriedades customizadas
+    # Relacionamento com propriedades customizadas e contatos vinculados
     property_values = relationship("CompanyPropertyValueModel", back_populates="company", cascade="all, delete-orphan")
+    contacts = relationship("ContactModel", secondary="company_contact_links", back_populates="companies")
 
 class CompanyPropertyValueModel(BaseModel):
     __tablename__ = "company_property_values"
@@ -60,8 +76,9 @@ class ContactModel(BaseModel):
     status = Column(String, default="active")
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Relacionamento com as propriedades customizadas
+    # Relacionamento com as propriedades customizadas e empresas vinculadas
     property_values = relationship("ContactPropertyValueModel", back_populates="contact", cascade="all, delete-orphan")
+    companies = relationship("CompanyModel", secondary="company_contact_links", back_populates="contacts")
 
 class ContactPropertyValueModel(BaseModel):
     __tablename__ = "contact_property_values"

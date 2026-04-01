@@ -9,6 +9,7 @@ class ContactReadDTO(BaseModel):
     phone: Optional[str] = None
     status: str
     properties: Dict[str, Any] = Field(default_factory=dict)
+    companies: list = Field(default_factory=list)
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

@@ -6,19 +6,19 @@ def seed():
     try:
         properties = [
             # Endereço
-            {"name": "logradouro", "label": "Logradouro", "type": "text", "group": "Endereço"},
-            {"name": "numero", "label": "Número", "type": "text", "group": "Endereço"},
-            {"name": "bairro", "label": "Bairro", "type": "text", "group": "Endereço"},
-            {"name": "cidade", "label": "Cidade", "type": "text", "group": "Endereço"},
-            {"name": "estado", "label": "Estado (UF)", "type": "text", "group": "Endereço"},
+            {"name": "logradouro", "label": "Logradouro", "type": "text"},
+            {"name": "numero", "label": "Número", "type": "text"},
+            {"name": "bairro", "label": "Bairro", "type": "text"},
+            {"name": "cidade", "label": "Cidade", "type": "text"},
+            {"name": "estado", "label": "Estado (UF)", "type": "text"},
             
             # Documentos
-            {"name": "cpf", "label": "CPF", "type": "text", "group": "Documentos"},
-            {"name": "rg", "label": "Identidade (RG)", "type": "text", "group": "Documentos"},
+            {"name": "cpf", "label": "CPF", "type": "text"},
+            {"name": "rg", "label": "Identidade (RG)", "type": "text"},
             
             # E-mails Adicionais
-            {"name": "email_profissional", "label": "E-mail Profissional", "type": "email", "group": "E-mails"},
-            {"name": "email_pessoal", "label": "E-mail Pessoal", "type": "email", "group": "E-mails"},
+            {"name": "email_profissional", "label": "E-mail Profissional", "type": "email"},
+            {"name": "email_pessoal", "label": "E-mail Pessoal", "type": "email"},
         ]
         
         for prop in properties:

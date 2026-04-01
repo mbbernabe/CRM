@@ -7,6 +7,7 @@ from src.application.use_cases.get_contact_use_case import GetContactUseCase
 from src.application.use_cases.create_contact_use_case import CreateContactUseCase
 from src.application.use_cases.update_contact_use_case import UpdateContactUseCase
 from src.application.use_cases.delete_contact_use_case import DeleteContactUseCase
+from src.application.use_cases.link_contact_company_use_cases import LinkContactCompanyUseCase, UnlinkContactCompanyUseCase
 from src.application.dtos.contact_dto import ContactReadDTO, ContactCreateDTO, ContactUpdateDTO
 from typing import List
 
@@ -50,3 +51,22 @@ def delete_contact(contact_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contato não encontrado")
     return None
+
+@router.post("/{contact_id}/companies/{company_id}")
+def link_company(contact_id: int, company_id: int, db: Session = Depends(get_db)):
+    repository = SqlAlchemyContactRepository(db)
+    use_case = LinkContactCompanyUseCase(repository)
+    try:
+        use_case.execute(contact_id, company_id)
+        return {"message": "Empresa vinculada com sucesso"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/{contact_id}/companies/{company_id}")
+def unlink_company(contact_id: int, company_id: int, db: Session = Depends(get_db)):
+    repository = SqlAlchemyContactRepository(db)
+    use_case = UnlinkContactCompanyUseCase(repository)
+    success = use_case.execute(contact_id, company_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Vínculo não encontrado")
+    return {"message": "Empresa desvinculada com sucesso"}

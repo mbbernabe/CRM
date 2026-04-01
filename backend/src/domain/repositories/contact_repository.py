@@ -21,3 +21,11 @@ class IContactRepository(Protocol):
     def delete(self, contact_id: int) -> bool:
         """Remove um contato pelo ID."""
         ...
+        
+    def link_company(self, contact_id: int, company_id: int) -> bool:
+        """Vincula um contato a uma empresa."""
+        ...
+        
+    def unlink_company(self, contact_id: int, company_id: int) -> bool:
+        """Desvincula um contato de uma empresa."""
+        ...
