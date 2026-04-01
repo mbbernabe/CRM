@@ -1,25 +1,28 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class ContactReadDTO(BaseModel):
     id: int
     name: str
-    email: str
+    email: EmailStr
     phone: Optional[str] = None
     status: str
+    properties: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 class ContactCreateDTO(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     phone: Optional[str] = None
     status: str = "active"
+    properties: Dict[str, Any] = Field(default_factory=dict)
 
 class ContactUpdateDTO(BaseModel):
     name: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
     status: Optional[str] = None
+    properties: Dict[str, Any] = Field(default_factory=dict)

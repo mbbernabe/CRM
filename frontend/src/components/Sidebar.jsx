@@ -21,6 +21,7 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
     { icon: <Building2 size={20} />, label: 'Empresas', id: 'companies' },
     { icon: <Handshake size={20} />, label: 'Negócios', id: 'deals' },
     { icon: <BarChart3 size={20} />, label: 'Relatórios', id: 'reports' },
+    { icon: <Settings size={20} />, label: 'Configurações', id: 'settings' },
   ];
 
   return (

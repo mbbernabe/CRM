@@ -10,7 +10,13 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
+    import src.infrastructure.database.models
     BaseModel.metadata.create_all(bind=engine)
+    try:
+        from seed_properties import seed
+        seed()
+    except Exception as e:
+        pass
 
 def get_db():
     db = SessionLocal()

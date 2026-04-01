@@ -11,7 +11,8 @@ class CreateContactUseCase:
             name=contact_dto.name,
             email=contact_dto.email,
             phone=contact_dto.phone,
-            status=contact_dto.status
+            status=contact_dto.status,
+            properties=contact_dto.properties
         )
         saved_contact = self.repository.save(contact)
         return ContactReadDTO.model_validate(saved_contact)

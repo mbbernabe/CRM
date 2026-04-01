@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 @dataclass
 class Contact:
@@ -9,4 +9,5 @@ class Contact:
     email: str = ""
     phone: Optional[str] = None
     status: str = "active"
+    properties: Dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)

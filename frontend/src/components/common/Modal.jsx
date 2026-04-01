@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'default' }) => {
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose();
@@ -20,7 +20,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className={`modal-content ${size}`} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{title}</h2>
           <button className="close-button" onClick={onClose}>
@@ -44,27 +44,38 @@ const Modal = ({ isOpen, onClose, title, children }) => {
           align-items: center;
           justify-content: center;
           z-index: 1000;
-          animation: fadeIn 0.2s ease-out;
+          animation: fadeIn 0.15s ease-out;
         }
         .modal-content {
           background: white;
           border-radius: 8px;
           width: 100%;
           max-width: 500px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
           transform: translateY(0);
-          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-content.medium {
+          max-width: 650px;
+        }
+        .modal-content.large {
+          max-width: 850px;
         }
         .modal-header {
-          padding: 20px 24px;
+          padding: 16px 24px;
           border-bottom: 1px solid #eaf0f6;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          flex-shrink: 0;
         }
         .modal-header h2 {
           margin: 0;
           font-size: 18px;
+          font-weight: 700;
           color: #2d3e50;
         }
         .close-button {
@@ -81,6 +92,8 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         }
         .modal-body {
           padding: 24px;
+          overflow-y: auto;
+          flex-grow: 1;
         }
         @keyframes fadeIn {
           from { opacity: 0; }

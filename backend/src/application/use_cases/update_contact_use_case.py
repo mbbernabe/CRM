@@ -20,6 +20,8 @@ class UpdateContactUseCase:
             contact.phone = contact_dto.phone
         if contact_dto.status is not None:
             contact.status = contact_dto.status
+        if contact_dto.properties is not None:
+            contact.properties.update(contact_dto.properties)
 
         updated_contact = self.repository.update(contact)
         return ContactReadDTO.model_validate(updated_contact)

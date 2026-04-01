@@ -6,6 +6,7 @@ import Dashboard from './components/screens/Dashboard';
 import Contacts from './components/screens/Contacts';
 import Companies from './components/screens/Companies';
 import Reports from './components/screens/Reports';
+import PropertySettings from './components/screens/PropertySettings';
 
 const PIPELINES = [
   {
@@ -98,6 +99,7 @@ function App() {
         </>
       );
       case 'reports': return <Reports />;
+      case 'settings': return <PropertySettings />;
       default: return <Dashboard />;
     }
   };
@@ -108,7 +110,13 @@ function App() {
       <div className="content-area">
         {activeScreen !== 'deals' && (
           <header className="simple-header">
-            <h1>{activeScreen.charAt(0).toUpperCase() + activeScreen.slice(1).replace('dashboard', 'Dashboard').replace('contacts', 'Contatos').replace('companies', 'Empresas').replace('reports', 'Relatórios')}</h1>
+            <h1>{
+              activeScreen === 'dashboard' ? 'Dashboard' :
+              activeScreen === 'contacts' ? 'Contatos' :
+              activeScreen === 'companies' ? 'Empresas' :
+              activeScreen === 'reports' ? 'Relatórios' :
+              activeScreen === 'settings' ? 'Configurações de Propriedades' : 'CRM'
+            }</h1>
             <div className="header-actions">
                {/* Add common actions here if needed */}
             </div>
