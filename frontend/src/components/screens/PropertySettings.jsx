@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Settings, Plus, Edit, Trash2, Shield, RefreshCw, AlertCircle, GripVertical } from 'lucide-react';
+import { Settings, Plus, Edit, Trash2, Shield, RefreshCw, AlertCircle, GripVertical, Search, X } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Modal from '../common/Modal';
+import { ToastProvider } from '../common/Toast';
 
 // --- Sortable Components ---
 
@@ -40,11 +41,14 @@ const SortableItem = ({ id, children, isSystem }) => {
 
   return (
     <tr ref={setNodeRef} style={style} className={isSystem ? 'system-prop' : ''}>
-      <td className="drag-handle-cell">
-        <button className="drag-handle" {...attributes} {...listeners}>
-          <GripVertical size={14} />
-        </button>
-      </td>
+      {!isSystem && (
+        <td className="drag-handle-cell">
+          <button className="drag-handle" {...attributes} {...listeners}>
+            <GripVertical size={14} />
+          </button>
+        </td>
+      )}
+      {isSystem && <td className="drag-handle-cell"></td>}
       {children}
     </tr>
   );
@@ -73,26 +77,26 @@ const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps, onR
 
   return (
     <div ref={isGlobalMode ? null : setNodeRef} style={style} className="property-group-card">
-      {!isGlobalMode && (
-        <div className="group-header">
-          <div className="group-title-area">
+      <div className="group-header">
+        <div className="group-title-area">
+          {!isGlobalMode && (
             <button className="group-drag-handle" {...attributes} {...listeners}>
               <GripVertical size={16} />
             </button>
-            <h3>{group}</h3>
-            <button className="icon-btn edit-group-btn" onClick={() => onRenameGroup(id, group)} title="Renomear Grupo">
-              <Edit size={14} />
-            </button>
-            <span className="count-badge">{props.length} campos</span>
-          </div>
-        </div>
-      )}
-      {isGlobalMode && (
-         <div className="group-header">
+          )}
+          {isGlobalMode ? (
             <h3>Pool Global de Propriedades</h3>
-            <span className="count-badge">{props.length} campos (Sem agrupamento)</span>
-         </div>
-      )}
+          ) : (
+            <input 
+              className="inline-group-input"
+              value={group}
+              onChange={(e) => onRenameGroup(id, e.target.value)}
+              title="Clique para renomear"
+            />
+          )}
+          <span className="count-badge">{props.length} campos</span>
+        </div>
+      </div>
       <div className="props-table-wrapper">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndProps}>
           <SortableContext items={props.map(p => p.id)} strategy={verticalListSortingStrategy}>
@@ -158,9 +162,77 @@ const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps, onR
   );
 };
 
+// --- Options Manager Component ---
+
+const OptionsManager = ({ value, onChange }) => {
+  const [inputValue, setInputValue] = useState('');
+  const options = useMemo(() => value ? value.split(';').filter(x => x) : [], [value]);
+
+  const addOption = () => {
+    if (!inputValue.trim()) return;
+    if (options.includes(inputValue.trim())) {
+      setInputValue('');
+      return;
+    }
+    onChange([...options, inputValue.trim()].join(';'));
+    setInputValue('');
+  };
+
+  const removeOption = (opt) => {
+    onChange(options.filter(x => x !== opt).join(';'));
+  };
+
+  return (
+    <div className="options-manager">
+      <div className="options-list">
+        {options.map((opt, i) => (
+          <div key={i} className="option-chip">
+            <span>{opt}</span>
+            <button type="button" onClick={() => removeOption(opt)}><X size={12} /></button>
+          </div>
+        ))}
+      </div>
+      <div className="option-input-group">
+        <input 
+          type="text" 
+          placeholder="Adicionar opção..." 
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
+          className="hs-input"
+        />
+        <button type="button" className="hs-button-secondary hs-button-sm" onClick={addOption}>
+          <Plus size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- Utils ---
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '_');
+};
+
 // --- Main Component ---
 
 const PropertySettings = () => {
+  return (
+    <ToastProvider>
+      {(addToast) => <PropertySettingsInner addToast={addToast} />}
+    </ToastProvider>
+  );
+};
+
+const PropertySettingsInner = ({ addToast }) => {
   const [activeTab, setActiveTab] = useState('contact'); // contact, company, global
   const [properties, setProperties] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -174,12 +246,12 @@ const PropertySettings = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isRenameGroupModalOpen, setIsRenameGroupModalOpen] = useState(false);
-  const [selectedGroupForRename, setSelectedGroupForRename] = useState(null);
-  const [newGroupName, setNewGroupName] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [otherProperties, setOtherProperties] = useState([]);
   const [selectedPropsToShare, setSelectedPropsToShare] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTermShare, setSearchTermShare] = useState('');
+  const [selectedGroupShare, setSelectedGroupShare] = useState('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -187,39 +259,60 @@ const PropertySettings = () => {
   );
 
   const fetchAll = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       if (activeTab === 'global') {
-        const propsRes = await fetch('http://localhost:8000/properties/global');
-        const propsData = await propsRes.json();
-        setProperties(propsData);
-        setGroups([]); // Sem grupos no global
+        const res = await fetch('http://localhost:8000/properties/global');
+        const data = await res.json();
+        setProperties(data);
+        setGroups([]);
       } else {
-        const [propsRes, groupsRes] = await Promise.all([
-          fetch(`http://localhost:8000/properties/entity/${activeTab}`),
-          fetch('http://localhost:8000/properties/groups')
+        const [groupsRes, propsRes] = await Promise.all([
+          fetch('http://localhost:8000/properties/groups'),
+          fetch(`http://localhost:8000/properties/entity/${activeTab}`)
         ]);
-        const linksData = await propsRes.json();
         const groupsData = await groupsRes.json();
+        const propsData = await propsRes.json();
         
-        const mappedProps = linksData.map(link => ({
+        setGroups(groupsData);
+        setProperties(propsData.map(link => ({
           ...link.property_def,
           link_id: link.id,
           group_id: link.group_id,
           order: link.order,
           is_required: link.is_required
-        }));
-        setProperties(mappedProps);
-        setGroups(groupsData);
+        })));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao carregar propriedades:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchAll(); }, [activeTab]);
+  useEffect(() => { 
+    fetchAll(); 
+  }, [activeTab]);
+
+  const groupedProps = useMemo(() => {
+    let baseProps = properties;
+    if (searchTerm) {
+      baseProps = baseProps.filter(p => 
+        p.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (activeTab === 'global') return { 'global': baseProps };
+    
+    return groups.reduce((acc, g) => {
+      const filteredGroupProps = baseProps.filter(p => p.group_id === g.id).sort((a, b) => a.order - b.order);
+      if (!searchTerm || filteredGroupProps.length > 0) {
+        acc[g.id] = filteredGroupProps;
+      }
+      return acc;
+    }, {});
+  }, [properties, groups, activeTab, searchTerm]);
 
   const handleOpenCreate = () => {
     setModalType('create');
@@ -247,7 +340,6 @@ const PropertySettings = () => {
     try {
       let finalGroupId = formData.group_id;
       
-      // Lógica de grupo apenas se não for global
       if (activeTab !== 'global') {
          const existingGroup = groups.find(g => g.name === formData.group);
          if (!existingGroup) {
@@ -280,14 +372,12 @@ const PropertySettings = () => {
            });
         }
       } else {
-         // Edição de Rótulo/Tipo Globalmente
          await fetch(`http://localhost:8000/properties/global/${selectedProperty.id}`, {
            method: 'PUT',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({ label: formData.label, type: formData.type, options: formData.options })
          });
          
-         // Atualização do vínculo se estivermos na aba de entidade
          if (activeTab !== 'global' && selectedProperty.link_id) {
            await fetch(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, {
              method: 'PUT',
@@ -299,46 +389,77 @@ const PropertySettings = () => {
 
       setIsModalOpen(false);
       fetchAll();
+      addToast(`Propriedade ${modalType === 'create' ? 'criada' : 'atualizada'} com sucesso!`, 'success');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleOpenRenameGroup = (id, currentName) => {
-    setSelectedGroupForRename(id);
-    setNewGroupName(currentName);
-    setIsRenameGroupModalOpen(true);
-  };
-  
-  const handleRenameGroupSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`http://localhost:8000/properties/groups/${selectedGroupForRename}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newGroupName })
-      });
-      if (!res.ok) throw new Error('Falha ao renomear grupo');
-      setIsRenameGroupModalOpen(false);
-      fetchAll();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
   const handleOpenShare = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/properties/global`);
-      const allProps = await res.json();
+      // Carregar todas as globais + os links da OUTRA entidade para saber os grupos
+      const otherEntity = activeTab === 'contact' ? 'company' : 'contact';
+      const [globalRes, otherLinksRes] = await Promise.all([
+        fetch(`http://localhost:8000/properties/global`),
+        fetch(`http://localhost:8000/properties/entity/${otherEntity}`)
+      ]);
       
-      const availableToShare = allProps.filter(p => !properties.some(linked => linked.id === p.id) && !p.is_system);
-      setOtherProperties(availableToShare);
+      const allGlobalProps = await globalRes.json();
+      const otherLinks = await otherLinksRes.json();
+      
+      // Filtrar as que já estão vinculadas na entidade atual
+      const availableToShare = allGlobalProps.filter(p => !properties.some(linked => linked.id === p.id) && !p.is_system);
+      
+      // Mapear propriedades para seus grupos na outra entidade (se existirem)
+      const propsWithGroupInfo = availableToShare.map(p => {
+        const link = otherLinks.find(l => l.property_id === p.id);
+        return {
+          ...p,
+          other_group: link && link.group ? link.group.name : 'Outros',
+          other_group_id: link ? link.group_id : null
+        };
+      });
+
+      setOtherProperties(propsWithGroupInfo);
       setSelectedPropsToShare([]);
+      setSearchTermShare('');
+      setSelectedGroupShare('all');
       setIsShareModalOpen(true);
     } catch (err) {
       console.error(err);
+      addToast('Erro ao carregar propriedades para vínculo', 'error');
+    }
+  };
+
+  const filteredOtherProps = useMemo(() => {
+    let result = otherProperties;
+    if (searchTermShare) {
+      const term = searchTermShare.toLowerCase();
+      result = result.filter(p => p.label.toLowerCase().includes(term) || p.name.toLowerCase().includes(term));
+    }
+    if (selectedGroupShare !== 'all') {
+      result = result.filter(p => p.other_group === selectedGroupShare);
+    }
+    return result;
+  }, [otherProperties, searchTermShare, selectedGroupShare]);
+
+  const otherGroups = useMemo(() => {
+     const groupsSet = new Set(otherProperties.map(p => p.other_group));
+     return Array.from(groupsSet).sort();
+  }, [otherProperties]);
+
+  const toggleSelectGroup = (groupName) => {
+    const groupProps = otherProperties.filter(p => p.other_group === groupName).map(p => p.id);
+    const allSelected = groupProps.every(id => selectedPropsToShare.includes(id));
+    
+    if (allSelected) {
+      // Remove todos do grupo
+      setSelectedPropsToShare(prev => prev.filter(id => !groupProps.includes(id)));
+    } else {
+      // Adiciona todos do grupo (sem duplicar)
+      setSelectedPropsToShare(prev => [...new Set([...prev, ...groupProps])]);
     }
   };
 
@@ -357,17 +478,25 @@ const PropertySettings = () => {
       }
       setIsShareModalOpen(false);
       fetchAll();
+      addToast(`${selectedPropsToShare.length} propriedades vinculadas com sucesso!`);
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const toggleShareSelection = (id) => {
-    setSelectedPropsToShare(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+  const handleRenameGroup = async (id, newName) => {
+    setGroups(prev => prev.map(g => g.id === id ? { ...g, name: newName } : g));
+    try {
+      await fetch(`http://localhost:8000/properties/groups/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+      });
+    } catch (err) {
+      console.error("Erro ao renomear grupo:", err);
+    }
   };
 
   const handleDragEndGroups = async (event) => {
@@ -389,54 +518,58 @@ const PropertySettings = () => {
   };
 
   const handleDragEndProps = async (event, groupId) => {
-    if (activeTab === 'global') return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const gProps = properties.filter(p => p.group_id === groupId);
-    const otherProps = properties.filter(p => p.group_id !== groupId);
+    const groupProps = [...groupedProps[groupId]];
+    const oldIndex = groupProps.findIndex(p => p.id === active.id);
+    const newIndex = groupProps.findIndex(p => p.id === over.id);
+    const newProps = arrayMove(groupProps, oldIndex, newIndex);
     
-    const oldIndex = gProps.findIndex(p => p.id === active.id);
-    const newIndex = gProps.findIndex(p => p.id === over.id);
-    const reorderedGroupProps = arrayMove(gProps, oldIndex, newIndex);
-    
-    const reorderedWithOrders = reorderedGroupProps.map((p, i) => ({ ...p, order: i }));
-    const newProperties = [...otherProps, ...reorderedWithOrders];
-    setProperties(newProperties);
+    setProperties(prev => {
+      const otherProps = prev.filter(p => p.group_id !== groupId || !newProps.some(np => np.id === p.id));
+      return [...otherProps, ...newProps];
+    });
 
-    const orders = reorderedWithOrders.map(p => ({ id: p.link_id, order: p.order }));
-    await fetch('http://localhost:8000/properties/entity/reorder', {
+    const orders = newProps.map((p, index) => {
+      const originalLink = properties.find(prop => prop.id === p.id);
+      return { id: originalLink.link_id, order: index };
+    });
+
+    await fetch(`http://localhost:8000/properties/entity/link/reorder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orders)
     });
   };
 
-  const groupedProps = useMemo(() => {
-    if (activeTab === 'global') return { 'global': properties };
-    return groups.reduce((acc, g) => {
-      acc[g.id] = properties.filter(p => p.group_id === g.id).sort((a, b) => a.order - b.order);
-      return acc;
-    }, {});
-  }, [properties, groups, activeTab]);
-
   if (loading) return <div className="loading-container"><RefreshCw className="spinner" /><p>Carregando...</p></div>;
 
   return (
     <div className="settings-container">
       <div className="settings-header">
-        <div className="header-info">
+        <div className="header-left">
           <h2>Definições de Propriedades</h2>
-          <p>
-            {activeTab === 'global' ? 
-             "Central global de propriedades. Aqui não há divisão de grupos, todas as propriedades estão listadas." :
-             `Gerencie os campos personalizados. Arraste para reordenar grupos e campos no módulo.`}
-          </p>
+          <div className="search-container">
+             <div className="search-input-wrapper">
+               <Search size={16} className="search-icon" />
+               <input 
+                 type="text" 
+                 placeholder="Pesquisar propriedades..." 
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="hs-input search-input"
+               />
+               {searchTerm && (
+                  <button className="clear-search-btn" onClick={() => setSearchTerm('')}><X size={14} /></button>
+               )}
+             </div>
+          </div>
         </div>
         <div className="header-actions">
           {activeTab !== 'global' && (
              <button className="hs-button-secondary" onClick={handleOpenShare}>
-               Adicionar Existente
+               Vincular Existente
              </button>
           )}
           <button className="hs-button-primary" onClick={handleOpenCreate}>
@@ -482,19 +615,30 @@ const PropertySettings = () => {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndGroups}>
             <SortableContext items={groups.map(g => g.id)} strategy={verticalListSortingStrategy}>
               <div className="groups-list">
-                {groups.map(g => (
-                  <SortableGroup 
-                    key={g.id} 
-                    id={g.id} 
-                    group={g.name} 
-                    props={groupedProps[g.id] || []}
-                    onEdit={handleOpenEdit}
-                    onDelete={(p) => { setSelectedProperty(p); setIsDeleteModalOpen(true); }}
-                    onDragEndProps={(e) => handleDragEndProps(e, g.id)}
-                    onRenameGroup={handleOpenRenameGroup}
-                    isGlobalMode={false}
-                  />
-                ))}
+                {groups.map(g => {
+                  const groupProps = groupedProps[g.id];
+                  if (!groupProps) return null;
+                  
+                  return (
+                    <SortableGroup 
+                      key={g.id} 
+                      id={g.id} 
+                      group={g.name} 
+                      props={groupProps}
+                      onEdit={handleOpenEdit}
+                      onDelete={(p) => { setSelectedProperty(p); setIsDeleteModalOpen(true); }}
+                      onDragEndProps={(e) => handleDragEndProps(e, g.id)}
+                      onRenameGroup={handleRenameGroup}
+                      isGlobalMode={false}
+                    />
+                  );
+                })}
+                {searchTerm && Object.keys(groupedProps).length === 0 && (
+                  <div className="no-results">
+                    <AlertCircle size={48} />
+                    <p>Nenhuma propriedade encontrada para "{searchTerm}"</p>
+                  </div>
+                )}
               </div>
             </SortableContext>
           </DndContext>
@@ -503,19 +647,33 @@ const PropertySettings = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Propriedade">
         <form onSubmit={handleSubmit} className="prop-form">
-          <div className="form-group">
-            <label>Nome Interno</label>
-            <input type="text" disabled={modalType === 'edit'} required value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value.toLowerCase().replace(/\s/g, '_')})} />
-          </div>
+          {modalType === 'edit' && (
+            <div className="form-group">
+              <label>Nome Interno</label>
+              <input type="text" className="hs-input" disabled value={formData.name} />
+            </div>
+          )}
           <div className="form-group">
             <label>Rótulo</label>
-            <input type="text" required value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})} />
+            <input 
+              type="text" 
+              className="hs-input" 
+              required 
+              value={formData.label} 
+              onChange={e => {
+                const label = e.target.value;
+                const update = { label };
+                if (modalType === 'create') {
+                  update.name = slugify(label);
+                }
+                setFormData(prev => ({...prev, ...update}));
+              }} 
+            />
           </div>
           {activeTab !== 'global' && (
              <div className="form-group">
                <label>Grupo (Escolha ou digite um novo)</label>
-               <input list="group-options" type="text" required value={formData.group} 
+               <input list="group-options" className="hs-input" type="text" required value={formData.group} 
                  onChange={e => setFormData({...formData, group: e.target.value})} />
                <datalist id="group-options">
                  {groups.map(g => <option key={g.id} value={g.name} />)}
@@ -524,127 +682,479 @@ const PropertySettings = () => {
           )}
           <div className="form-group">
             <label>Tipo de Dado</label>
-            <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+            <select className="hs-select" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
               <option value="text">Texto</option>
               <option value="textarea">Texto Longo</option>
-              <option value="select">Seleção</option>
+              <option value="select">Seleção (Dropdown)</option>
               <option value="multiselect">Multi-seleção</option>
               <option value="email">E-mail</option>
               <option value="date">Data</option>
+              <option value="number">Número</option>
+              <option value="currency">Moeda</option>
+              <option value="boolean">Booleano (Sim/Não)</option>
             </select>
           </div>
+          {(formData.type === 'select' || formData.type === 'multiselect') && (
+            <div className="form-group">
+              <label>Opções (Separadas por ponto e vírgula)</label>
+              <OptionsManager value={formData.options} onChange={val => setFormData({...formData, options: val})} />
+            </div>
+          )}
           <div className="form-actions">
             <button type="button" className="hs-button-secondary" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-            <button type="submit" className="hs-button-primary">{isSaving ? '...' : 'Salvar'}</button>
+            <button type="submit" className="hs-button-primary" disabled={isSaving}>{isSaving ? 'Salvando...' : 'Salvar Propriedade'}</button>
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title={activeTab === 'global' ? 'Excluir Definitivamente' : 'Desvincular Propriedade'}>
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirmar Exclusão">
         <div className="delete-confirm">
-          <p>
-            {activeTab === 'global' ? 
-              `ATENÇÃO: Você está prestando a excluir definitivamente a propriedade "${selectedProperty?.label}" de todo o sistema. Isso a removerá de todos os contatos e empresas vinculadas. Deseja continuar?` :
-              `Desvincular a propriedade "${selectedProperty?.label}"? Ela deixará de aparecer neste módulo, mas os dados não serão apagados da base e ela continuará disponível na Central Global.`}
-          </p>
-          <div className="form-actions">
-            <button onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
-            <button onClick={async () => {
+          <p>Tem certeza que deseja {activeTab === 'global' ? 'excluir permanentemente' : 'desvincular'} a propriedade <strong>{selectedProperty?.label}</strong>?</p>
+          <div className="form-actions" style={{ marginTop: '24px' }}>
+            <button className="hs-button-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
+            <button className="hs-button-primary" style={{ background: '#dc2626', border: '1px solid #dc2626' }} 
+              onClick={async () => {
               setIsDeleting(true);
-              if (activeTab === 'global') {
-                 await fetch(`http://localhost:8000/properties/global/${selectedProperty.id}`, { method: 'DELETE' });
-              } else {
-                 await fetch(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, { method: 'DELETE' });
+              try {
+                if (activeTab === 'global') {
+                   await fetch(`http://localhost:8000/properties/global/${selectedProperty.id}`, { method: 'DELETE' });
+                } else {
+                   await fetch(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, { method: 'DELETE' });
+                }
+                setIsDeleteModalOpen(false);
+                fetchAll();
+                addToast(`Propriedade ${activeTab === 'global' ? 'excluída' : 'desvinculada'} com sucesso!`);
+              } catch (err) {
+                addToast(err.message, 'error');
+              } finally {
+                setIsDeleting(false);
               }
-              setIsDeleteModalOpen(false);
-              setIsDeleting(false);
-              fetchAll();
             }}>Sim, Confirmar</button>
           </div>
         </div>
       </Modal>
 
-      <Modal isOpen={isRenameGroupModalOpen} onClose={() => setIsRenameGroupModalOpen(false)} title="Renomear Grupo">
-        <form onSubmit={handleRenameGroupSubmit} className="prop-form">
-          <div className="form-group">
-            <label>Nome do Grupo</label>
-            <input type="text" required value={newGroupName} onChange={e => setNewGroupName(e.target.value)} />
-          </div>
-          <div className="form-actions">
-            <button type="button" className="hs-button-secondary" onClick={() => setIsRenameGroupModalOpen(false)}>Cancelar</button>
-            <button type="submit" className="hs-button-primary">Salvar</button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} title="Adicionar Propriedade Existente">
+      <Modal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} title="Vincular Propriedades Existentes" size="large">
         <div className="share-modal-content">
-          <p>Selecione as propriedades globais que deseja vincular a este módulo.</p>
-          <div className="share-list">
-            {otherProperties.length === 0 ? (
-              <p className="no-props">Não há novas propriedades globais para vincular.</p>
-            ) : (
-              otherProperties.map(p => (
-                <label key={p.id} className="share-item">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedPropsToShare.includes(p.id)} 
-                    onChange={() => toggleShareSelection(p.id)} 
-                  />
-                  <span>{p.label} <small>({p.type})</small></span>
-                </label>
-              ))
+          <p className="share-intro">Selecione propriedades já cadastradas no sistema para adicionar ao grupo <strong>{groups.find(g => g.id === formData.group_id)?.name || 'Outros'}</strong> de <strong>{activeTab === 'contact' ? 'Contatos' : 'Empresas'}</strong>.</p>
+          
+          <div className="share-filters">
+            <div className="search-box">
+              <Search size={16} />
+              <input 
+                type="text" 
+                placeholder="Buscar por rótulo..." 
+                value={searchTermShare}
+                onChange={e => setSearchTermShare(e.target.value)}
+              />
+            </div>
+            <select 
+              className="hs-select filter-select"
+              value={selectedGroupShare}
+              onChange={e => setSelectedGroupShare(e.target.value)}
+            >
+              <option value="all">Todos os Grupos</option>
+              {otherGroups.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+
+          <div className="share-groups-list">
+            {otherGroups.filter(g => selectedGroupShare === 'all' || selectedGroupShare === g).map(groupName => {
+              const groupProps = filteredOtherProps.filter(p => p.other_group === groupName);
+              if (groupProps.length === 0) return null;
+              
+              const isAllSelected = groupProps.every(p => selectedPropsToShare.includes(p.id));
+
+              return (
+                <div key={groupName} className="share-group-section">
+                  <div className="share-group-header">
+                    <h4>{groupName}</h4>
+                    <button 
+                      type="button" 
+                      className={`hs-button-link ${isAllSelected ? 'selected' : ''}`}
+                      onClick={() => toggleSelectGroup(groupName)}
+                    >
+                      {isAllSelected ? 'Desmarcar Grupo' : 'Selecionar Grupo'}
+                    </button>
+                  </div>
+                  <div className="share-props-grid">
+                    {groupProps.map(prop => (
+                      <label key={prop.id} className={`share-prop-card ${selectedPropsToShare.includes(prop.id) ? 'selected' : ''}`}>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedPropsToShare.includes(prop.id)}
+                          onChange={() => {
+                            setSelectedPropsToShare(prev => 
+                              prev.includes(prop.id) ? prev.filter(id => id !== prop.id) : [...prev, prop.id]
+                            );
+                          }}
+                        />
+                        <div className="prop-info">
+                          <span className="prop-label">{prop.label}</span>
+                          <span className="prop-name">{prop.name}</span>
+                        </div>
+                        <span className="prop-type-badge">{prop.type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredOtherProps.length === 0 && (
+              <div className="no-share-results">
+                <AlertCircle size={32} />
+                <p>Nenhuma propriedade encontrada para o filtro selecionado.</p>
+              </div>
             )}
           </div>
-          <div className="form-actions">
+          
+          <div className="form-actions sticky-footer">
             <button className="hs-button-secondary" onClick={() => setIsShareModalOpen(false)}>Cancelar</button>
-            <button className="hs-button-primary" onClick={handleShareSubmit} disabled={selectedPropsToShare.length === 0 || isSaving}>
-              {isSaving ? '...' : 'Vincular Marcadas'}
+            <button 
+              className="hs-button-primary" 
+              onClick={handleShareSubmit} 
+              disabled={selectedPropsToShare.length === 0 || isSaving}
+            >
+              {isSaving ? 'Vinculando...' : `Vincular ${selectedPropsToShare.length} ${selectedPropsToShare.length === 1 ? 'Propriedade' : 'Propriedades'}`}
             </button>
           </div>
         </div>
       </Modal>
 
       <style jsx>{`
-        .settings-container { padding: 32px; max-width: 1000px; margin: 0 auto; height: calc(100vh - 100px); display: flex; flex-direction: column; }
-        .settings-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-shrink: 0; }
-        .tabs-container { display: flex; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid #cbd6e2; padding-bottom: 8px; flex-shrink: 0; }
-        .tab-btn { background: none; border: none; font-size: 16px; font-weight: 500; color: #516f90; cursor: pointer; padding: 4px 8px; border-bottom: 2px solid transparent; transition: all 0.2s; }
-        .tab-btn:hover { color: #2d3e50; }
-        .tab-btn.active { color: #2d3e50; border-bottom-color: #ff7a59; }
-        .scroll-vessel { flex-grow: 1; overflow-y: auto; padding-right: 8px; }
-        .groups-list { display: flex; flex-direction: column; gap: 24px; padding-bottom: 40px; }
-        .property-group-card { background: white; border: 1px solid #cbd6e2; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .group-header { background: #f5f8fa; padding: 12px 20px; border-bottom: 1px solid #cbd6e2; transition: background 0.2s; }
-        .group-title-area { display: flex; align-items: center; gap: 12px; }
-        .group-drag-handle { background: none; border: none; color: #cbd6e2; cursor: grab; padding: 4px; border-radius: 4px; }
-        .group-drag-handle:hover { color: #516f90; background: #eaf0f6; }
-        .edit-group-btn { background: none; border: none; color: #cbd6e2; cursor: pointer; padding: 4px; display: flex; align-items: center; border-radius: 4px; }
-        .edit-group-btn:hover { color: #516f90; background: #eaf0f6; }
-        .drag-handle { background: none; border: none; color: #cbd6e2; cursor: grab; display: flex; align-items: center; }
-        .drag-handle:hover { color: #516f90; }
-        .props-table { width: 100%; border-collapse: collapse; }
-        .props-table th { text-align: left; padding: 12px 10px; font-size: 11px; text-transform: uppercase; color: #516f90; border-bottom: 1px solid #eaf0f6; }
-        .props-table td { padding: 10px; border-bottom: 1px solid #eaf0f6; font-size: 14px; }
-        .type-badge { font-size: 10px; background: #eaf0f6; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 700; }
-        .hs-button-primary { background: #ff7a59; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .hs-button-secondary { background: white; border: 1px solid #cbd6e2; padding: 8px 16px; border-radius: 3px; font-weight: 600; cursor: pointer; }
-        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; }
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-        .form-group label { font-size: 0.9rem; font-weight: 600; color: #2d3e50; }
-        .form-group input, .form-group select { padding: 8px; border: 1px solid #cbd6e2; border-radius: 4px; }
-        .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
-        .share-modal-content p { margin-bottom: 16px; color: #516f90; }
-        .share-list { max-height: 300px; overflow-y: auto; border: 1px solid #cbd6e2; border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-        .share-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .share-item span { font-size: 14px; color: #2d3e50; }
-        .share-item small { color: #879fb8; }
-        .no-props { color: #879fb8; font-style: italic; }
+        ${styles}
       `}</style>
     </div>
   );
 };
+
+const styles = `
+  .settings-container { 
+    padding: 32px; 
+    max-width: 1100px; 
+    margin: 0 auto; 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column;
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .share-modal-content { display: flex; flex-direction: column; gap: 16px; max-height: 70vh; }
+  .share-intro { font-size: 14px; color: var(--hs-text-secondary); line-height: 1.5; }
+  .share-filters { display: flex; gap: 12px; margin-bottom: 8px; }
+  .share-filters .search-box { flex: 1; min-width: 0; }
+  .filter-select { width: 200px; }
+  
+  .share-groups-list { overflow-y: auto; display: flex; flex-direction: column; gap: 24px; padding: 4px; }
+  .share-group-section { display: flex; flex-direction: column; gap: 12px; }
+  .share-group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eaf0f6; padding-bottom: 8px; }
+  .share-group-header h4 { margin: 0; font-size: 14px; color: var(--hs-text-primary); text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  .hs-button-link { background: none; border: none; font-size: 12px; color: var(--hs-blue); font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+  .hs-button-link:hover { background: #f5f8fa; }
+  .hs-button-link.selected { color: var(--hs-orange); }
+
+  .share-props-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .share-prop-card { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #cbd6e2; border-radius: 6px; cursor: pointer; transition: all 0.2s; position: relative; }
+  .share-prop-card:hover { border-color: var(--hs-blue); background: #fdfdfd; }
+  .share-prop-card.selected { border-color: var(--hs-blue); background: #eaf0f6; }
+  
+  .share-prop-card input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+  .prop-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .prop-label { font-size: 14px; font-weight: 600; color: #2d3e50; }
+  .prop-name { font-size: 12px; color: #516f90; overflow: hidden; text-overflow: ellipsis; }
+  .prop-type-badge { font-size: 10px; background: #fff; border: 1px solid #cbd6e2; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; color: #516f90; font-weight: 700; }
+
+  .no-share-results { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px; color: var(--hs-text-secondary); text-align: center; }
+
+  .settings-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-end; 
+    margin-bottom: 32px;
+    gap: 24px;
+  }
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .header-left h2 { 
+    font-size: 24px; 
+    font-weight: 700;
+    color: var(--hs-text-primary); 
+    margin: 0;
+  }
+
+  .search-container {
+    max-width: 460px;
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--hs-text-secondary);
+    pointer-events: none;
+  }
+
+  .search-input {
+    padding-left: 36px !important;
+    width: 100%;
+    height: 40px;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: 8px;
+    background: #cbd6e2;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .header-actions { 
+    display: flex; 
+    gap: 12px;
+    padding-bottom: 2px;
+  }
+
+  .tabs-container { 
+    display: flex; 
+    gap: 32px; 
+    margin-bottom: 24px; 
+    border-bottom: 1px solid var(--hs-border-light);
+  }
+
+  .tab-btn { 
+    background: none; 
+    border: none; 
+    font-size: 14px; 
+    font-weight: 600; 
+    color: var(--hs-text-secondary); 
+    cursor: pointer; 
+    padding: 12px 4px; 
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover { color: var(--hs-text-primary); }
+  .tab-btn.active { color: var(--hs-orange); }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--hs-orange);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .scroll-vessel { 
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding-right: 8px;
+    margin-right: -8px;
+  }
+
+  .groups-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 24px; 
+    padding-bottom: 40px; 
+  }
+
+  .property-group-card { 
+    background: var(--hs-white);
+    border: 1px solid var(--hs-border-light);
+    border-radius: var(--hs-radius-lg); 
+    box-shadow: var(--hs-shadow-sm);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .group-header { 
+    padding: 12px 20px; 
+    background: #f8fafc;
+    border-bottom: 1px solid var(--hs-border-light);
+  }
+
+  .group-title-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .inline-group-input {
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--hs-text-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    width: auto;
+  }
+
+  .inline-group-input:hover { background: rgba(0,0,0,0.03); }
+  .inline-group-input:focus { background: white; border-color: var(--hs-blue); outline: none; }
+
+  .count-badge {
+    font-size: 11px;
+    color: var(--hs-text-secondary);
+    background: #eaf0f6;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .props-table-wrapper { overflow-x: auto; }
+  .props-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+  }
+
+  .props-table th {
+    text-align: left;
+    padding: 10px 20px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--hs-text-secondary);
+    background: #f8fafc;
+    border-bottom: 1px solid var(--hs-border-light);
+  }
+
+  .props-table td {
+    padding: 12px 20px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--hs-border-light);
+  }
+
+  .label-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--hs-blue);
+  }
+
+  .type-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: #475569;
+    text-transform: capitalize;
+  }
+
+  .actions-cell {
+    display: flex;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    color: var(--hs-text-secondary);
+    transition: all 0.2s;
+  }
+
+  .icon-btn:hover { background: #f1f5f9; color: var(--hs-text-primary); }
+  .icon-btn.delete:hover { color: #dc2626; background: #fee2e2; }
+
+  .no-results {
+    padding: 80px 20px;
+    text-align: center;
+    color: var(--hs-text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .prop-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hs-text-secondary);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .share-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--hs-border-light);
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+
+  .share-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--hs-border-light);
+  }
+  .share-item:last-child { border-bottom: none; }
+  .share-item:hover { background: #f8fafc; }
+
+  .share-info { display: flex; flex-direction: column; }
+  .share-label { font-weight: 600; font-size: 14px; }
+  .share-type { font-size: 11px; color: var(--hs-text-secondary); }
+
+  .drag-handle { background: none; border: none; cursor: grab; color: #cbd6e2; padding: 4px; }
+  .group-drag-handle { background: none; border: none; cursor: grab; color: #cbd6e2; padding: 2px; }
+
+  .options-manager { border: 1px solid var(--hs-border-light); border-radius: 4px; padding: 12px; background: #fdfdfd; }
+  .options-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .option-chip { background: #eaf0f6; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .option-chip button { background: none; border: none; cursor: pointer; color: #516f90; padding: 0; display: flex; }
+
+  .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--hs-text-secondary); gap: 16px; }
+  .spinner { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+`;
 
 export default PropertySettings;

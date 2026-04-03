@@ -13,9 +13,14 @@ def init_db():
     import src.infrastructure.database.models
     BaseModel.metadata.create_all(bind=engine)
     try:
-        from seed_properties import seed
-        seed()
+        from seed_properties import seed as seed_props
+        seed_props()
+        from seed import seed as seed_contacts
+        seed_contacts()
+        from seed_companies import seed as seed_companies
+        seed_companies()
     except Exception as e:
+        print(f"Erro ao rodar seeds: {e}")
         pass
 
 def get_db():

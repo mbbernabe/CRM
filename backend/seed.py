@@ -2,14 +2,11 @@ from src.infrastructure.database.db import SessionLocal, init_db
 from src.infrastructure.database.models import ContactModel
 
 def seed():
-    # Inicializa as tabelas
-    init_db()
-    
     db = SessionLocal()
     
     # Verifica se já existem contatos
     if db.query(ContactModel).count() > 0:
-        print("Banco já contém dados. Pulando seed.")
+        print("Banco já contém dados em ContactModel. Pulando seed.")
         db.close()
         return
 
@@ -23,7 +20,8 @@ def seed():
     db.add_all(contacts)
     db.commit()
     db.close()
-    print("Seed finalizado!")
+    print("Seed de contatos finalizado!")
 
 if __name__ == "__main__":
+    init_db()
     seed()

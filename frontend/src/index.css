@@ -25,8 +25,15 @@
   --header-height: 64px;
   
   /* Shadows & Radius */
-  --hs-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --hs-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --hs-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --hs-shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --hs-radius: 4px;
+  --hs-radius-lg: 8px;
+
+  /* Form Spacing */
+  --form-gap: 20px;
+  --input-padding: 10px 12px;
 
   font-family: 'Lexend', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -40,6 +47,66 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Base Form Styles */
+.hs-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--form-gap);
+}
+
+.hs-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hs-text-secondary);
+}
+
+.hs-input, .hs-select {
+  padding: var(--input-padding);
+  border: 1px solid var(--hs-border);
+  border-radius: 3px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--hs-white);
+}
+
+.hs-input:focus, .hs-select:focus {
+  outline: none;
+  border-color: var(--hs-blue);
+  box-shadow: 0 0 0 2px rgba(0, 145, 174, 0.15);
+}
+
+/* HubSpot Buttons Global */
+.hs-button-primary { 
+  background: var(--hs-orange); 
+  color: white; 
+  border: 1px solid var(--hs-orange);
+  padding: 8px 16px; 
+  border-radius: 3px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.hs-button-primary:hover { border-color: #f26a4a; background: #f26a4a; }
+.hs-button-primary:active { transform: translateY(1px); }
+
+.hs-button-secondary { 
+  background: white; 
+  border: 1px solid var(--hs-border); 
+  padding: 8px 16px; 
+  border-radius: 3px; 
+  font-weight: 600; 
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--hs-text-primary);
+  font-size: 14px;
+}
+.hs-button-secondary:hover { background: #f5f8fa; border-color: #cbd6e2; }
 
 * {
   box-sizing: border-box;

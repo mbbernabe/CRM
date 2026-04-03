@@ -43,7 +43,7 @@ class SqlAlchemyContactRepository(IContactRepository):
             return None
         return self._map_to_domain(db_contact)
 
-    def save(self, contact: Contact) -> Contact:
+    def save(self, contact: Contact, company_ids: Optional[List[int]] = None) -> Contact:
         db_contact = ContactModel(
             name=contact.name,
             email=contact.email,
@@ -65,6 +65,13 @@ class SqlAlchemyContactRepository(IContactRepository):
                         value=str(value) if value is not None else None
                     )
                     self.db.add(pv)
+        
+        # Vincula empresas se fornecido
+        if company_ids:
+            for c_id in company_ids:
+                db_company = self.db.query(CompanyModel).filter(CompanyModel.id == c_id).first()
+                if db_company:
+                    db_contact.companies.append(db_company)
         
         self.db.commit()
         self.db.refresh(db_contact)

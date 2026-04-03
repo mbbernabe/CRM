@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, MoreHorizontal, User, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import Modal from '../common/Modal';
+import { ToastProvider } from '../common/Toast';
+import { Building2 } from 'lucide-react';
 
 const Contacts = () => {
+  return (
+    <ToastProvider>
+      {(addToast) => <ContactsInner addToast={addToast} />}
+    </ToastProvider>
+  );
+};
+
+const ContactsInner = ({ addToast }) => {
   const [contacts, setContacts] = useState([]);
   const [propertyDefinitions, setPropertyDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,6 +20,7 @@ const Contacts = () => {
   const [allCompanies, setAllCompanies] = useState([]);
   const [selectedCompanyIdToLink, setSelectedCompanyIdToLink] = useState('');
   const [isLinking, setIsLinking] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Modals & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +32,8 @@ const Contacts = () => {
     email: '',
     phone: '',
     status: 'active',
-    properties: {}
+    properties: {},
+    company_ids: []
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -89,7 +101,8 @@ const Contacts = () => {
       email: '', 
       phone: '', 
       status: 'active',
-      properties: {} 
+      properties: {},
+      company_ids: []
     });
     setSelectedContact(null);
     setIsModalOpen(true);
@@ -102,7 +115,8 @@ const Contacts = () => {
       email: contact.email,
       phone: contact.phone || '',
       status: contact.status,
-      properties: contact.properties || {}
+      properties: contact.properties || {},
+      company_ids: (contact.companies || []).map(c => c.id)
     });
     setSelectedContact(contact);
     setIsModalOpen(true);
@@ -123,10 +137,10 @@ const Contacts = () => {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Falha ao excluir contato');
-      setIsDeleteModalOpen(false);
       fetchContacts();
+      addToast('Contato excluído com sucesso!');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -140,10 +154,18 @@ const Contacts = () => {
         ? 'http://localhost:8000/contacts/' 
         : `http://localhost:8000/contacts/${selectedContact.id}`;
       
+      // Se for edição, o backend atualiza apenas propriedades do contato, 
+      // não o array de empresas (que é gerenciado pelas rotas de link/unlink exclusivas).
+      // Se for criação, mandamos o array company_ids.
+      const payload = { ...formData };
+      if (modalType === 'edit') {
+         delete payload.company_ids;
+      }
+
       const response = await fetch(url, {
         method: modalType === 'create' ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -153,8 +175,9 @@ const Contacts = () => {
 
       setIsModalOpen(false);
       fetchContacts();
+      addToast(`Contato ${modalType === 'create' ? 'criado' : 'atualizado'} com sucesso!`);
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -176,8 +199,9 @@ const Contacts = () => {
         setSelectedContact(updatedContact);
       }
       setSelectedCompanyIdToLink('');
+      addToast('Empresa vinculada com sucesso!');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsLinking(false);
     }
@@ -198,8 +222,9 @@ const Contacts = () => {
         const updatedContact = await updatedResponse.json();
         setSelectedContact(updatedContact);
       }
+      addToast('Empresa desvinculada.');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     }
   };
 
@@ -218,6 +243,17 @@ const Contacts = () => {
       prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
     );
   };
+
+  const filteredContacts = useMemo(() => {
+    if (!searchTerm) return contacts;
+    const term = searchTerm.toLowerCase();
+    return contacts.filter(contact => 
+      contact.name.toLowerCase().includes(term) || 
+      contact.email.toLowerCase().includes(term) ||
+      (contact.phone && contact.phone.includes(term)) ||
+      (contact.companies && contact.companies.some(c => c.name.toLowerCase().includes(term)))
+    );
+  }, [contacts, searchTerm]);
 
   // Agrupar propriedades dinâmicas
   const groupedProperties = propertyDefinitions.reduce((acc, prop) => {
@@ -244,7 +280,12 @@ const Contacts = () => {
         <div className="header-actions">
           <div className="search-box">
             <Search size={16} />
-            <input type="text" placeholder="Filtrar contatos..." />
+            <input 
+              type="text" 
+              placeholder="Filtrar contatos..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
           </div>
           <button className="hs-button-secondary">
             <Filter size={16} />
@@ -268,7 +309,7 @@ const Contacts = () => {
             </tr>
           </thead>
           <tbody>
-            {contacts.map((contact) => (
+            {filteredContacts.map((contact) => (
               <tr key={contact.id}>
                 <td>
                   <div className="contact-cell">
@@ -334,35 +375,36 @@ const Contacts = () => {
               <h3 className="section-title">Informações Básicas</h3>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>Nome Completo</label>
+                  <label className="hs-label">Nome Completo</label>
                   <input 
-                    type="text" required 
+                    type="text" className="hs-input" required 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     placeholder="Ex: João Silva"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Email Principal</label>
+                  <label className="hs-label">Email Principal</label>
                   <input 
-                    type="email" required 
+                    type="email" className="hs-input" required 
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
                     placeholder="exemplo@email.com"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Telefone Principal</label>
+                  <label className="hs-label">Telefone Principal</label>
                   <input 
-                    type="text" 
+                    type="text" className="hs-input"
                     value={formData.phone}
                     onChange={e => setFormData({...formData, phone: e.target.value})}
                     placeholder="(11) 99999-9999"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Status</label>
+                  <label className="hs-label">Status</label>
                   <select 
+                    className="hs-select"
                     value={formData.status}
                     onChange={e => setFormData({...formData, status: e.target.value})}
                   >
@@ -475,7 +517,7 @@ const Contacts = () => {
 
                       return (
                         <div key={prop.name} className={`form-group ${prop.type === 'textarea' || prop.type === 'multiselect' ? 'full-width' : ''}`}>
-                          <label>{prop.label}</label>
+                          <label className="hs-label">{prop.label}</label>
                           {renderField()}
                         </div>
                       );
@@ -485,6 +527,65 @@ const Contacts = () => {
               </div>
             ))}
             
+            {modalType === 'create' && (
+              <div className="form-section relations">
+                <h3 className="section-title">Vincular a Empresas</h3>
+                <div className="relations-list">
+                  {formData.company_ids.length > 0 ? (
+                    formData.company_ids.map(cId => {
+                      const comp = allCompanies.find(c => c.id === parseInt(cId));
+                      return (
+                        <div key={cId} className="relation-item">
+                          <div className="relation-info">
+                            <Building2 size={16} />
+                            <span>{comp?.name || 'Empresa desconhecida'}</span>
+                          </div>
+                          <button 
+                            type="button" 
+                            className="unlink-btn" 
+                            onClick={() => setFormData(prev => ({...prev, company_ids: prev.company_ids.filter(id => id !== cId)}))}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="no-relations">Nenhuma empresa selecionada para este novo contato.</p>
+                  )}
+                </div>
+                
+                <div className="link-action">
+                  <select 
+                    value={selectedCompanyIdToLink} 
+                    onChange={e => setSelectedCompanyIdToLink(e.target.value)}
+                    className="link-select"
+                  >
+                    <option value="">Selecione uma empresa...</option>
+                    {allCompanies
+                      .filter(c => !formData.company_ids.includes(c.id))
+                      .map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))
+                    }
+                  </select>
+                  <button 
+                    type="button" 
+                    className="hs-button-secondary link-btn"
+                    onClick={() => {
+                       if (selectedCompanyIdToLink) {
+                          setFormData(prev => ({...prev, company_ids: [...prev.company_ids, parseInt(selectedCompanyIdToLink)]}));
+                          setSelectedCompanyIdToLink('');
+                       }
+                    }}
+                    disabled={!selectedCompanyIdToLink}
+                  >
+                    Selecionar Empresa
+                  </button>
+                </div>
+              </div>
+            )}
+
             {modalType === 'edit' && selectedContact && (
               <div className="form-section relations">
                 <h3 className="section-title">Empresas Vinculadas</h3>

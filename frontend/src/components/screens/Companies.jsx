@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import Modal from '../common/Modal';
+import { ToastProvider } from '../common/Toast';
 
 const Companies = () => {
+  return (
+    <ToastProvider>
+      {(addToast) => <CompaniesInner addToast={addToast} />}
+    </ToastProvider>
+  );
+};
+
+const CompaniesInner = ({ addToast }) => {
   const [companies, setCompanies] = useState([]);
   const [propertyDefinitions, setPropertyDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,6 +19,7 @@ const Companies = () => {
   const [allContacts, setAllContacts] = useState([]);
   const [selectedContactIdToLink, setSelectedContactIdToLink] = useState('');
   const [isLinking, setIsLinking] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Modals & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,10 +130,10 @@ const Companies = () => {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Falha ao excluir empresa');
-      setIsDeleteModalOpen(false);
       fetchCompanies();
+      addToast('Empresa excluída com sucesso!');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -150,8 +160,9 @@ const Companies = () => {
 
       setIsModalOpen(false);
       fetchCompanies();
+      addToast(`Empresa ${modalType === 'create' ? 'criada' : 'atualizada'} com sucesso!`);
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -173,8 +184,9 @@ const Companies = () => {
         setSelectedCompany(updatedCompany);
       }
       setSelectedContactIdToLink('');
+      addToast('Contato vinculado com sucesso!');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setIsLinking(false);
     }
@@ -195,8 +207,9 @@ const Companies = () => {
         const updatedCompany = await updatedResponse.json();
         setSelectedCompany(updatedCompany);
       }
+      addToast('Contato desvinculado.');
     } catch (err) {
-      alert(err.message);
+      addToast(err.message, 'error');
     }
   };
 
@@ -215,6 +228,16 @@ const Companies = () => {
       prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
     );
   };
+
+  const filteredCompanies = useMemo(() => {
+    if (!searchTerm) return companies;
+    const term = searchTerm.toLowerCase();
+    return companies.filter(company => 
+      company.name.toLowerCase().includes(term) || 
+      (company.domain && company.domain.toLowerCase().includes(term)) ||
+      (company.contacts && company.contacts.some(c => c.name.toLowerCase().includes(term)))
+    );
+  }, [companies, searchTerm]);
 
   // Agrupar propriedades dinâmicas
   const groupedProperties = propertyDefinitions.reduce((acc, prop) => {
@@ -241,7 +264,12 @@ const Companies = () => {
         <div className="header-actions">
           <div className="search-box">
             <Search size={16} />
-            <input type="text" placeholder="Filtrar empresas..." />
+            <input 
+              type="text" 
+              placeholder="Filtrar empresas..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
           </div>
           <button className="hs-button-secondary">
             <Filter size={16} />
@@ -265,7 +293,7 @@ const Companies = () => {
             </tr>
           </thead>
           <tbody>
-            {companies.map((company) => (
+            {filteredCompanies.map((company) => (
               <tr key={company.id}>
                 <td>
                   <div className="company-cell">
@@ -340,26 +368,27 @@ const Companies = () => {
               <h3 className="section-title">Informações Básicas</h3>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>Nome da Empresa *</label>
+                  <label className="hs-label">Nome da Empresa *</label>
                   <input 
-                    type="text" required 
+                    type="text" className="hs-input" required 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     placeholder="Ex: Globex Corp"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Domínio da Empresa</label>
+                  <label className="hs-label">Domínio da Empresa</label>
                   <input 
-                    type="text" 
+                    type="text" className="hs-input"
                     value={formData.domain}
                     onChange={e => setFormData({...formData, domain: e.target.value})}
                     placeholder="ex: globex.com"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Status</label>
+                  <label className="hs-label">Status</label>
                   <select 
+                    className="hs-select"
                     value={formData.status}
                     onChange={e => setFormData({...formData, status: e.target.value})}
                   >
@@ -476,7 +505,7 @@ const Companies = () => {
 
                       return (
                         <div key={prop.name} className={`form-group ${prop.type === 'textarea' || prop.type === 'multiselect' ? 'full-width' : ''}`}>
-                          <label>{prop.label} {prop.is_required && '*'}</label>
+                          <label className="hs-label">{prop.label} {prop.is_required && '*'}</label>
                           {renderField()}
                         </div>
                       );

@@ -20,6 +20,7 @@ class ContactCreateDTO(BaseModel):
     phone: Optional[str] = None
     status: str = "active"
     properties: Dict[str, Any] = Field(default_factory=dict)
+    company_ids: List[int] = Field(default_factory=list)
 
 class ContactUpdateDTO(BaseModel):
     name: Optional[str] = None

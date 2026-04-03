@@ -10,7 +10,7 @@ class IContactRepository(Protocol):
         """Recupera um contato pelo ID."""
         ...
     
-    def save(self, contact: Contact) -> Contact:
+    def save(self, contact: Contact, company_ids: Optional[List[int]] = None) -> Contact:
         """Salva um novo contato no repositório."""
         ...
 
