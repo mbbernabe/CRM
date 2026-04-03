@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { Search, Filter, MoreHorizontal, User, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import Modal from '../common/Modal';
 import { ToastProvider } from '../common/Toast';
@@ -13,6 +14,7 @@ const Contacts = () => {
 };
 
 const ContactsInner = ({ addToast }) => {
+  const { fetchWithAuth } = useAuth();
   const [contacts, setContacts] = useState([]);
   const [propertyDefinitions, setPropertyDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ const ContactsInner = ({ addToast }) => {
 
   const fetchContacts = async () => {
     try {
-      const response = await fetch('http://localhost:8000/contacts/');
+      const response = await fetchWithAuth('http://localhost:8000/contacts/');
       if (!response.ok) throw new Error('Falha ao buscar contatos');
       const data = await response.json();
       setContacts(data);
@@ -53,7 +55,7 @@ const ContactsInner = ({ addToast }) => {
 
   const fetchProperties = async () => {
     try {
-      const response = await fetch('http://localhost:8000/properties/entity/contact');
+      const response = await fetchWithAuth('http://localhost:8000/properties/entity/contact');
       if (!response.ok) throw new Error('Falha ao buscar definições de propriedades');
       const data = await response.json();
       
@@ -74,7 +76,7 @@ const ContactsInner = ({ addToast }) => {
 
   const fetchCompaniesList = async () => {
     try {
-      const response = await fetch('http://localhost:8000/companies/');
+      const response = await fetchWithAuth('http://localhost:8000/companies/');
       if (response.ok) {
         const data = await response.json();
         setAllCompanies(data);
@@ -133,7 +135,7 @@ const ContactsInner = ({ addToast }) => {
     if (!selectedContact) return;
     setIsDeleting(true);
     try {
-      const response = await fetch(`http://localhost:8000/contacts/${selectedContact.id}`, {
+      const response = await fetchWithAuth(`http://localhost:8000/contacts/${selectedContact.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Falha ao excluir contato');
@@ -162,9 +164,8 @@ const ContactsInner = ({ addToast }) => {
          delete payload.company_ids;
       }
 
-      const response = await fetch(url, {
+      const response = await fetchWithAuth(url, {
         method: modalType === 'create' ? 'POST' : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -187,13 +188,13 @@ const ContactsInner = ({ addToast }) => {
     if (!selectedCompanyIdToLink || !selectedContact) return;
     setIsLinking(true);
     try {
-      const response = await fetch(`http://localhost:8000/contacts/${selectedContact.id}/companies/${selectedCompanyIdToLink}`, {
+      const response = await fetchWithAuth(`http://localhost:8000/contacts/${selectedContact.id}/companies/${selectedCompanyIdToLink}`, {
         method: 'POST'
       });
       if (!response.ok) throw new Error('Falha ao vincular empresa');
       await fetchContacts();
       
-      const updatedResponse = await fetch(`http://localhost:8000/contacts/${selectedContact.id}`);
+      const updatedResponse = await fetchWithAuth(`http://localhost:8000/contacts/${selectedContact.id}`);
       if (updatedResponse.ok) {
         const updatedContact = await updatedResponse.json();
         setSelectedContact(updatedContact);
@@ -211,13 +212,13 @@ const ContactsInner = ({ addToast }) => {
     if (!selectedContact) return;
     if (!window.confirm('Tem certeza que deseja desvincular esta empresa?')) return;
     try {
-      const response = await fetch(`http://localhost:8000/contacts/${selectedContact.id}/companies/${companyId}`, {
+      const response = await fetchWithAuth(`http://localhost:8000/contacts/${selectedContact.id}/companies/${companyId}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Falha ao desvincular empresa');
       await fetchContacts();
       
-      const updatedResponse = await fetch(`http://localhost:8000/contacts/${selectedContact.id}`);
+      const updatedResponse = await fetchWithAuth(`http://localhost:8000/contacts/${selectedContact.id}`);
       if (updatedResponse.ok) {
         const updatedContact = await updatedResponse.json();
         setSelectedContact(updatedContact);
@@ -375,7 +376,7 @@ const ContactsInner = ({ addToast }) => {
               <h3 className="section-title">Informações Básicas</h3>
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="hs-label">Nome Completo</label>
+                  <label className="hs-label">Nome Completo <span className="required-indicator">*</span></label>
                   <input 
                     type="text" className="hs-input" required 
                     value={formData.name}
@@ -384,7 +385,7 @@ const ContactsInner = ({ addToast }) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="hs-label">Email Principal</label>
+                  <label className="hs-label">Email Principal <span className="required-indicator">*</span></label>
                   <input 
                     type="email" className="hs-input" required 
                     value={formData.email}
@@ -442,30 +443,34 @@ const ContactsInner = ({ addToast }) => {
                                 onChange={e => handlePropertyChange(prop.name, e.target.value)}
                                 placeholder={`Digite o ${prop.label.toLowerCase()}...`}
                                 rows={3}
+                                className="hs-input w-full"
+                                required={prop.is_required}
                               />
                             );
                           case 'boolean':
                             return (
                               <div className="checkbox-wrapper">
-                                <label className="hs-checkbox">
+                                <label className="hs-checkbox flex items-center gap-2">
                                   <input 
                                     type="checkbox" 
                                     checked={currentValue === 'true' || currentValue === true}
                                     onChange={e => handlePropertyChange(prop.name, e.target.checked ? 'true' : 'false')}
                                   />
-                                  <span>Sim</span>
+                                  <span className="text-sm">Sim</span>
                                 </label>
                               </div>
                             );
                           case 'currency':
                             return (
-                              <div className="currency-input-wrapper">
-                                <span className="currency-prefix">R$</span>
+                              <div className="currency-input-wrapper relative">
+                                <span className="currency-prefix absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
                                 <input 
                                   type="number" step="0.01"
+                                  className="hs-input w-full pl-10"
                                   value={currentValue}
                                   onChange={e => handlePropertyChange(prop.name, e.target.value)}
                                   placeholder="0,00"
+                                  required={prop.is_required}
                                 />
                               </div>
                             );
@@ -473,8 +478,10 @@ const ContactsInner = ({ addToast }) => {
                             const options = prop.options ? prop.options.split(';') : [];
                             return (
                               <select 
+                                className="hs-select w-full"
                                 value={currentValue}
                                 onChange={e => handlePropertyChange(prop.name, e.target.value)}
+                                required={prop.is_required}
                               >
                                 <option value="">Selecione...</option>
                                 {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -490,15 +497,15 @@ const ContactsInner = ({ addToast }) => {
                               handlePropertyChange(prop.name, newValues.join(','));
                             };
                             return (
-                              <div className="multiselect-group">
+                              <div className="multiselect-group flex flex-wrap gap-2">
                                 {multiOptions.map(opt => (
-                                  <label key={opt} className="hs-checkbox">
+                                  <label key={opt} className="hs-checkbox flex items-center gap-2 bg-gray-50 px-2 py-1 rounded">
                                     <input 
                                       type="checkbox" 
                                       checked={selectedValues.includes(opt)}
                                       onChange={() => toggleValue(opt)}
                                     />
-                                    <span>{opt}</span>
+                                    <span className="text-sm">{opt}</span>
                                   </label>
                                 ))}
                               </div>
@@ -507,17 +514,22 @@ const ContactsInner = ({ addToast }) => {
                             return (
                               <input 
                                 type={prop.type === 'email' ? 'email' : prop.type === 'date' ? 'date' : prop.type === 'url' ? 'url' : 'text'} 
+                                className="hs-input w-full"
                                 value={currentValue}
                                 onChange={e => handlePropertyChange(prop.name, e.target.value)}
                                 placeholder={`Digite o ${prop.label.toLowerCase()}...`}
+                                required={prop.is_required}
                               />
                             );
                         }
                       };
 
                       return (
-                        <div key={prop.name} className={`form-group ${prop.type === 'textarea' || prop.type === 'multiselect' ? 'full-width' : ''}`}>
-                          <label className="hs-label">{prop.label}</label>
+                        <div key={prop.name} className={`hs-form-group ${prop.type === 'textarea' || prop.type === 'multiselect' ? 'full-width' : ''}`}>
+                          <label className="hs-label">
+                            {prop.label}
+                            {prop.is_required && <span className="required-indicator">*</span>}
+                          </label>
                           {renderField()}
                         </div>
                       );

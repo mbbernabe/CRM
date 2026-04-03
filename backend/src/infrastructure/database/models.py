@@ -5,22 +5,46 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 class BaseModel(DeclarativeBase):
     pass
 
+class TeamModel(BaseModel):
+    __tablename__ = "teams"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    users = relationship("UserModel", back_populates="team")
+
+class UserModel(BaseModel):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password = Column(String, nullable=False) # Armazenada em texto plano inicialmente (conforme plano)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    team = relationship("TeamModel", back_populates="users")
+
 class PropertyGroupModel(BaseModel):
     __tablename__ = "property_groups"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, index=True, nullable=False)
     order = Column(Integer, default=0)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
 
 class PropertyDefinitionModel(BaseModel):
     __tablename__ = "property_definitions"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)  # slug: "personal_email"
+    name = Column(String, index=True, nullable=False)  # slug: "personal_email"
     label = Column(String, nullable=False)                          # display: "E-mail Pessoal"
     type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
     options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
     is_system = Column(Boolean, default=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     
     links = relationship("EntityPropertyLinkModel", back_populates="property_def", cascade="all, delete-orphan")
 
@@ -33,6 +57,7 @@ class EntityPropertyLinkModel(BaseModel):
     group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
     order = Column(Integer, default=0)
     is_required = Column(Boolean, default=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     
     property_def = relationship("PropertyDefinitionModel", back_populates="links")
     group = relationship("PropertyGroupModel")
@@ -49,6 +74,7 @@ class CompanyModel(BaseModel):
     name = Column(String, nullable=False)
     domain = Column(String, unique=True, index=True, nullable=True)
     status = Column(String, default="active")
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamento com propriedades customizadas e contatos vinculados
@@ -74,6 +100,7 @@ class ContactModel(BaseModel):
     email = Column(String, unique=True, index=True)
     phone = Column(String, nullable=True)
     status = Column(String, default="active")
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamento com as propriedades customizadas e empresas vinculadas

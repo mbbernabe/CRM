@@ -1,145 +1,99 @@
 from typing import List, Optional
 from src.domain.entities.property import PropertyDefinition, PropertyGroup, EntityPropertyLink
+from src.domain.repositories.property_repository import IPropertyRepository
 
-class PropertyRepository:
-    # Global Props
-    def list_all_global(self) -> List[PropertyDefinition]: pass
-    def get_global_by_name(self, name: str) -> Optional[PropertyDefinition]: pass
-    def get_global_by_id(self, prop_id: int) -> Optional[PropertyDefinition]: pass
-    def save_global(self, prop: PropertyDefinition) -> PropertyDefinition: pass
-    def update_global(self, prop: PropertyDefinition) -> PropertyDefinition: pass
-    def delete_global(self, prop_id: int) -> bool: pass
-    
-    # Linked Props
-    def list_linked_properties(self, entity_type: str) -> List[EntityPropertyLink]: pass
-    def get_link_by_id(self, link_id: int) -> Optional[EntityPropertyLink]: pass
-    def get_link_by_entity_and_property(self, entity_type: str, property_id: int) -> Optional[EntityPropertyLink]: pass
-    def link_property(self, link: EntityPropertyLink) -> EntityPropertyLink: pass
-    def update_link(self, link: EntityPropertyLink) -> EntityPropertyLink: pass
-    def unlink_property(self, link_id: int) -> bool: pass
-    def update_linked_orders(self, orders: List[dict]): pass
-    
-    # Groups
-    def list_groups(self) -> List[PropertyGroup]: pass
-    def save_group(self, group: PropertyGroup) -> PropertyGroup: pass
-    def update_group_orders(self, orders: List[dict]): pass
-    def get_group_by_name(self, name: str) -> Optional[PropertyGroup]: pass
-    def update_group_name(self, group_id: int, new_name: str) -> Optional[PropertyGroup]: pass
-
-
-# --- Global Property Use Cases ---
-class ListGlobalPropertiesUseCase:
-    def __init__(self, repository: PropertyRepository):
+# --- Property Definition Use Cases (Antigas Global) ---
+class ListPropertyDefinitionsUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-    def execute(self) -> List[PropertyDefinition]:
-        return self.repository.list_all_global()
+    def execute(self, team_id: int) -> List[PropertyDefinition]:
+        return self.repository.list_definitions(team_id)
 
-class CreateGlobalPropertyUseCase:
-    def __init__(self, repository: PropertyRepository):
+class CreatePropertyDefinitionUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
         
-    def execute(self, name: str, label: str, type: str = "text", options: Optional[str] = None) -> PropertyDefinition:
-        existing = self.repository.get_global_by_name(name)
+    def execute(self, name: str, label: str, team_id: int, type: str = "text", options: Optional[str] = None) -> PropertyDefinition:
+        existing = self.repository.get_definition_by_name(name, team_id)
         if existing:
-            raise ValueError(f"Propriedade com nome '{name}' já existe")
-        new_prop = PropertyDefinition(name=name, label=label, type=type, options=options)
-        return self.repository.save_global(new_prop)
+            raise ValueError(f"Propriedade com nome '{name}' já existe neste time.")
+        new_prop = PropertyDefinition(name=name, label=label, type=type, options=options, team_id=team_id)
+        return self.repository.save_definition(new_prop, team_id)
 
-class UpdateGlobalPropertyUseCase:
-    def __init__(self, repository: PropertyRepository):
+class UpdatePropertyDefinitionUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-        
-    def execute(self, prop_id: int, label: str, type: str, options: Optional[str] = None) -> PropertyDefinition:
-        prop = self.repository.get_global_by_id(prop_id)
+    def execute(self, prop_id: int, label: str, team_id: int, type: str, options: Optional[str] = None) -> PropertyDefinition:
+        # Nota: O repositório precisa suportar get_definition_by_id ou similar
+        # Por enquanto, vamos assumir que o repositório foi atualizado
+        # Se não, vamos usar o que temos.
+        # Na verdade, o SqlAlchemyPropertyRepository tem get_definition_by_id.
+        prop = self.repository.get_definition_by_id(prop_id, team_id)
         if not prop: raise ValueError("Propriedade não encontrada")
         prop.label = label
         prop.type = type
         prop.options = options
-        return self.repository.update_global(prop)
+        return self.repository.save_definition(prop, team_id)
 
-class DeleteGlobalPropertyUseCase:
-    def __init__(self, repository: PropertyRepository):
+class DeletePropertyDefinitionUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-        
-    def execute(self, prop_id: int) -> bool:
-        prop = self.repository.get_global_by_id(prop_id)
-        if not prop: return False
-        if prop.is_system: raise ValueError("Propriedades de sistema não podem ser excluídas")
-        return self.repository.delete_global(prop_id)
-
+    def execute(self, prop_id: int, team_id: int) -> bool:
+        return self.repository.delete_definition(prop_id, team_id)
 
 # --- Linked Property Use Cases ---
-class ListLinkedPropertiesUseCase:
-    def __init__(self, repository: PropertyRepository):
+class ListEntityLinksUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-    def execute(self, entity_type: str) -> List[EntityPropertyLink]:
-        return self.repository.list_linked_properties(entity_type)
+    def execute(self, entity_type: str, team_id: int) -> List[EntityPropertyLink]:
+        return self.repository.list_entity_links(entity_type, team_id)
 
-class LinkPropertyUseCase:
-    def __init__(self, repository: PropertyRepository):
-        self.repository = repository
-        
-    def execute(self, entity_type: str, property_id: int, group_id: Optional[int], order: int = 0) -> EntityPropertyLink:
-        existing = self.repository.get_link_by_entity_and_property(entity_type, property_id)
-        if existing:
-            raise ValueError(f"Propriedade já está vinculada neste módulo")
-        link = EntityPropertyLink(entity_type=entity_type, property_id=property_id, group_id=group_id, order=order)
-        return self.repository.link_property(link)
-
-class UpdatePropertyLinkUseCase:
-    def __init__(self, repository: PropertyRepository):
+class CreateEntityLinkUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
         
-    def execute(self, link_id: int, group_id: Optional[int], is_required: bool) -> EntityPropertyLink:
-        link = self.repository.get_link_by_id(link_id)
-        if not link: raise ValueError("Vínculo não encontrado")
-        link.group_id = group_id
-        link.is_required = is_required
-        return self.repository.update_link(link)
+    def execute(self, entity_type: str, property_id: int, team_id: int, group_id: Optional[int], order: int = 0) -> EntityPropertyLink:
+        links = self.repository.list_entity_links(entity_type, team_id)
+        if any(ln.property_id == property_id for ln in links):
+            raise ValueError(f"Propriedade já está vinculada neste módulo.")
+        
+        link = EntityPropertyLink(entity_type=entity_type, property_id=property_id, group_id=group_id, order=order, team_id=team_id)
+        return self.repository.save_entity_link(link, team_id)
 
-class UnlinkPropertyUseCase:
-    def __init__(self, repository: PropertyRepository):
+class DeleteEntityLinkUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
         
-    def execute(self, link_id: int) -> bool:
-        return self.repository.unlink_property(link_id)
-
-class ReorderLinkedPropertiesUseCase:
-    def __init__(self, repository: PropertyRepository):
-        self.repository = repository
-        
-    def execute(self, orders: List[dict]):
-        self.repository.update_linked_orders(orders)
-
+    def execute(self, link_id: int, team_id: int) -> bool:
+        return self.repository.delete_entity_link(link_id, team_id)
 
 # --- Group Use Cases ---
-class ListGroupsUseCase:
-    def __init__(self, repository: PropertyRepository):
+class ListPropertyGroupsUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-    def execute(self) -> List[PropertyGroup]:
-        return self.repository.list_groups()
+    def execute(self, team_id: int) -> List[PropertyGroup]:
+        return self.repository.list_groups(team_id)
 
-class CreateGroupUseCase:
-    def __init__(self, repository: PropertyRepository):
+class CreatePropertyGroupUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-    def execute(self, name: str) -> PropertyGroup:
-        existing = self.repository.get_group_by_name(name)
+    def execute(self, name: str, team_id: int) -> PropertyGroup:
+        groups = self.repository.list_groups(team_id)
+        existing = next((g for g in groups if g.name == name), None)
         if existing: return existing
-        return self.repository.save_group(PropertyGroup(name=name, order=999))
+        return self.repository.save_group(PropertyGroup(name=name, order=999, team_id=team_id), team_id)
 
 class ReorderGroupsUseCase:
-    def __init__(self, repository: PropertyRepository):
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-    def execute(self, orders: List[dict]):
-        self.repository.update_group_orders(orders)
+    def execute(self, orders: List[dict], team_id: int):
+        # Usando método utilitário se disponível no repo (ou iterando)
+        if hasattr(self.repository, "update_group_orders"):
+            self.repository.update_group_orders(orders, team_id)
 
-class RenameGroupUseCase:
-    def __init__(self, repository: PropertyRepository):
+class ReorderLinksUseCase:
+    def __init__(self, repository: IPropertyRepository):
         self.repository = repository
-    def execute(self, group_id: int, new_name: str) -> PropertyGroup:
-        existing = self.repository.get_group_by_name(new_name)
-        if existing and existing.id != group_id:
-            raise ValueError(f"Grupo '{new_name}' já existe")
-        updated = self.repository.update_group_name(group_id, new_name)
-        if not updated: raise ValueError("Grupo não encontrado")
-        return updated
+    def execute(self, orders: List[dict], team_id: int):
+        if hasattr(self.repository, "update_link_orders"):
+            self.repository.update_link_orders(orders, team_id)

@@ -38,30 +38,32 @@ class CompanyResponse(BaseModel):
     class Config:
         orm_mode = True
 
+from src.infrastructure.api.dependencies import get_team_id
+
 router = APIRouter(prefix="/companies", tags=["Companies"])
 
 @router.get("/", response_model=List[CompanyResponse])
-def list_companies(db: Session = Depends(get_db)):
+def list_companies(db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     company_repo = SqlAlchemyCompanyRepository(db)
     use_case = ListCompaniesUseCase(company_repo)
-    return use_case.execute()
+    return use_case.execute(team_id)
 
 @router.get("/{company_id}", response_model=CompanyResponse)
-def get_company(company_id: int, db: Session = Depends(get_db)):
+def get_company(company_id: int, db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     company_repo = SqlAlchemyCompanyRepository(db)
     use_case = GetCompanyUseCase(company_repo)
-    company = use_case.execute(company_id)
+    company = use_case.execute(company_id, team_id)
     if not company:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     return company
 
 @router.post("/", response_model=CompanyResponse, status_code=status.HTTP_201_CREATED)
-def create_company(company: CompanyCreate, db: Session = Depends(get_db)):
+def create_company(company: CompanyCreate, db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     company_repo = SqlAlchemyCompanyRepository(db)
     property_repo = SqlAlchemyPropertyRepository(db)
     use_case = CreateCompanyUseCase(company_repo, property_repo)
     try:
-        return use_case.execute(company.name, company.domain, company.properties)
+        return use_case.execute(company.name, team_id, company.domain, company.properties)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -70,12 +72,12 @@ def create_company(company: CompanyCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/{company_id}", response_model=CompanyResponse)
-def update_company(company_id: int, company: CompanyUpdate, db: Session = Depends(get_db)):
+def update_company(company_id: int, company: CompanyUpdate, db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     company_repo = SqlAlchemyCompanyRepository(db)
     property_repo = SqlAlchemyPropertyRepository(db)
     use_case = UpdateCompanyUseCase(company_repo, property_repo)
     try:
-        return use_case.execute(company_id, company.name, company.domain, company.properties)
+        return use_case.execute(company_id, team_id, company.name, company.domain, company.properties)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -84,29 +86,29 @@ def update_company(company_id: int, company: CompanyUpdate, db: Session = Depend
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/{company_id}")
-def delete_company(company_id: int, db: Session = Depends(get_db)):
+def delete_company(company_id: int, db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     company_repo = SqlAlchemyCompanyRepository(db)
     use_case = DeleteCompanyUseCase(company_repo)
-    success = use_case.execute(company_id)
+    success = use_case.execute(company_id, team_id)
     if not success:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     return {"message": "Empresa excluída com sucesso"}
 
 @router.post("/{company_id}/contacts/{contact_id}")
-def link_contact(company_id: int, contact_id: int, db: Session = Depends(get_db)):
+def link_contact(company_id: int, contact_id: int, db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     contact_repo = SqlAlchemyContactRepository(db)
     use_case = LinkContactCompanyUseCase(contact_repo)
     try:
-        use_case.execute(contact_id, company_id)
+        use_case.execute(contact_id, company_id, team_id)
         return {"message": "Contato vinculado com sucesso"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.delete("/{company_id}/contacts/{contact_id}")
-def unlink_contact(company_id: int, contact_id: int, db: Session = Depends(get_db)):
+def unlink_contact(company_id: int, contact_id: int, db: Session = Depends(get_db), team_id: int = Depends(get_team_id)):
     contact_repo = SqlAlchemyContactRepository(db)
     use_case = UnlinkContactCompanyUseCase(contact_repo)
-    success = use_case.execute(contact_id, company_id)
+    success = use_case.execute(contact_id, company_id, team_id)
     if not success:
         raise HTTPException(status_code=404, detail="Vínculo não encontrado")
     return {"message": "Contato desvinculado com sucesso"}

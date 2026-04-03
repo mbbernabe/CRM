@@ -9,11 +9,16 @@ import {
   ChevronUp,
   LogOut,
   User as UserIcon,
-  HelpCircle
+  HelpCircle,
+  Shield
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ activeScreen, onNavigate }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const { user, logout } = useAuth();
+  
+  const userInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
 
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', id: 'dashboard' },
@@ -23,6 +28,10 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
     { icon: <BarChart3 size={20} />, label: 'Relatórios', id: 'reports' },
     { icon: <Settings size={20} />, label: 'Configurações', id: 'settings' },
   ];
+
+  if (user?.role === 'admin') {
+    menuItems.push({ icon: <Shield size={20} />, label: 'Administração', id: 'admin' });
+  }
 
   return (
     <aside className="sidebar">
@@ -49,10 +58,10 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
           {showProfileMenu && (
             <div className="profile-dropdown">
               <div className="dropdown-header">
-                <div className="avatar">MB</div>
+                <div className="avatar">{userInitials}</div>
                 <div className="user-info">
-                  <span className="user-name">Mario Barroso</span>
-                  <span className="user-email">mario@tj.rj.gov.br</span>
+                  <span className="user-name">{user?.name}</span>
+                  <span className="user-email">{user?.email}</span>
                 </div>
               </div>
               <div className="dropdown-divider"></div>
@@ -66,7 +75,7 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
                 <HelpCircle size={16} /> <span>Ajuda</span>
               </div>
               <div className="dropdown-divider"></div>
-              <div className="dropdown-item logout">
+              <div className="dropdown-item logout" onClick={logout}>
                 <LogOut size={16} /> <span>Sair</span>
               </div>
             </div>
@@ -76,10 +85,10 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
             className="user-profile" 
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
-            <div className="avatar">MB</div>
+            <div className="avatar">{userInitials}</div>
             <div className="user-meta">
-              <span className="user-name">Mario Barroso</span>
-              <span className="user-role">Administrador</span>
+              <span className="user-name">{user?.name || 'Carregando...'}</span>
+              <span className="user-role" style={{ textTransform: 'capitalize' }}>{user?.role || 'Usuário'}</span>
             </div>
             <ChevronUp size={16} className={`chevron ${showProfileMenu ? 'open' : ''}`} />
           </div>

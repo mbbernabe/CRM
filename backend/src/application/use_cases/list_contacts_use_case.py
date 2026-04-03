@@ -6,6 +6,6 @@ class ListContactsUseCase:
     def __init__(self, contact_repository: IContactRepository):
         self.contact_repository = contact_repository
 
-    def execute(self) -> List[ContactReadDTO]:
-        contacts = self.contact_repository.list_all()
+    def execute(self, team_id: int) -> List[ContactReadDTO]:
+        contacts = self.contact_repository.list_all(team_id)
         return [ContactReadDTO.model_validate(contact) for contact in contacts]

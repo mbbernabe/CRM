@@ -22,42 +22,47 @@ class SqlAlchemyContactRepository(IContactRepository):
             email=db_contact.email,
             phone=db_contact.phone,
             status=db_contact.status,
+            team_id=db_contact.team_id,
             properties=properties,
             companies=companies,
             created_at=db_contact.created_at
         )
 
-    def list_all(self) -> List[Contact]:
+    def list_all(self, team_id: int) -> List[Contact]:
         db_contacts = self.db.query(ContactModel).options(
             joinedload(ContactModel.property_values).joinedload(ContactPropertyValueModel.property_def)
-        ).all()
+        ).filter(ContactModel.team_id == team_id).all()
         return [self._map_to_domain(c) for c in db_contacts]
 
-    def get_by_id(self, contact_id: int) -> Optional[Contact]:
+    def get_by_id(self, contact_id: int, team_id: int) -> Optional[Contact]:
         db_contact = self.db.query(ContactModel).options(
             joinedload(ContactModel.property_values).joinedload(ContactPropertyValueModel.property_def),
             joinedload(ContactModel.companies)
-        ).filter(ContactModel.id == contact_id).first()
+        ).filter(ContactModel.id == contact_id, ContactModel.team_id == team_id).first()
         
         if not db_contact:
             return None
         return self._map_to_domain(db_contact)
 
-    def save(self, contact: Contact, company_ids: Optional[List[int]] = None) -> Contact:
+    def save(self, contact: Contact, team_id: int, company_ids: Optional[List[int]] = None) -> Contact:
         db_contact = ContactModel(
             name=contact.name,
             email=contact.email,
             phone=contact.phone,
             status=contact.status,
+            team_id=team_id,
             created_at=contact.created_at
         )
         self.db.add(db_contact)
-        self.db.flush() # Para pegar o ID ante do commit
+        self.db.flush() 
         
         # Salva as propriedades dinâmicas
         if contact.properties:
             for name, value in contact.properties.items():
-                prop_def = self.db.query(PropertyDefinitionModel).filter(PropertyDefinitionModel.name == name).first()
+                prop_def = self.db.query(PropertyDefinitionModel).filter(
+                    PropertyDefinitionModel.name == name,
+                    PropertyDefinitionModel.team_id == team_id
+                ).first()
                 if prop_def:
                     pv = ContactPropertyValueModel(
                         contact_id=db_contact.id,
@@ -69,31 +74,39 @@ class SqlAlchemyContactRepository(IContactRepository):
         # Vincula empresas se fornecido
         if company_ids:
             for c_id in company_ids:
-                db_company = self.db.query(CompanyModel).filter(CompanyModel.id == c_id).first()
+                db_company = self.db.query(CompanyModel).filter(
+                    CompanyModel.id == c_id,
+                    CompanyModel.team_id == team_id
+                ).first()
                 if db_company:
                     db_contact.companies.append(db_company)
         
         self.db.commit()
         self.db.refresh(db_contact)
         contact.id = db_contact.id
+        contact.team_id = team_id
         return contact
 
-    def update(self, contact: Contact) -> Contact:
-        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact.id).first()
+    def update(self, contact: Contact, team_id: int) -> Contact:
+        db_contact = self.db.query(ContactModel).filter(
+            ContactModel.id == contact.id, 
+            ContactModel.team_id == team_id
+        ).first()
         if db_contact:
             db_contact.name = contact.name
             db_contact.email = contact.email
             db_contact.phone = contact.phone
             db_contact.status = contact.status
             
-            # Atualiza propriedades (Simplificado: Remove e recria as que mudaram/existem)
+            # Atualiza propriedades
+            self.db.query(ContactPropertyValueModel).filter(ContactPropertyValueModel.contact_id == contact.id).delete()
+            
             if contact.properties:
-                # Remove valores antigos
-                self.db.query(ContactPropertyValueModel).filter(ContactPropertyValueModel.contact_id == contact.id).delete()
-                
-                # Adiciona novos
                 for name, value in contact.properties.items():
-                    prop_def = self.db.query(PropertyDefinitionModel).filter(PropertyDefinitionModel.name == name).first()
+                    prop_def = self.db.query(PropertyDefinitionModel).filter(
+                        PropertyDefinitionModel.name == name,
+                        PropertyDefinitionModel.team_id == team_id
+                    ).first()
                     if prop_def:
                         pv = ContactPropertyValueModel(
                             contact_id=db_contact.id,
@@ -106,17 +119,26 @@ class SqlAlchemyContactRepository(IContactRepository):
             self.db.refresh(db_contact)
         return contact
 
-    def delete(self, contact_id: int) -> bool:
-        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact_id).first()
+    def delete(self, contact_id: int, team_id: int) -> bool:
+        db_contact = self.db.query(ContactModel).filter(
+            ContactModel.id == contact_id,
+            ContactModel.team_id == team_id
+        ).first()
         if db_contact:
             self.db.delete(db_contact)
             self.db.commit()
             return True
         return False
 
-    def link_company(self, contact_id: int, company_id: int) -> bool:
-        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact_id).first()
-        db_company = self.db.query(CompanyModel).filter(CompanyModel.id == company_id).first()
+    def link_company(self, contact_id: int, company_id: int, team_id: int) -> bool:
+        db_contact = self.db.query(ContactModel).filter(
+            ContactModel.id == contact_id,
+            ContactModel.team_id == team_id
+        ).first()
+        db_company = self.db.query(CompanyModel).filter(
+            CompanyModel.id == company_id,
+            CompanyModel.team_id == team_id
+        ).first()
         if not db_contact or not db_company:
             return False
             
@@ -125,8 +147,11 @@ class SqlAlchemyContactRepository(IContactRepository):
             self.db.commit()
         return True
 
-    def unlink_company(self, contact_id: int, company_id: int) -> bool:
-        db_contact = self.db.query(ContactModel).filter(ContactModel.id == contact_id).first()
+    def unlink_company(self, contact_id: int, company_id: int, team_id: int) -> bool:
+        db_contact = self.db.query(ContactModel).filter(
+            ContactModel.id == contact_id,
+            ContactModel.team_id == team_id
+        ).first()
         if not db_contact:
             return False
             

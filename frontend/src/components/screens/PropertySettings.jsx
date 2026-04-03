@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { Settings, Plus, Edit, Trash2, Shield, RefreshCw, AlertCircle, GripVertical, Search, X } from 'lucide-react';
 import {
   DndContext,
@@ -233,6 +234,7 @@ const PropertySettings = () => {
 };
 
 const PropertySettingsInner = ({ addToast }) => {
+  const { fetchWithAuth } = useAuth();
   const [activeTab, setActiveTab] = useState('contact'); // contact, company, global
   const [properties, setProperties] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -262,14 +264,14 @@ const PropertySettingsInner = ({ addToast }) => {
     setLoading(true);
     try {
       if (activeTab === 'global') {
-        const res = await fetch('http://localhost:8000/properties/global');
+        const res = await fetchWithAuth('http://localhost:8000/properties/definitions');
         const data = await res.json();
         setProperties(data);
         setGroups([]);
       } else {
         const [groupsRes, propsRes] = await Promise.all([
-          fetch('http://localhost:8000/properties/groups'),
-          fetch(`http://localhost:8000/properties/entity/${activeTab}`)
+          fetchWithAuth('http://localhost:8000/properties/groups'),
+          fetchWithAuth(`http://localhost:8000/properties/entity/${activeTab}`)
         ]);
         const groupsData = await groupsRes.json();
         const propsData = await propsRes.json();
@@ -343,9 +345,8 @@ const PropertySettingsInner = ({ addToast }) => {
       if (activeTab !== 'global') {
          const existingGroup = groups.find(g => g.name === formData.group);
          if (!existingGroup) {
-           const groupRes = await fetch('http://localhost:8000/properties/groups', {
+           const groupRes = await fetchWithAuth('http://localhost:8000/properties/groups', {
              method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({ name: formData.group })
            });
            const newGroup = await groupRes.json();
@@ -356,7 +357,7 @@ const PropertySettingsInner = ({ addToast }) => {
       }
 
       if (modalType === 'create') {
-        const globalRes = await fetch('http://localhost:8000/properties/global', {
+        const globalRes = await fetchWithAuth('http://localhost:8000/properties/definitions', {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({ name: formData.name, label: formData.label, type: formData.type, options: formData.options })
@@ -365,24 +366,21 @@ const PropertySettingsInner = ({ addToast }) => {
         if (!globalRes.ok) throw new Error(newGlobalProp.detail || "Erro ao criar");
 
         if (activeTab !== 'global') {
-           await fetch(`http://localhost:8000/properties/entity/${activeTab}/link`, {
+           await fetchWithAuth(`http://localhost:8000/properties/entity/${activeTab}/link`, {
              method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({ property_id: newGlobalProp.id, group_id: finalGroupId, order: 0 })
            });
         }
       } else {
-         await fetch(`http://localhost:8000/properties/global/${selectedProperty.id}`, {
+         await fetchWithAuth(`http://localhost:8000/properties/definitions/${selectedProperty.id}`, {
            method: 'PUT',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ label: formData.label, type: formData.type, options: formData.options })
+           body: JSON.stringify({ name: formData.name, label: formData.label, type: formData.type, options: formData.options })
          });
          
          if (activeTab !== 'global' && selectedProperty.link_id) {
-           await fetch(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, {
+           await fetchWithAuth(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, {
              method: 'PUT',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ group_id: finalGroupId })
+             body: JSON.stringify({ group_id: finalGroupId, is_required: selectedProperty.is_required })
            });
          }
       }
@@ -402,8 +400,8 @@ const PropertySettingsInner = ({ addToast }) => {
       // Carregar todas as globais + os links da OUTRA entidade para saber os grupos
       const otherEntity = activeTab === 'contact' ? 'company' : 'contact';
       const [globalRes, otherLinksRes] = await Promise.all([
-        fetch(`http://localhost:8000/properties/global`),
-        fetch(`http://localhost:8000/properties/entity/${otherEntity}`)
+        fetchWithAuth(`http://localhost:8000/properties/definitions`),
+        fetchWithAuth(`http://localhost:8000/properties/entity/${otherEntity}`)
       ]);
       
       const allGlobalProps = await globalRes.json();
@@ -470,9 +468,8 @@ const PropertySettingsInner = ({ addToast }) => {
     try {
       const groupToUse = groups[0] ? groups[0].id : null;
       for (let pId of selectedPropsToShare) {
-         await fetch(`http://localhost:8000/properties/entity/${activeTab}/link`, {
+         await fetchWithAuth(`http://localhost:8000/properties/entity/${activeTab}/link`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ property_id: pId, group_id: groupToUse, order: 0 })
          });
       }
@@ -489,9 +486,8 @@ const PropertySettingsInner = ({ addToast }) => {
   const handleRenameGroup = async (id, newName) => {
     setGroups(prev => prev.map(g => g.id === id ? { ...g, name: newName } : g));
     try {
-      await fetch(`http://localhost:8000/properties/groups/${id}`, {
+      await fetchWithAuth(`http://localhost:8000/properties/groups/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName })
       });
     } catch (err) {
@@ -510,9 +506,8 @@ const PropertySettingsInner = ({ addToast }) => {
     setGroups(newGroups);
 
     const orders = newGroups.map((g, index) => ({ id: g.id, order: index }));
-    await fetch('http://localhost:8000/properties/groups/reorder', {
+    await fetchWithAuth('http://localhost:8000/properties/groups/reorder', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orders)
     });
   };
@@ -536,9 +531,8 @@ const PropertySettingsInner = ({ addToast }) => {
       return { id: originalLink.link_id, order: index };
     });
 
-    await fetch(`http://localhost:8000/properties/entity/link/reorder`, {
+    await fetchWithAuth(`http://localhost:8000/properties/entity/reorder`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orders)
     });
   };
@@ -717,9 +711,9 @@ const PropertySettingsInner = ({ addToast }) => {
               setIsDeleting(true);
               try {
                 if (activeTab === 'global') {
-                   await fetch(`http://localhost:8000/properties/global/${selectedProperty.id}`, { method: 'DELETE' });
+                   await fetchWithAuth(`http://localhost:8000/properties/definitions/${selectedProperty.id}`, { method: 'DELETE' });
                 } else {
-                   await fetch(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, { method: 'DELETE' });
+                   await fetchWithAuth(`http://localhost:8000/properties/entity/link/${selectedProperty.link_id}`, { method: 'DELETE' });
                 }
                 setIsDeleteModalOpen(false);
                 fetchAll();

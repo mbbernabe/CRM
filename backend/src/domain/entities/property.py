@@ -9,12 +9,14 @@ class PropertyDefinition:
     type: str = "text"      # text, number, date, email, select
     options: Optional[str] = None
     is_system: bool = False
+    team_id: Optional[int] = None
 
 @dataclass
 class PropertyGroup:
     id: Optional[int] = None
     name: str = ""
     order: int = 0
+    team_id: Optional[int] = None
 
 @dataclass
 class EntityPropertyLink:
@@ -24,6 +26,7 @@ class EntityPropertyLink:
     group_id: Optional[int] = None
     order: int = 0
     is_required: bool = False
+    team_id: Optional[int] = None
     
     # Relacionamentos para facilitar o trânsito de dados na UI
     property_def: Optional[PropertyDefinition] = None

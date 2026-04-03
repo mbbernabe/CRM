@@ -9,6 +9,7 @@ class Contact:
     email: str = ""
     phone: Optional[str] = None
     status: str = "active"
+    team_id: Optional[int] = None
     properties: Dict[str, Any] = field(default_factory=dict)
     companies: List[Dict[str, Any]] = field(default_factory=list) # [{'id': 1, 'name': 'Acme'}]
     created_at: datetime = field(default_factory=datetime.utcnow)

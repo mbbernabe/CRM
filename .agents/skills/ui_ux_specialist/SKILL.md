@@ -37,6 +37,7 @@ Ao revisar uma tela:
 - **Estética**: Moderna, limpa e premium. Evitar designs datados ou genéricos.
 - **Idioma**: Interface em Português do Brasil (PT-BR) ou Inglês (conforme configurado).
 - **Consistência**: Seguir o sistema de design definido para o projeto (frontend/src/styles).
+- **Campos Obrigatórios**: Todos os campos obrigatórios devem ser identificados com um asterisco (`*`) utilizando a classe CSS `.required-indicator` (Cor: Laranja Vibrante / `--hs-orange`).
 
 ## 🚀 Comandos de Saída (Output)
 Ao atuar nesta skill, você deve fornecer:

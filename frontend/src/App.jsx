@@ -7,6 +7,10 @@ import Contacts from './components/screens/Contacts';
 import Companies from './components/screens/Companies';
 import Reports from './components/screens/Reports';
 import PropertySettings from './components/screens/PropertySettings';
+import AdminUsers from './components/screens/AdminUsers';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
 
 const PIPELINES = [
   {
@@ -52,9 +56,31 @@ const INITIAL_DEALS = [
 ];
 
 function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
+}
+
+function AppInner() {
+  const { isAuthenticated, loading } = useAuth();
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [activePipelineId, setActivePipelineId] = useState('retail');
   const [deals, setDeals] = useState(INITIAL_DEALS);
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  if (loading) {
+     return <div className="loading-screen">Carregando...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return isRegistering ? (
+      <Register onSwitchToLogin={() => setIsRegistering(false)} />
+    ) : (
+      <Login onSwitchToRegister={() => setIsRegistering(true)} />
+    );
+  }
 
   const activePipeline = PIPELINES.find(p => p.id === activePipelineId);
 
@@ -100,6 +126,7 @@ function App() {
       );
       case 'reports': return <Reports />;
       case 'settings': return <PropertySettings />;
+      case 'admin': return <AdminUsers />;
       default: return <Dashboard />;
     }
   };
@@ -115,7 +142,8 @@ function App() {
               activeScreen === 'contacts' ? 'Contatos' :
               activeScreen === 'companies' ? 'Empresas' :
               activeScreen === 'reports' ? 'Relatórios' :
-              activeScreen === 'settings' ? 'Configurações de Propriedades' : 'CRM'
+              activeScreen === 'settings' ? 'Configurações de Propriedades' : 
+              activeScreen === 'admin' ? 'Administração de Usuários' : 'CRM'
             }</h1>
             <div className="header-actions">
                {/* Add common actions here if needed */}
@@ -126,6 +154,14 @@ function App() {
       </div>
 
       <style jsx>{`
+        .loading-screen {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          font-size: 18px;
+          color: var(--hs-text-secondary);
+        }
         .app-layout {
           display: flex;
           width: 100%;
