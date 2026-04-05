@@ -8,12 +8,17 @@ description: Orquestrar a construção de aplicações robustas utilizando Pytho
 ## 🎯 Objetivo
 Orquestrar a construção de aplicações robustas utilizando **Python**, seguindo rigorosamente os princípios de **Clean Architecture**, **Injeção de Dependências** e **Persistência Relacional com Migrations**.
 
-## 🏗️ Estrutura de Diretórios Obrigatória
-Todo código gerado deve respeitar a seguinte hierarquia:
-- `src/domain/`: Entidades puras e Interfaces (Protocols/Abstract Classes).
-- `src/application/`: Casos de Uso (Use Cases) e DTOs.
-- `src/infrastructure/`: Implementações de Repositórios (SQLAlchemy), API (FastAPI) e Migrations (Alembic).
-- `scripts/`: Scripts auxiliares, ferramentas de diagnóstico e scripts de massa de dados (seeding), organizados por contexto (ex: `scripts/auth/`, `scripts/database/`).
+## 🏗️ Estrutura de Diretórios Obrigatória (Foco em Workspace/SaaS)
+Todo código gerado deve respeitar a hierarquia e o isolamento por `workspace_id`:
+- `src/domain/`: Entidades (ex: `Workspace`, `User`, `Team`) e Interfaces (Repositories).
+- `src/application/`: Use Cases (sempre exigindo `workspace_id` para operações de dados) e DTOs.
+- `src/infrastructure/`: Implementações SQL (SQLAlchemy), API (FastAPI) e Security.
+- `scripts/`: Ferramentas determinísticas organizadas por contexto (ex: `scripts/database/reset_db.py`, `scripts/auth/test_auth.py`).
+
+## 🛠️ Regras de Arquitetura Multi-Tenant
+1. **Isolamento de Dados**: Toda consulta que envolva entidades de negócio (Contatos, Empresas, etc.) DEVE filtrar por `workspace_id`.
+2. **Injeção de Dependência**: Use Cases devem receber os repositórios necessários e o `workspace_id` no método `execute`.
+3. **Scripts Determinísticos**: Para tarefas repetitivas (reset de banco, carga de dados), SEMPRE criar ou atualizar scripts em `backend/scripts/`.
 
 ## 🛠️ Regras Técnicas de Implementação
 

@@ -10,15 +10,21 @@ Criar modelos de domínio puros que encapsulam a lógica de negócio e invariant
 
 ## 🏗️ Estrutura de Diretórios Granular
 Todo código de domínio deve ser organizado da seguinte forma:
-- `src/domain/entities/`: Classes com identidade única e ciclo de vida (ex: `Contact`, `Order`).
-- `src/domain/value_objects/`: Objetos imutáveis definidos por seus atributos (ex: `Email`, `CPF`, `Address`).
-- `src/domain/services/`: Lógica de negócio que envolve múltiplas entidades ou não pertence a uma entidade específica.
-- `src/domain/repositories/`: Interfaces (`Protocols`) que definem como os agregados são persistidos.
-- `src/domain/exceptions/`: Exceções para erros **Excepcionais/Críticos** (falhas sistêmicas).
-- `src/domain/results/`: Classes para lidar com erros de **Negócio Previsíveis** (fluxo normal).
-- `scripts/`: Scripts auxiliares de domínio, geração de massa de dados (seeding) e ferramentas de diagnóstico, organizados por contexto (ex: `scripts/database/`, `scripts/domain/`).
+- `src/domain/entities/`: Classes (ex: `Workspace`, `User`, `Team`) com `workspace_id` obrigatório para isolamento.
+- `src/domain/exceptions/`: Exceções de negócio amigáveis (ex: `DomainException`, `AuthenticationException`) e erros sistêmicos.
+- `src/domain/results/`: Classes para lidar com resultados de validação.
+- `scripts/`: Scripts determinísticos para carga de dados, reset de banco e diagnósticos em `backend/scripts/`.
 
-## 🛠️ Padrões de Validação e Erros
+## 🛠️ Padrões de Validação, Erros e Multi-Tenancy
+
+### 1. Mensagens Amigáveis (Friendly Messages)
+- **Regra**: Toda exceção que possa chegar ao usuário final DEVE herdar de `DomainException` e conter uma mensagem amigável e instrutiva em Português (BR).
+- **Log**: Erros técnicos detalhados devem ser logados na infraestrutura, nunca exibidos ao usuário.
+
+### 2. Isolamento por Workspace
+- **Entidades de Negócio**: Devem obrigatoriamente possuir um atributo `workspace_id`.
+- **Validação de Invariantes**: Regras que dependem do contexto (ex: "Nome único de grupo de propriedade") devem ser validadas considerando o `workspace_id`.
+
 
 ### 1. Result Objects (Erros Previsíveis)
 Use para falhas que fazem parte da regra de negócio (ex: "Saldo Insuficiente", "Documento Inválido").

@@ -11,11 +11,19 @@ Garantir que o CRM não seja apenas funcional, mas também intuitivo, esteticame
 ## 🏗️ Responsabilidades Principais
 5. **Responsividade & Acessibilidade**: Garantir que as interfaces funcionem perfeitamente em diferentes tamanhos de tela e sejam acessíveis a todos os usuários.
 
-## 🏗️ Estrutura de Diretórios Recomendada
 - `docs/ui_ux/`: Documentação de design, guias de estilo e tokens.
-- `scripts/diagnostics/`: Scripts auxiliares de geração de massa de dados visual para prototipagem real e testes de componentes.
+- `scripts/ui/`: Scripts determinísticos de geração de massa de dados visual para prototipagem real e testes de componentes em `frontend/scripts` ou `backend/scripts`.
 
-## 🛠️ Protocolos de Trabalho
+## 🛠️ Protocolos de Trabalho e Feedback do Usuário
+
+### 1. Mensagens de Erro e Sucesso (Feedback)
+- **Mensagens Amigáveis**: NUNCA exibir erros técnicos (ex: "500 Internal Server Error"). SEMPRE exibir mensagens em Português (BR) que ajudem o usuário a resolver o problema (ex: "Ocorreu um erro, tente novamente mais tarde").
+- **Log Visual**: Erros críticos devem ser destacados com ícones de alerta e cores semânticas (vermelho para erro), mas mantendo a linguagem acessível.
+
+### 2. Consistência e Tematização (HubSpot Style)
+- **Cores**: Use a paleta de cores definida (HubSpot Orange para indicadores, azul para links).
+- **Componentes**: Utilize Toasts, Modais e Alerts para feedback imediato de ações do usuário.
+
 
 ### 1. Proposta de Nova Tela/Funcionalidade
 Sempre que uma nova funcionalidade for planejada:

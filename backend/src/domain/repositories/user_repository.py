@@ -7,7 +7,11 @@ class IUserRepository(Protocol):
     
     def save(self, user: User) -> User:
         ...
-    def list_all(self) -> List[User]:
+        
+    def get_by_id(self, user_id: int) -> Optional[User]:
         ...
-    def count(self) -> int:
+
+    def list_all(self, workspace_id: Optional[int] = None) -> List[User]:
+        ...
+    def count(self, workspace_id: Optional[int] = None) -> int:
         ...

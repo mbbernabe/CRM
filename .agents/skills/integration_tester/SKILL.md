@@ -25,14 +25,15 @@ Os testes de integração devem ser organizados em:
 - **Banco de Dados Limpo**: Todo teste deve iniciar com um esquema de banco de dados limpo e ser descartado ao final.
 - **Fixtures Globais**: Use `conftest.py` para gerenciar a criação do banco de dados e o override da dependência `get_db`.
 
-### 2. Validação Multi-Tenancy (X-Team-ID)
-- **Obrigatoriedade**: Todo teste de integração de recursos (Contatos, Empresas, Propriedades) DEVE incluir o header `X-Team-ID`.
-- **Teste de Vazamento**: Sempre inclua um teste que verifique se dados de um Time A NÃO são acessíveis por um Time B.
+### 2. Validação Multi-Tenancy (Workspace Context)
+- **Obrigatoriedade**: Todo teste de integração DEVE validar que o `workspace_id` foi injetado via header ou contexto.
+- **Teste de Vazamento**: SEMPRE valide que um usuário do Workspace X NÃO acessa dados do Workspace Y.
+- **Scripts de Fluxo**: Use `backend/scripts/testing/` para scripts de integração de ponta a ponta (como cadastro -> login).
 
-### 3. Padrão de Chamada
-- Use o `client` (TestClient) para simular chamadas HTTP reais.
-- Verifique tanto o `status_code` quanto o conteúdo do JSON retornado.
-- Opcionalmente, verifique o estado do banco de dados diretamente via `db_session` para garantir persistência.
+### 3. Padrão de Chamada e Diagnóstico
+- Use o `client` (TestClient) para rotas individuais.
+- Para fluxos de negócio complexos, crie scripts `.py` determinísticos em `scripts/tasks/` ou `scripts/testing/`.
+- Verifique se as mensagens de erro retornadas são **amigáveis ao usuário** (em Português), enquanto erros técnicos ficam nos logs.
 
 ## 🚀 Comandos de Saída (Output)
 Ao atuar como Especialista em Testes de Integração, a skill deve fornecer:

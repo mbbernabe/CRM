@@ -33,7 +33,11 @@ const AdminUsers = () => {
             const data = await res.json();
             setUsers(data);
         } catch (err) {
-            setError(err.message);
+            if (err.message === 'Failed to fetch') {
+                setError('Não foi possível conectar ao servidor. Verifique se o backend está ativo.');
+            } else {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
