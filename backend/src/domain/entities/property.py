@@ -11,6 +11,7 @@ class PropertyDefinition:
     options: Optional[str] = None
     is_system: bool = False
     team_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 @dataclass
 class PropertyGroup:
@@ -18,6 +19,7 @@ class PropertyGroup:
     name: str = ""
     order: int = 0
     team_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 @dataclass
 class EntityPropertyLink:
@@ -28,6 +30,7 @@ class EntityPropertyLink:
     order: int = 0
     is_required: bool = False
     team_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     
     # Relacionamentos para facilitar o trânsito de dados na UI
     property_def: Optional[PropertyDefinition] = None

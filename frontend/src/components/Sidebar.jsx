@@ -11,13 +11,17 @@ import {
   User as UserIcon,
   HelpCircle,
   Shield,
-  Globe
+  Globe,
+  Palette,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ activeScreen, onNavigate }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const { user, logout } = useAuth();
+  const [expandedMenus, setExpandedMenus] = useState({ 'settings-group': true });
+  const { user, workspace, logout } = useAuth();
   
   const userInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
 
@@ -27,31 +31,91 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
     { icon: <Building2 size={20} />, label: 'Empresas', id: 'companies' },
     { icon: <Handshake size={20} />, label: 'Negócios', id: 'deals' },
     { icon: <BarChart3 size={20} />, label: 'Relatórios', id: 'reports' },
-    { icon: <Settings size={20} />, label: 'Propriedades', id: 'settings' },
-    { icon: <Shield size={20} />, label: 'Pipelines', id: 'pipeline-settings' },
   ];
 
-  if (user?.role === 'admin') {
-    menuItems.push({ icon: <Shield size={20} />, label: 'Administração', id: 'admin' });
-    menuItems.push({ icon: <Globe size={20} />, label: 'Sistema', id: 'system-settings' });
+  const configGroup = {
+    icon: <Settings size={20} />,
+    label: 'Configuração',
+    id: 'settings-group',
+    children: [
+      { label: 'Propriedades', id: 'settings' },
+      { label: 'Pipelines', id: 'pipeline-settings' },
+    ]
+  };
+
+  const isPowerUser = user?.role === 'superadmin' || user?.role === 'admin';
+
+  if (isPowerUser) {
+    configGroup.children.push({ label: 'Área de Trabalho', id: 'workspace-settings' });
+    
+    if (user?.role === 'superadmin') {
+      configGroup.children.push({ label: 'E-mail (SMTP)', id: 'system-settings' });
+    }
+    
+    menuItems.push(configGroup);
+    
+    if (user?.role === 'superadmin') {
+      menuItems.push({ icon: <Shield size={20} />, label: 'Administração', id: 'admin' });
+    }
+  } else {
+    // For non-admins, if they have access to some config
+    menuItems.push(configGroup);
   }
+
+  const toggleMenu = (id) => {
+    setExpandedMenus(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const isChildActive = (item) => {
+    return item.children?.some(child => child.id === activeScreen);
+  };
 
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-placeholder">C</div>
-        <span className="logo-text">CRM</span>
+        {workspace?.logo_url ? (
+          <img src={workspace.logo_url} alt="Logo" className="workspace-logo-img" />
+        ) : (
+          <div className="logo-placeholder">{workspace?.name?.charAt(0) || 'C'}</div>
+        )}
+        <span className="logo-text">{workspace?.name || 'CRM'}</span>
       </div>
       
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
-          <div 
-            key={item.id} 
-            className={`nav-item ${activeScreen === item.id ? 'active' : ''}`}
-            onClick={() => onNavigate(item.id)}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
+          <div key={item.id} className="menu-group">
+            <div 
+              className={`nav-item ${activeScreen === item.id || isChildActive(item) ? 'active' : ''}`}
+              onClick={() => {
+                if (item.children) {
+                  toggleMenu(item.id);
+                } else {
+                  onNavigate(item.id);
+                }
+              }}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+              {item.children && (
+                <span className="chevron-icon">
+                  {expandedMenus[item.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </span>
+              )}
+            </div>
+            
+            {item.children && expandedMenus[item.id] && (
+              <div className="sub-menu">
+                {item.children.map(child => (
+                  <div 
+                    key={child.id}
+                    className={`nav-item sub-item ${activeScreen === child.id ? 'active' : ''}`}
+                    onClick={() => onNavigate(child.id)}
+                  >
+                    <span className="nav-label">{child.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </nav>
@@ -118,6 +182,13 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
           border-bottom: 1px solid var(--hs-border-light);
         }
 
+        .workspace-logo-img {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
+          border-radius: 4px;
+        }
+
         .logo-placeholder {
           width: 32px;
           height: 32px;
@@ -163,6 +234,33 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
 
         .nav-item.active {
           background: var(--hs-sidebar-hover);
+          color: var(--hs-blue);
+          font-weight: 600;
+        }
+
+        .chevron-icon {
+          margin-left: auto;
+          display: flex;
+          color: var(--hs-text-secondary);
+        }
+
+        .sub-menu {
+          margin-top: 2px;
+          margin-bottom: 8px;
+        }
+
+        .sub-item {
+          padding-left: 44px;
+          margin-bottom: 2px;
+          color: var(--hs-text-secondary);
+        }
+
+        .sub-item:hover {
+          color: var(--hs-blue);
+        }
+
+        .sub-item.active {
+          background: transparent;
           color: var(--hs-blue);
           font-weight: 600;
         }

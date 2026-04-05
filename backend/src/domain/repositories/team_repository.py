@@ -7,8 +7,9 @@ class ITeamRepository(Protocol):
         
     def save(self, team: Team) -> Team:
         ...
+
+    def list_by_workspace(self, workspace_id: int) -> List[Team]:
+        ...
         
     def get_by_invite_code(self, code: str) -> Optional[Team]:
-        # Para simplificar agora, talvez nem precisemos de código ainda, 
-        # mas já deixo o placeholder se necessário.
         ...

@@ -15,6 +15,8 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import SystemSettings from './components/screens/SystemSettings';
 import PipelineSettings from './components/screens/PipelineSettings';
+import WorkspaceSettings from './components/screens/WorkspaceSettings';
+
 
 const PIPELINES = [
   {
@@ -152,6 +154,7 @@ function AppInner() {
       case 'settings': return <PropertySettings />;
       case 'system-settings': return <SystemSettings />;
       case 'pipeline-settings': return <PipelineSettings />;
+      case 'workspace-settings': return <WorkspaceSettings />;
       case 'admin': return <AdminUsers />;
       default: return <Dashboard />;
     }
@@ -170,6 +173,7 @@ function AppInner() {
               activeScreen === 'reports' ? 'Relatórios' :
               activeScreen === 'settings' ? 'Configurações de Propriedades' : 
               activeScreen === 'pipeline-settings' ? 'Configuração de Pipelines' : 
+              activeScreen === 'workspace-settings' ? 'Personalização da Área de Trabalho' : 
               activeScreen === 'system-settings' ? 'Configurações Globais do Sistema' : 
               activeScreen === 'admin' ? 'Administração de Usuários' : 'CRM'
             }</h1>

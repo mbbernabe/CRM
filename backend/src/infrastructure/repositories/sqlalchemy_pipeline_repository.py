@@ -25,29 +25,31 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
             name=db_pipeline.name,
             entity_type=db_pipeline.entity_type,
             team_id=db_pipeline.team_id,
+            workspace_id=db_pipeline.workspace_id,
             stages=stages
         )
 
-    def list_all(self, team_id: int) -> List[Pipeline]:
+    def list_all(self, workspace_id: int) -> List[Pipeline]:
         db_pipelines = self.db.query(PipelineModel).options(
             joinedload(PipelineModel.stages)
-        ).filter(PipelineModel.team_id == team_id).all()
+        ).filter(PipelineModel.workspace_id == workspace_id).all()
         return [self._map_to_domain(p) for p in db_pipelines]
 
-    def get_by_id(self, pipeline_id: int, team_id: int) -> Optional[Pipeline]:
+    def get_by_id(self, pipeline_id: int, workspace_id: int) -> Optional[Pipeline]:
         db_pipeline = self.db.query(PipelineModel).options(
             joinedload(PipelineModel.stages)
-        ).filter(PipelineModel.id == pipeline_id, PipelineModel.team_id == team_id).first()
+        ).filter(PipelineModel.id == pipeline_id, PipelineModel.workspace_id == workspace_id).first()
         
         if not db_pipeline:
             return None
         return self._map_to_domain(db_pipeline)
 
-    def save(self, pipeline: Pipeline, team_id: int) -> Pipeline:
+    def save(self, pipeline: Pipeline, workspace_id: int) -> Pipeline:
         db_pipeline = PipelineModel(
             name=pipeline.name,
             entity_type=pipeline.entity_type,
-            team_id=team_id
+            team_id=pipeline.team_id,
+            workspace_id=workspace_id
         )
         self.db.add(db_pipeline)
         self.db.flush() 
@@ -68,20 +70,15 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
         self.db.refresh(db_pipeline)
         return self._map_to_domain(db_pipeline)
 
-    def update_stages(self, pipeline_id: int, stages: List[PipelineStage], team_id: int) -> bool:
+    def update_stages(self, pipeline_id: int, stages: List[PipelineStage], workspace_id: int) -> bool:
         db_pipeline = self.db.query(PipelineModel).filter(
             PipelineModel.id == pipeline_id, 
-            PipelineModel.team_id == team_id
+            PipelineModel.workspace_id == workspace_id
         ).first()
         
         if not db_pipeline:
             return False
             
-        # Simplificação: Deleta todos os estágios atuais e recria
-        # Nota: Isso pode quebrar referências de stage_id em contatos se os IDs mudarem.
-        # Uma versão melhor faria um merge (update existing, add new, delete removed).
-        
-        # Para evitar quebrar referências, vamos apenas atualizar os existentes ou adicionar novos.
         current_stage_ids = [s.id for s in db_pipeline.stages]
         new_stage_ids = [s.id for s in stages if s.id is not None]
         
@@ -114,10 +111,10 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
         self.db.commit()
         return True
 
-    def delete(self, pipeline_id: int, team_id: int) -> bool:
+    def delete(self, pipeline_id: int, workspace_id: int) -> bool:
         db_pipeline = self.db.query(PipelineModel).filter(
             PipelineModel.id == pipeline_id,
-            PipelineModel.team_id == team_id
+            PipelineModel.workspace_id == workspace_id
         ).first()
         if db_pipeline:
             self.db.delete(db_pipeline)
@@ -125,11 +122,11 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
             return True
         return False
 
-    def move_entity(self, entity_type: str, entity_id: int, stage_id: int, team_id: int) -> bool:
-        # Verifica se o estágio existe e pertence a uma pipeline do time
+    def move_entity(self, entity_type: str, entity_id: int, stage_id: int, workspace_id: int) -> bool:
+        # Verifica se o estágio existe e pertence a uma pipeline do workspace
         db_stage = self.db.query(PipelineStageModel).join(PipelineModel).filter(
             PipelineStageModel.id == stage_id,
-            PipelineModel.team_id == team_id
+            PipelineModel.workspace_id == workspace_id
         ).first()
         
         if not db_stage:
@@ -138,12 +135,12 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
         if entity_type == "contact":
             db_entity = self.db.query(ContactModel).filter(
                 ContactModel.id == entity_id,
-                ContactModel.team_id == team_id
+                ContactModel.workspace_id == workspace_id
             ).first()
         elif entity_type == "company":
             db_entity = self.db.query(CompanyModel).filter(
                 CompanyModel.id == entity_id,
-                CompanyModel.team_id == team_id
+                CompanyModel.workspace_id == workspace_id
             ).first()
         else:
             return False

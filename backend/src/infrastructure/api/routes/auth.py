@@ -10,8 +10,11 @@ from pydantic import BaseModel, EmailStr
 from src.application.use_cases.password_reset_use_case import RequestPasswordResetUseCase, ResetPasswordUseCase
 from src.infrastructure.repositories.sqlalchemy_settings_repository import SqlAlchemySettingsRepository
 from src.infrastructure.utils.logger import get_logger, log_exception
+from src.domain.exceptions.base_exceptions import DomainException, AuthenticationException
 
 logger = get_logger(__name__)
+
+from src.infrastructure.repositories.sqlalchemy_workspace_repository import SqlAlchemyWorkspaceRepository
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -19,21 +22,41 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 def register(dto: UserCreateDTO, db: Session = Depends(get_db)):
     user_repo = SqlAlchemyUserRepository(db)
     team_repo = SqlAlchemyTeamRepository(db)
+    workspace_repo = SqlAlchemyWorkspaceRepository(db)
     prop_repo = SqlAlchemyPropertyRepository(db)
     try:
-        user = RegisterUserUseCase(user_repo, team_repo, prop_repo).execute(dto)
-        return AuthResponseDTO(user=UserReadDTO.model_validate(user))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        user, workspace = RegisterUserUseCase(user_repo, team_repo, workspace_repo, prop_repo).execute(dto)
+        return AuthResponseDTO(
+            user=UserReadDTO.model_validate(user),
+            workspace=workspace
+        )
+    except DomainException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+    except Exception as e:
+        log_exception(logger, e, "register")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Não foi possível concluir seu cadastro no momento. Nossa equipe técnica foi notificada. Por favor, tente novamente em alguns minutos."
+        )
 
 @router.post("/login", response_model=AuthResponseDTO)
 def login(dto: LoginRequestDTO, db: Session = Depends(get_db)):
     user_repo = SqlAlchemyUserRepository(db)
+    workspace_repo = SqlAlchemyWorkspaceRepository(db)
     try:
-        user = LoginUseCase(user_repo).execute(dto)
-        return AuthResponseDTO(user=UserReadDTO.model_validate(user))
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        user, workspace = LoginUseCase(user_repo, workspace_repo).execute(dto)
+        return AuthResponseDTO(
+            user=UserReadDTO.model_validate(user),
+            workspace=workspace
+        )
+    except AuthenticationException as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
+    except Exception as e:
+        log_exception(logger, e, "login")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Ocorreu um erro ao tentar entrar no sistema. Por favor, tente novamente mais tarde."
+        )
 
 class ForgotPasswordDTO(BaseModel):
     email: EmailStr
@@ -71,9 +94,12 @@ def reset_password(dto: ResetPasswordDTO, db: Session = Depends(get_db)):
     try:
         ResetPasswordUseCase(user_repo).execute(dto.token, dto.new_password)
         return {"message": "Senha atualizada com sucesso!"}
-    except ValueError as e:
+    except DomainException as e:
         logger.warning(f"Tentativa inválida de reset de senha: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Link de redefinição inválido ou expirado. Por favor, solicite um novo link.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
     except Exception as e:
         log_exception(logger, e, "reset_password")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Falha ao redefinir senha. Entre em contato com a equipe técnica.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Não foi possível redefinir sua senha agora. Por favor, entre em contato com o suporte se o problema persistir."
+        )

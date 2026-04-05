@@ -5,13 +5,29 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 class BaseModel(DeclarativeBase):
     pass
 
+class WorkspaceModel(BaseModel):
+    __tablename__ = "workspaces"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    logo_url = Column(String, nullable=True)
+    primary_color = Column(String, default="#0091ae") # HubSpot Blue
+    accent_color = Column(String, default="#ff7a59")  # HubSpot Orange
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    teams = relationship("TeamModel", back_populates="workspace")
+    users = relationship("UserModel", back_populates="workspace")
+
 class TeamModel(BaseModel):
     __tablename__ = "teams"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    workspace = relationship("WorkspaceModel", back_populates="teams")
     users = relationship("UserModel", back_populates="team")
 
 class UserModel(BaseModel):
@@ -22,25 +38,28 @@ class UserModel(BaseModel):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False) # Armazenada em texto plano inicialmente (conforme plano)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     role = Column(String, default="user")
     reset_password_token = Column(String, nullable=True, index=True)
     reset_password_expires = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     team = relationship("TeamModel", back_populates="users")
+    workspace = relationship("WorkspaceModel", back_populates="users")
 
 class PropertyGroupModel(BaseModel):
     __tablename__ = "property_groups"
-    __table_args__ = (UniqueConstraint('team_id', 'name', name='_team_group_uc'),)
+    __table_args__ = (UniqueConstraint('workspace_id', 'name', name='_workspace_group_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     order = Column(Integer, default=0)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
 
 class PropertyDefinitionModel(BaseModel):
     __tablename__ = "property_definitions"
-    __table_args__ = (UniqueConstraint('team_id', 'entity_type', 'name', name='_team_prop_uc'),)
+    __table_args__ = (UniqueConstraint('workspace_id', 'entity_type', 'name', name='_workspace_prop_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
     entity_type = Column(String, index=True, nullable=False, default='contact')
@@ -49,7 +68,8 @@ class PropertyDefinitionModel(BaseModel):
     type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
     options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
     is_system = Column(Boolean, default=False)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     
     links = relationship("EntityPropertyLinkModel", back_populates="property_def", cascade="all, delete-orphan")
 
@@ -62,7 +82,8 @@ class EntityPropertyLinkModel(BaseModel):
     group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
     order = Column(Integer, default=0)
     is_required = Column(Boolean, default=False)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     
     property_def = relationship("PropertyDefinitionModel", back_populates="links")
     group = relationship("PropertyGroupModel")
@@ -80,7 +101,8 @@ class CompanyModel(BaseModel):
     domain = Column(String, unique=True, index=True, nullable=True)
     status = Column(String, default="active")
     stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True) # Pipeline Stage
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamento com propriedades customizadas e contatos vinculados
@@ -108,7 +130,8 @@ class ContactModel(BaseModel):
     phone = Column(String, nullable=True)
     status = Column(String, default="active")
     stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True) # Pipeline Stage
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamento com as propriedades customizadas e empresas vinculadas
@@ -129,12 +152,13 @@ class ContactPropertyValueModel(BaseModel):
 
 class PipelineModel(BaseModel):
     __tablename__ = "pipelines"
-    __table_args__ = (UniqueConstraint('team_id', 'entity_type', 'name', name='_team_pipeline_uc'),)
+    __table_args__ = (UniqueConstraint('workspace_id', 'entity_type', 'name', name='_workspace_pipeline_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     entity_type = Column(String, nullable=False, default="contact") # contact, company, deal
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     stages = relationship("PipelineStageModel", back_populates="pipeline", order_by="PipelineStageModel.order", cascade="all, delete-orphan")

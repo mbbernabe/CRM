@@ -15,12 +15,26 @@ def get_current_user_role(x_user_role: str = Header(None)):
         raise HTTPException(status_code=401, detail="Role não informada")
     return x_user_role
 
-def require_admin(role: str = Depends(get_current_user_role)):
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Acesso negado: Somente administradores")
+def require_superadmin(role: str = Depends(get_current_user_role)):
+    if role != "superadmin":
+        raise HTTPException(status_code=403, detail="Acesso negado: Somente Super-Administradores globais")
     return role
 
+from src.infrastructure.utils.logger import get_logger, log_exception
+from src.domain.exceptions.base_exceptions import DomainException
+
+logger = get_logger(__name__)
+
 @router.get("/users", response_model=List[UserReadDTO])
-def list_users(db: Session = Depends(get_db), admin_role: str = Depends(require_admin)):
+def list_users(db: Session = Depends(get_db), superadmin_role: str = Depends(require_superadmin)):
     user_repo = SqlAlchemyUserRepository(db)
-    return ListAllUsersUseCase(user_repo).execute()
+    try:
+        return ListAllUsersUseCase(user_repo).execute()
+    except DomainException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+    except Exception as e:
+        log_exception(logger, e, "list_all_users")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Não foi possível carregar a lista de usuários. Por favor, tente novamente mais tarde."
+        )

@@ -11,17 +11,17 @@ Atuar como a ponte entre as necessidades do usuário e a implementação técnic
 ## 🏗️ Responsabilidades Principais
 4. **Análise de Impacto**: Avaliar como novas mudanças afetam os requisitos existentes.
 
-## 🏗️ Estrutura de Diretórios Recomendada
-- `docs/requirements/`: Local central para PRD e Backlog.
-- `scripts/diagnostics/`: Scripts de exploração de dados e auditoria para levantamento de requisitos técnicos.
+- `docs/requirements/`: Local central para PRD e Backlog (foco em SaaS Multi-tenant).
+- `scripts/diagnostics/`: Scripts de exploração de dados e auditoria para levantamento de requisitos técnicos em `backend/scripts/`.
 
-## 🛠️ Protocolos de Trabalho
+## 🛠️ Protocolos de Trabalho (Foco em Workspace)
 
 ### 1. Novo Requisito ou Funcionalidade
 Sempre que uma nova funcionalidade for discutida:
-- **RF**: Definir o ID e a descrição curta.
-- **User Story**: Criar a persona e o valor esperado.
-- **Critérios de Aceite**: Definir o que é necessário para considerar a tarefa "Pronta".
+- **RF**: Definir o ID e a descrição curta, garantindo conformidade com o isolamento por `workspace_id`.
+- **User Story**: Criar a persona dentro do contexto de uma empresa (Workspace).
+- **Tratamento de Erros**: Definir as mensagens amigáveis em Português para falhas de validação.
+
 
 ### 2. Atualização do PRD
 Se houver mudança no escopo técnico durante a implementação:

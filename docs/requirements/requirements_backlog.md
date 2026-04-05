@@ -9,23 +9,23 @@
 ---
 
 ## 🏢 Gestão de Áreas de Trabalho (Workspaces) & Times
-- [ ] **Workspaces**: A Área de Trabalho é o tenant principal. Todo dado pertence a um Workspace.
-- [ ] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro).
-- [ ] **Associação de Usuário**: Usuários podem ser membros de múltiplos Workspaces e múltiplos Times.
+- [x] **Workspaces**: A Área de Trabalho é o tenant principal. Todo dado pertence a um Workspace.
+- [x] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro).
+- [x] **Associação de Usuário**: Usuários podem ser membros de múltiplos Workspaces e múltiplos Times.
+- [x] **Isolamento de Dados**: `Workspace` isola a base global e `Team` isola a visibilidade (Usuários veem apenas o que o Time possui).
 - [ ] **Sistema de Convites**: Fluxo para convidar usuários para o Workspace e dar acesso a times específicos.
-- [ ] **Isolamento de Dados**: `Workspace` isola a base global e `Team` isola a visibilidade (Usuários veem apenas o que o Time possui).
 - [ ] **Validação & Máscaras**: Tipos específicos para CPF, CNPJ, Telefone e E-mail com validação e formatação automática.
 - [ ] **Lógica Inter-propriedades**: Autopreenchimento (ex: CEP preenche Logradouro/Cidade/UF) e cálculos entre campos.
 - [ ] **Recuperação de Senha (RF009)**: Link "Esqueci minha senha", envio de e-mail com token temporário e tela de definição de nova senha.
 
-## 📅 Notas de Brainstorming [03/04/2026]
+## 📅 Notas de Brainstorming [05/04/2026]
 - **Visão**: O CRM deve ser um SaaS para pessoas e times organizarem Atividades Empresariais (Marketing, Fluxo de Clientes, Produção).
-- **Prioridade 1**: **Flexibilidade nas Propriedades** (Custom Fields) é a base de tudo agora.
-- **Próximos Passos**: 
-    1.  Definição técnica da arquitetura de Propriedades Dinâmicas vinculadas ao Workspace.
-    2.  Modelagem da entidade **Workspace** como pai de **Teams**.
-    3.  Alteração do fluxo de Registro para capturar 'Nome da Área de Trabalho'.
-    4.  **Projeto de Pipelines Genéricas**: Mapear como Contatos, Empresas e Negócios ocuparão 'Stages' de fluxos distintos.
+- **Conquista**: Arquitetura Multi-tenant (Workspaces) implementada com sucesso no Backend e Frontend.
+- **Próximos Passos Sugeridos**: 
+    1.  **Refinamento de UI**: Implementar seletor/troca de Workspace para o usuário logado.
+    2.  **Configurações de Workspace**: Permitir upload de Logo, personalização de cores e nome da empresa.
+    3.  **Convites (Teams/Workspace)**: Desenvolver o fluxo de captura de convidados para novos membros.
+    4.  **Projeto de Pipelines Genéricas**: Iniciar a migração das pipelines para serem totalmente agnósticas à entidade.
 
 ---
 

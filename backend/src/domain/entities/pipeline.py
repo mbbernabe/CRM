@@ -17,4 +17,5 @@ class Pipeline:
     name: str = ""
     entity_type: str = "contact" # contact, company, deal, etc.
     team_id: int = 0
+    workspace_id: Optional[int] = None
     stages: List[PipelineStage] = field(default_factory=list)

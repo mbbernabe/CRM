@@ -6,21 +6,21 @@ from src.infrastructure.repositories.sqlalchemy_settings_repository import SqlAl
 from src.application.use_cases.settings_use_cases import GetSystemSettingsUseCase, UpdateSystemSettingsUseCase
 from pydantic import BaseModel
 
+from src.infrastructure.api.routes.admin import require_superadmin
+
 router = APIRouter(prefix="/admin/settings", tags=["Admin Settings"])
 
 class SettingUpdateDTO(BaseModel):
     settings: Dict[str, str]
 
 @router.get("")
-def get_settings(db: Session = Depends(get_db)):
-    # Futuramente: Adicionar verificação de Role Admin aqui
+def get_settings(db: Session = Depends(get_db), superadmin_role: str = Depends(require_superadmin)):
     repo = SqlAlchemySettingsRepository(db)
     settings = GetSystemSettingsUseCase(repo).execute()
     return settings
 
 @router.post("")
-def update_settings(dto: SettingUpdateDTO, db: Session = Depends(get_db)):
-    # Futuramente: Adicionar verificação de Role Admin aqui
+def update_settings(dto: SettingUpdateDTO, db: Session = Depends(get_db), superadmin_role: str = Depends(require_superadmin)):
     try:
         repo = SqlAlchemySettingsRepository(db)
         UpdateSystemSettingsUseCase(repo).execute(dto.settings)

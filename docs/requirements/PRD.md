@@ -4,11 +4,11 @@
 Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organizarem suas atividades empresariais, gerenciando fluxos de clientes (CRM), marketing, produção e integração com plataformas externas.
 
 ### 1.1 Objetivos
-- [ ] **Workspaces (Multi-tenancy)**: Isolamento de dados por Área de Trabalho (Workspace).
+- [x] **Workspaces (Multi-tenancy)**: Isolamento de dados por Área de Trabalho (Workspace).
 - [ ] **Estrutura Infinitamente Escalável**: Um Workspace pode conter diversos Times (Teams).
-- [ ] **Flexibilidade Total**: Usuários definem suas próprias propriedades por Workspace.
+- [x] **Flexibilidade Total**: Usuários definem suas próprias propriedades por Workspace.
 - [ ] **Gestão de Convites**: Fluxo robusto para convidar membros para times específicos dentro de uma área.
-- [ ] **Segurança**: Autenticação moderna e segura (OAuth2/JWT) com isolamento estrito.
+- [x] **Segurança**: Autenticação moderna e segura (OAuth2/JWT) com isolamento estrito.
 
 ### 1.2 Público-Alvo (Personas)
 - **Empreendedor Individual**: Organização pessoal e automação de leads.
@@ -20,12 +20,11 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 ## 2. Requisitos Funcionais (RF)
 | ID | Descrição | Prioridade | Status |
 |----|-----------|------------|--------|
-| RF001 | **Propriedades Dinâmicas**: Gerenciamento de metadados (Seleção, Moeda, Múltiplas Linhas, etc). | **P0 (Crítica)** | Em Desenvolvimento |
-| RF002 | **Isolamento por Workspace**: Adicionar `workspace_id` em todas as entidades globais do tenant. | **P0 (Crítica)** | Planejado |
-| RF003 | **Gestão de Áreas de Trabalho**: Criar, gerenciar e configurar Workspaces. | **P1 (Alta)** | Em Definição |
+| RF002 | **Isolamento por Workspace**: Adicionar `workspace_id` em todas as entidades globais do tenant. | **P0 (Crítica)** | **Concluído** |
+| RF003 | **Gestão de Áreas de Trabalho**: Criar, gerenciar e configurar Workspaces. | **P1 (Alta)** | **Concluído** |
 | RF004 | **Gestão de Times (Teams)**: Criar múltiplos times dentro de um mesmo Workspace. | **P1 (Alta)** | Pendente |
 | RF005 | **Convites & Colaboração**: Enviar convites para usuários participarem de times específicos. | **P1 (Alta)** | Pendente |
-| RF006 | **Autenticação & Registro**: Registro de novo usuário associado a um novo Workspace nomeado. | **P1 (Alta)** | **Pendente** |
+| RF006 | **Autenticação & Registro**: Registro de novo usuário associado a um novo Workspace nomeado. | **P1 (Alta)** | **Concluído** |
 | RF010 | **Visibilidade por Time**: Filtro automático de dados (Contatos, Empresas, Negócios) para que usuários vejam apenas o que foi atribuído aos seus times específicos. | **P1 (Alta)** | **Pendente** |
 | RF006 | **Captura de Leads**: API/Webhook para integração com WhatsApp/IG/FB. | P2 (Média) | Pendente |
 | RF007 | **Tipos Complexos & Máscaras**: CPF, CNPJ e Telefone com validação e formatação automática. | P1 (Alta) | Pendente |

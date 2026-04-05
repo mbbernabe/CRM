@@ -169,7 +169,14 @@ const SystemSettings = () => {
             </form>
 
             <style jsx>{`
-                .settings-page { padding: 32px; max-width: 1000px; margin: 0 auto; }
+                .settings-page { 
+                    padding: 32px; 
+                    max-width: 1000px; 
+                    margin: 0 auto;
+                    flex: 1;
+                    overflow-y: auto;
+                    height: 100%;
+                }
                 .settings-header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--hs-border-light); }
                 .settings-header h2 { font-size: 24px; font-weight: 700; color: #2d3e50; margin-bottom: 8px; }
                 .settings-header p { color: var(--hs-text-secondary); font-size: 14px; }

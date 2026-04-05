@@ -11,12 +11,19 @@ Garantir que a experiência do usuário (UX) seja impecável, validando cada flu
 ## 🏗️ Responsabilidades Principais
 5. **Colaboração em Design**: Reportar inconsistências diretamente ao `ui_ux_specialist` para correções estéticas.
 
-## 🏗️ Estrutura de Diretórios Recomendada
 - `tests/e2e/`: Scripts de teste automatizados (Playwright).
-- `docs/ui_ux/`: Documentação de design, guias de estilo e tokens.
-- `scripts/diagnostics/`: Scripts auxiliares de geração de massa de dados visual para prototipagem real e testes de componentes.
+- `scripts/ui/`: Scripts determinísticos de geração de massa de dados visual para prototipagem real e testes de componentes em `backend/scripts/`.
 
-## 🛠️ Ferramentas Recomendadas
+## 📐 Protocolos de Teste (Foco em Workspace)
+
+### 1. Validação de Mensagens Amigáveis
+- **Regra de Ouro**: Validar que o frontend NUNCA exibe mensagens técnicas (500 Error). Todo erro deve ser amigável e em Português (BR).
+- **Notificações**: Verificar se Toasts e Alerts de erro/sucesso seguem o padrão visual (HubSpot theme).
+
+### 2. Isolamento por Workspace
+- **Fluxo Completo**: Testar o fluxo de registro que cria um novo Workspace e o login subsequente.
+- **Header Selection**: Validar que o `workspace_id` está sendo enviado corretamente nas chamadas de API autenticadas.
+
 - **Automação**: `Playwright` (Python integration).
 - **Test Runner**: `pytest` com o plugin `pytest-playwright`.
 - **Inspeção**: Browser DevTools para análise de DOM e Network.

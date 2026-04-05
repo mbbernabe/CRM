@@ -1,17 +1,17 @@
 from src.domain.entities.property import PropertyDefinition, PropertyGroup, EntityPropertyLink
 from src.domain.repositories.property_repository import IPropertyRepository
 
-class InitializeTeamPropertiesUseCase:
+class InitializeWorkspacePropertiesUseCase:
     def __init__(self, property_repo: IPropertyRepository):
         self.property_repo = property_repo
 
-    def execute(self, team_id: int):
+    def execute(self, workspace_id: int):
         # 1. Criar Grupos Padrão
         contact_info_group = PropertyGroup(name="Informações de Contato", order=0)
-        contact_info_group = self.property_repo.save_group(contact_info_group, team_id)
+        contact_info_group = self.property_repo.save_group(contact_info_group, workspace_id)
 
         company_info_group = PropertyGroup(name="Informações da Empresa", order=0)
-        company_info_group = self.property_repo.save_group(company_info_group, team_id)
+        company_info_group = self.property_repo.save_group(company_info_group, workspace_id)
 
         # 2. Definir Propriedades de Contato Padrão
         contact_props = [
@@ -23,15 +23,16 @@ class InitializeTeamPropertiesUseCase:
 
         for p_data in contact_props:
             prop_def = PropertyDefinition(**p_data, entity_type="contact")
-            prop_def = self.property_repo.save_definition(prop_def, team_id)
+            prop_def = self.property_repo.save_definition(prop_def, workspace_id)
             # Vincular ao grupo de contato
             self.property_repo.save_entity_link(EntityPropertyLink(
                 entity_type="contact",
                 property_id=prop_def.id,
                 group_id=contact_info_group.id,
                 order=0,
-                is_required=True if p_data["name"] == "name" else False
-            ), team_id)
+                is_required=True if p_data["name"] == "name" else False,
+                workspace_id=workspace_id
+            ), workspace_id)
 
         # 3. Definir Propriedades de Empresa Padrão
         company_props = [
@@ -42,14 +43,15 @@ class InitializeTeamPropertiesUseCase:
 
         for p_data in company_props:
             prop_def = PropertyDefinition(**p_data, entity_type="company")
-            prop_def = self.property_repo.save_definition(prop_def, team_id)
+            prop_def = self.property_repo.save_definition(prop_def, workspace_id)
             # Vincular ao grupo de empresa
             self.property_repo.save_entity_link(EntityPropertyLink(
                 entity_type="company",
                 property_id=prop_def.id,
                 group_id=company_info_group.id,
                 order=0,
-                is_required=True if p_data["name"] == "name" else False
-            ), team_id)
+                is_required=True if p_data["name"] == "name" else False,
+                workspace_id=workspace_id
+            ), workspace_id)
 
         return True
