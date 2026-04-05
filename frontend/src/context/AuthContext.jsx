@@ -7,7 +7,36 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('crm_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
+  const [workspace, setWorkspace] = useState(() => {
+    const savedWorkspace = localStorage.getItem('crm_workspace');
+    return savedWorkspace ? JSON.parse(savedWorkspace) : null;
+  });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Aplicar cores dinâmicas se houver workspace
+    if (workspace) {
+      document.documentElement.style.setProperty('--hs-blue', workspace.primary_color || '#0091ae');
+      document.documentElement.style.setProperty('--hs-orange', workspace.accent_color || '#ff7a59');
+    } else if (user && !loading) {
+      // Se temos usuário mas não temos os dados do workspace (ex: refresh), buscamos
+      refreshWorkspace();
+    }
+  }, [workspace, user]);
+
+  const refreshWorkspace = async () => {
+    if (!user || !user.workspace_id) return;
+    try {
+      const res = await fetch(`http://localhost:8000/workspaces/${user.workspace_id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWorkspace(data);
+        localStorage.setItem('crm_workspace', JSON.stringify(data));
+      }
+    } catch (e) {
+      console.error('Erro ao atualizar workspace branding:', e);
+    }
+  };
 
   const login = async (email, password) => {
     setLoading(true);
@@ -28,7 +57,9 @@ export const AuthProvider = ({ children }) => {
       if (!res.ok) throw new Error(data.detail || 'Erro ao fazer login');
       
       setUser(data.user);
+      setWorkspace(data.workspace);
       localStorage.setItem('crm_user', JSON.stringify(data.user));
+      localStorage.setItem('crm_workspace', JSON.stringify(data.workspace));
       return data.user;
     } finally {
       setLoading(false);
@@ -54,7 +85,9 @@ export const AuthProvider = ({ children }) => {
       if (!res.ok) throw new Error(data.detail || 'Erro ao registrar');
       
       setUser(data.user);
+      setWorkspace(data.workspace);
       localStorage.setItem('crm_user', JSON.stringify(data.user));
+      localStorage.setItem('crm_workspace', JSON.stringify(data.workspace));
       return data.user;
     } finally {
       setLoading(false);
@@ -95,7 +128,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    setWorkspace(null);
     localStorage.removeItem('crm_user');
+    localStorage.removeItem('crm_workspace');
   };
 
   const fetchWithAuth = async (url, options = {}) => {
@@ -104,6 +139,10 @@ export const AuthProvider = ({ children }) => {
         'Content-Type': 'application/json'
     };
     
+    if (user && user.workspace_id) {
+      headers['X-Workspace-ID'] = user.workspace_id.toString();
+    }
+
     if (user && user.team_id) {
       headers['X-Team-ID'] = user.team_id.toString();
     }
@@ -118,8 +157,8 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-        user, login, register, logout, loading, 
-        forgotPassword, resetPassword,
+        user, workspace, login, register, logout, loading, 
+        forgotPassword, resetPassword, refreshWorkspace,
         isAuthenticated: !!user,
         fetchWithAuth
     }}>

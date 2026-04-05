@@ -7,8 +7,8 @@ class UpdateContactUseCase:
     def __init__(self, contact_repository: IContactRepository):
         self.contact_repository = contact_repository
 
-    def execute(self, contact_id: int, contact_dto: ContactUpdateDTO, team_id: int) -> Optional[ContactReadDTO]:
-        existing_contact = self.contact_repository.get_by_id(contact_id, team_id)
+    def execute(self, contact_id: int, contact_dto: ContactUpdateDTO, workspace_id: int) -> Optional[ContactReadDTO]:
+        existing_contact = self.contact_repository.get_by_id(contact_id, workspace_id)
         if not existing_contact:
             return None
         
@@ -20,5 +20,5 @@ class UpdateContactUseCase:
         if contact_dto.properties:
              existing_contact.properties.update(contact_dto.properties)
 
-        updated_contact = self.contact_repository.update(existing_contact, team_id)
+        updated_contact = self.contact_repository.update(existing_contact, workspace_id)
         return ContactReadDTO.model_validate(updated_contact)

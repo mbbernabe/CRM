@@ -11,7 +11,8 @@ import {
     MoreHorizontal,
     Search,
     Filter,
-    Globe
+    Globe,
+    Building2
 } from 'lucide-react';
 
 const AdminUsers = () => {
@@ -47,10 +48,16 @@ const AdminUsers = () => {
         fetchAllUsers();
     }, []);
 
-    const filteredUsers = users.filter(u => 
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(u => {
+        const searchLower = searchTerm.toLowerCase();
+        const workspaceName = (u.workspace_name || `Workspace #${u.workspace_id}`).toLowerCase();
+        
+        return (
+            u.name.toLowerCase().includes(searchLower) || 
+            u.email.toLowerCase().includes(searchLower) ||
+            workspaceName.includes(searchLower)
+        );
+    });
 
     if (loading) return (
         <div className="loading-container">
@@ -122,6 +129,7 @@ const AdminUsers = () => {
                             <th>IDENTIFICADOR</th>
                             <th>USUÁRIO</th>
                             <th>PERMISSÃO</th>
+                            <th>ÁREA DE TRABALHO</th>
                             <th>TIME (TENANT)</th>
                             <th className="actions-header">AÇÕES</th>
                         </tr>
@@ -148,6 +156,12 @@ const AdminUsers = () => {
                                         {u.role === 'admin' ? <Shield size={10} /> : null}
                                         {u.role}
                                     </span>
+                                </td>
+                                <td>
+                                    <div className="workspace-indicator">
+                                        <Building2 size={14} />
+                                        <span>{u.workspace_name || `Workspace #${u.workspace_id}`}</span>
+                                    </div>
                                 </td>
                                 <td>
                                     {u.team_id ? (
@@ -418,8 +432,20 @@ const AdminUsers = () => {
                     height: 8px;
                     background: var(--hs-blue);
                     border-radius: 50%;
-                    box-shadow: 0 0 0 rgba(0, 145, 174, 0.4);
+                    box-shadow: 0 0 0 rgba(0, 145, 174, 0.7);
                     animation: pulse 2s infinite;
+                }
+
+                .workspace-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-weight: 500;
+                    color: var(--hs-text-primary);
+                }
+
+                .workspace-indicator svg {
+                    color: var(--hs-blue);
                 }
 
                 @keyframes pulse {

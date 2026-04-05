@@ -25,8 +25,11 @@ def register(dto: UserCreateDTO, db: Session = Depends(get_db)):
     workspace_repo = SqlAlchemyWorkspaceRepository(db)
     prop_repo = SqlAlchemyPropertyRepository(db)
     try:
-        user = RegisterUserUseCase(user_repo, team_repo, workspace_repo, prop_repo).execute(dto)
-        return AuthResponseDTO(user=UserReadDTO.model_validate(user))
+        user, workspace = RegisterUserUseCase(user_repo, team_repo, workspace_repo, prop_repo).execute(dto)
+        return AuthResponseDTO(
+            user=UserReadDTO.model_validate(user),
+            workspace=workspace
+        )
     except DomainException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
     except Exception as e:
@@ -39,9 +42,13 @@ def register(dto: UserCreateDTO, db: Session = Depends(get_db)):
 @router.post("/login", response_model=AuthResponseDTO)
 def login(dto: LoginRequestDTO, db: Session = Depends(get_db)):
     user_repo = SqlAlchemyUserRepository(db)
+    workspace_repo = SqlAlchemyWorkspaceRepository(db)
     try:
-        user = LoginUseCase(user_repo).execute(dto)
-        return AuthResponseDTO(user=UserReadDTO.model_validate(user))
+        user, workspace = LoginUseCase(user_repo, workspace_repo).execute(dto)
+        return AuthResponseDTO(
+            user=UserReadDTO.model_validate(user),
+            workspace=workspace
+        )
     except AuthenticationException as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
     except Exception as e:

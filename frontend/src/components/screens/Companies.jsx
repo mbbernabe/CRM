@@ -180,13 +180,13 @@ const CompaniesInner = ({ addToast }) => {
     if (!selectedContactIdToLink || !selectedCompany) return;
     setIsLinking(true);
     try {
-      const response = await fetch(`http://localhost:8000/companies/${selectedCompany.id}/contacts/${selectedContactIdToLink}`, {
+      const response = await fetchWithAuth(`http://localhost:8000/companies/${selectedCompany.id}/contacts/${selectedContactIdToLink}`, {
         method: 'POST'
       });
       if (!response.ok) throw new Error('Falha ao vincular contato');
       await fetchCompanies();
       
-      const updatedResponse = await fetch(`http://localhost:8000/companies/${selectedCompany.id}`);
+      const updatedResponse = await fetchWithAuth(`http://localhost:8000/companies/${selectedCompany.id}`);
       if (updatedResponse.ok) {
         const updatedCompany = await updatedResponse.json();
         setSelectedCompany(updatedCompany);
@@ -204,13 +204,13 @@ const CompaniesInner = ({ addToast }) => {
     if (!selectedCompany) return;
     if (!window.confirm('Tem certeza que deseja desvincular este contato?')) return;
     try {
-      const response = await fetch(`http://localhost:8000/companies/${selectedCompany.id}/contacts/${contactId}`, {
+      const response = await fetchWithAuth(`http://localhost:8000/companies/${selectedCompany.id}/contacts/${contactId}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Falha ao desvincular contato');
       await fetchCompanies();
       
-      const updatedResponse = await fetch(`http://localhost:8000/companies/${selectedCompany.id}`);
+      const updatedResponse = await fetchWithAuth(`http://localhost:8000/companies/${selectedCompany.id}`);
       if (updatedResponse.ok) {
         const updatedCompany = await updatedResponse.json();
         setSelectedCompany(updatedCompany);

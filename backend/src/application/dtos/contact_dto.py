@@ -8,6 +8,8 @@ class ContactReadDTO(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     status: str
+    workspace_id: int
+    team_id: Optional[int] = None
     properties: Dict[str, Any] = Field(default_factory=dict)
     companies: list = Field(default_factory=list)
     created_at: datetime

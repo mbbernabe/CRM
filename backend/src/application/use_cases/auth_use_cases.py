@@ -58,9 +58,17 @@ class RegisterUserUseCase:
             raise AuthenticationException("Para criar sua conta, precisamos que você informe o nome da sua empresa ou área de trabalho.")
 
         # 3. Criar Usuário 
-        # (Primeiro usuário do Workspace é Admin)
-        workspace_users_count = len(self.user_repo.list_all(workspace_id))
-        role = "admin" if workspace_users_count == 0 else "user"
+        # (Primeiro usuário do SISTEMA é Superadmin, 
+        # Primeiro usuário de um WORKSPACE é Admin)
+        total_users_count = self.user_repo.count()
+        workspace_users_count = self.user_repo.count(workspace_id)
+        
+        if total_users_count == 0:
+            role = "superadmin"
+        elif workspace_users_count == 0:
+            role = "admin"
+        else:
+            role = "user"
 
         user = User(
             name=dto.name,
@@ -70,14 +78,19 @@ class RegisterUserUseCase:
             team_id=team_id,
             role=role
         )
-        return self.user_repo.save(user)
+        user = self.user_repo.save(user)
+        workspace = self.workspace_repo.get_by_id(workspace_id)
+        return user, workspace
 
 class LoginUseCase:
-    def __init__(self, user_repo: IUserRepository):
+    def __init__(self, user_repo: IUserRepository, workspace_repo: IWorkspaceRepository):
         self.user_repo = user_repo
+        self.workspace_repo = workspace_repo
 
-    def execute(self, dto: LoginRequestDTO) -> User:
+    def execute(self, dto: LoginRequestDTO) -> (User, Workspace):
         user = self.user_repo.get_by_email(dto.email)
         if not user or not SecurityUtils.verify_password(dto.password, user.password):
             raise AuthenticationException("E-mail ou senha incorretos. Por favor, tente novamente.")
-        return user
+        
+        workspace = self.workspace_repo.get_by_id(user.workspace_id)
+        return user, workspace

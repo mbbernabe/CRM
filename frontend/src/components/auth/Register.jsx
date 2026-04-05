@@ -7,7 +7,7 @@ const Register = ({ onSwitchToLogin }) => {
     name: '',
     email: '',
     password: '',
-    team_name: ''
+    workspace_name: ''
   });
   const [error, setError] = useState('');
   const { register, loading } = useAuth();
@@ -36,7 +36,7 @@ const Register = ({ onSwitchToLogin }) => {
             <UserPlus size={24} />
           </div>
           <h1>Crie sua conta</h1>
-          <p>Comece a gerenciar seu time de forma modular</p>
+          <p>Comece a gerenciar sua empresa de forma modular</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -87,21 +87,21 @@ const Register = ({ onSwitchToLogin }) => {
           </div>
 
           <div className="form-group team-section">
-            <label>Nome do Time <span className="required-indicator">*</span></label>
+            <label>Nome da Empresa / Área de Trabalho <span className="required-indicator">*</span></label>
             <input 
-              name="team_name"
+              name="workspace_name"
               type="text" 
               className="hs-input" 
-              placeholder="Ex: Marketing Digital, Vendas SP..."
-              value={formData.team_name}
+              placeholder="Ex: Minha Empresa, Consultoria ABC..."
+              value={formData.workspace_name}
               onChange={handleChange}
               required
             />
-            <p className="field-hint">Você será o administrador deste time.</p>
+            <p className="field-hint">Você será o administrador desta área de trabalho.</p>
           </div>
 
           <button type="submit" className="hs-button-primary auth-submit" disabled={loading}>
-            {loading ? 'Criando conta...' : 'Criar Conta e Time'}
+            {loading ? 'Criando conta...' : 'Criar Conta e Área de Trabalho'}
           </button>
         </form>
 

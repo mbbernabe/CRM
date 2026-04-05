@@ -20,10 +20,48 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
 
   const handleQuickAccess = async () => {
     setError('');
+
+    // Credenciais do dev (usado após reset ou fluxo normal)
+    const devCredentials = [
+      { email: 'admin@crm.com', password: 'admin' },
+      { email: 'mbbernabe@gmail.com', password: 'mbb1223' },
+    ];
+
+    // Tentar logar com cada conjunto de credenciais existentes
+    for (const creds of devCredentials) {
+      try {
+        await login(creds.email, creds.password);
+        return; // Sucesso — sair do loop
+      } catch (err) {
+        // Continuar tentando com as próximas credenciais
+        if (!err.message.includes("incorretos") && !err.message.includes("401")) {
+          setError('Erro no Acesso Rápido: ' + err.message);
+          return;
+        }
+      }
+    }
+
+    // Nenhuma credencial funcionou — banco vazio, criar o primeiro superadmin
     try {
-      await login('mbbernabe@gmail.com', 'mbb1223');
-    } catch (err) {
-      setError('Erro no Acesso Rápido: ' + err.message);
+      const registerRes = await fetch('http://localhost:8000/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Marcelo Bernabe (Dev)',
+          email: 'mbbernabe@gmail.com',
+          password: 'mbb1223',
+          workspace_name: 'Minha Empresa Dev'
+        })
+      });
+
+      if (registerRes.ok) {
+        await login('mbbernabe@gmail.com', 'mbb1223');
+      } else {
+        const data = await registerRes.json();
+        setError('Falha ao criar superadmin: ' + (data.detail || 'Erro desconhecido'));
+      }
+    } catch (regErr) {
+      setError('Não foi possível inicializar o sistema. Cadastre-se manualmente.');
     }
   };
 

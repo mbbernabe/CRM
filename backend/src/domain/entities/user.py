@@ -6,6 +6,7 @@ from typing import Optional
 class Team:
     id: Optional[int] = None
     name: str = ""
+    workspace_id: Optional[int] = None
     created_at: datetime = datetime.utcnow()
 
 @dataclass
@@ -15,7 +16,9 @@ class User:
     email: str = ""
     password: str = ""
     team_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     role: str = "user"
+    workspace_name: Optional[str] = None
     reset_password_token: Optional[str] = None
     reset_password_expires: Optional[datetime] = None
     created_at: datetime = datetime.utcnow()

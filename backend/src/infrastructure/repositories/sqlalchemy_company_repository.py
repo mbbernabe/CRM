@@ -10,25 +10,26 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
     def __init__(self, db: Session):
         self.db = db
 
-    def list_all(self, team_id: int) -> List[Company]:
-        db_companies = self.db.query(CompanyModel).filter(CompanyModel.team_id == team_id).all()
+    def list_all(self, workspace_id: int) -> List[Company]:
+        db_companies = self.db.query(CompanyModel).filter(CompanyModel.workspace_id == workspace_id).all()
         return [self._map_to_entity(c) for c in db_companies]
 
-    def get_by_id(self, company_id: int, team_id: int) -> Optional[Company]:
+    def get_by_id(self, company_id: int, workspace_id: int) -> Optional[Company]:
         db_company = self.db.query(CompanyModel).options(
             joinedload(CompanyModel.property_values).joinedload(CompanyPropertyValueModel.property_def),
             joinedload(CompanyModel.contacts)
-        ).filter(CompanyModel.id == company_id, CompanyModel.team_id == team_id).first()
+        ).filter(CompanyModel.id == company_id, CompanyModel.workspace_id == workspace_id).first()
         if not db_company:
             return None
         return self._map_to_entity(db_company)
 
-    def save(self, company: Company, team_id: int, contact_ids: Optional[List[int]] = None) -> Company:
+    def save(self, company: Company, workspace_id: int, contact_ids: Optional[List[int]] = None) -> Company:
         db_company = CompanyModel(
             name=company.name,
             domain=company.domain,
             status=company.status,
-            team_id=team_id
+            team_id=company.team_id,
+            workspace_id=workspace_id
         )
         self.db.add(db_company)
         self.db.flush()
@@ -38,7 +39,7 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
             for prop_name, prop_value in company.properties.items():
                 prop_def = self.db.query(PropertyDefinitionModel).filter(
                     PropertyDefinitionModel.name == prop_name,
-                    PropertyDefinitionModel.team_id == team_id
+                    PropertyDefinitionModel.workspace_id == workspace_id
                 ).first()
                 if prop_def:
                     db_prop_val = CompanyPropertyValueModel(
@@ -53,18 +54,18 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
             for c_id in contact_ids:
                 db_contact = self.db.query(ContactModel).filter(
                     ContactModel.id == c_id,
-                    ContactModel.team_id == team_id
+                    ContactModel.workspace_id == workspace_id
                 ).first()
                 if db_contact:
                     db_company.contacts.append(db_contact)
 
         self.db.commit()
-        return self.get_by_id(db_company.id, team_id)
+        return self.get_by_id(db_company.id, workspace_id)
 
-    def update(self, company: Company, team_id: int) -> Company:
+    def update(self, company: Company, workspace_id: int) -> Company:
         db_company = self.db.query(CompanyModel).filter(
             CompanyModel.id == company.id,
-            CompanyModel.team_id == team_id
+            CompanyModel.workspace_id == workspace_id
         ).first()
         if not db_company:
             raise ValueError("Empresa não encontrada")
@@ -72,6 +73,7 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
         db_company.name = company.name
         db_company.domain = company.domain
         db_company.status = company.status
+        db_company.team_id = company.team_id
 
         # Clear existing property values
         self.db.query(CompanyPropertyValueModel).filter(CompanyPropertyValueModel.company_id == company.id).delete()
@@ -81,7 +83,7 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
             for prop_name, prop_value in company.properties.items():
                 prop_def = self.db.query(PropertyDefinitionModel).filter(
                     PropertyDefinitionModel.name == prop_name,
-                    PropertyDefinitionModel.team_id == team_id
+                    PropertyDefinitionModel.workspace_id == workspace_id
                 ).first()
                 if prop_def:
                     db_prop_val = CompanyPropertyValueModel(
@@ -92,12 +94,12 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
                     self.db.add(db_prop_val)
                     
         self.db.commit()
-        return self.get_by_id(db_company.id, team_id)
+        return self.get_by_id(db_company.id, workspace_id)
 
-    def delete(self, company_id: int, team_id: int) -> bool:
+    def delete(self, company_id: int, workspace_id: int) -> bool:
         db_company = self.db.query(CompanyModel).filter(
             CompanyModel.id == company_id,
-            CompanyModel.team_id == team_id
+            CompanyModel.workspace_id == workspace_id
         ).first()
         if not db_company:
             return False
@@ -106,14 +108,14 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
         self.db.commit()
         return True
 
-    def link_contact(self, company_id: int, contact_id: int, team_id: int) -> bool:
+    def link_contact(self, company_id: int, contact_id: int, workspace_id: int) -> bool:
         db_company = self.db.query(CompanyModel).filter(
             CompanyModel.id == company_id,
-            CompanyModel.team_id == team_id
+            CompanyModel.workspace_id == workspace_id
         ).first()
         db_contact = self.db.query(ContactModel).filter(
             ContactModel.id == contact_id,
-            ContactModel.team_id == team_id
+            ContactModel.workspace_id == workspace_id
         ).first()
         if not db_company or not db_contact: return False
         
@@ -122,10 +124,10 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
             self.db.commit()
         return True
 
-    def unlink_contact(self, company_id: int, contact_id: int, team_id: int) -> bool:
+    def unlink_contact(self, company_id: int, contact_id: int, workspace_id: int) -> bool:
         db_company = self.db.query(CompanyModel).filter(
             CompanyModel.id == company_id,
-            CompanyModel.team_id == team_id
+            CompanyModel.workspace_id == workspace_id
         ).first()
         if not db_company: return False
         
@@ -150,6 +152,7 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
             domain=db_company.domain,
             status=db_company.status,
             team_id=db_company.team_id,
+            workspace_id=db_company.workspace_id,
             properties=props,
             contacts=contacts,
             created_at=db_company.created_at

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from src.domain.entities.user import User
 from src.domain.entities.team import Team
 from src.infrastructure.database.models import UserModel
@@ -17,6 +17,7 @@ class SqlAlchemyUserRepository(IUserRepository):
             password=model.password,
             team_id=model.team_id,
             workspace_id=model.workspace_id,
+            workspace_name=model.workspace.name if hasattr(model, 'workspace') and model.workspace else None,
             role=model.role,
             reset_password_token=model.reset_password_token,
             reset_password_expires=model.reset_password_expires,
@@ -66,7 +67,7 @@ class SqlAlchemyUserRepository(IUserRepository):
         return user
 
     def list_all(self, workspace_id: Optional[int] = None) -> List[User]:
-        query = self.db.query(UserModel)
+        query = self.db.query(UserModel).options(joinedload(UserModel.workspace))
         if workspace_id is not None:
             query = query.filter(UserModel.workspace_id == workspace_id)
         models = query.all()
