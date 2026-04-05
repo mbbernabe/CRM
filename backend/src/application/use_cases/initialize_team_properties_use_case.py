@@ -22,7 +22,7 @@ class InitializeTeamPropertiesUseCase:
         ]
 
         for p_data in contact_props:
-            prop_def = PropertyDefinition(**p_data)
+            prop_def = PropertyDefinition(**p_data, entity_type="contact")
             prop_def = self.property_repo.save_definition(prop_def, team_id)
             # Vincular ao grupo de contato
             self.property_repo.save_entity_link(EntityPropertyLink(
@@ -41,7 +41,7 @@ class InitializeTeamPropertiesUseCase:
         ]
 
         for p_data in company_props:
-            prop_def = PropertyDefinition(**p_data)
+            prop_def = PropertyDefinition(**p_data, entity_type="company")
             prop_def = self.property_repo.save_definition(prop_def, team_id)
             # Vincular ao grupo de empresa
             self.property_repo.save_entity_link(EntityPropertyLink(

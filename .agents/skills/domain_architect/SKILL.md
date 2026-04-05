@@ -16,6 +16,7 @@ Todo código de domínio deve ser organizado da seguinte forma:
 - `src/domain/repositories/`: Interfaces (`Protocols`) que definem como os agregados são persistidos.
 - `src/domain/exceptions/`: Exceções para erros **Excepcionais/Críticos** (falhas sistêmicas).
 - `src/domain/results/`: Classes para lidar com erros de **Negócio Previsíveis** (fluxo normal).
+- `scripts/`: Scripts auxiliares de domínio, geração de massa de dados (seeding) e ferramentas de diagnóstico, organizados por contexto (ex: `scripts/database/`, `scripts/domain/`).
 
 ## 🛠️ Padrões de Validação e Erros
 

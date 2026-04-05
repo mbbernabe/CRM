@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Filter, MoreHorizontal, User, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import Modal from '../common/Modal';
 import { ToastProvider } from '../common/Toast';
-import { Building2 } from 'lucide-react';
+import GenericBoard from '../common/GenericBoard';
+import { Building2, LayoutGrid, List as ListIcon } from 'lucide-react';
 
 const Contacts = () => {
   return (
@@ -23,6 +23,9 @@ const ContactsInner = ({ addToast }) => {
   const [selectedCompanyIdToLink, setSelectedCompanyIdToLink] = useState('');
   const [isLinking, setIsLinking] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'board'
+  const [pipelines, setPipelines] = useState([]);
+  const [activePipelineId, setActivePipelineId] = useState(null);
   
   // Modals & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,6 +37,7 @@ const ContactsInner = ({ addToast }) => {
     email: '',
     phone: '',
     status: 'active',
+    stage_id: null,
     properties: {},
     company_ids: []
   });
@@ -73,7 +77,6 @@ const ContactsInner = ({ addToast }) => {
       console.error(err);
     }
   };
-
   const fetchCompaniesList = async () => {
     try {
       const response = await fetchWithAuth('http://localhost:8000/companies/');
@@ -86,9 +89,25 @@ const ContactsInner = ({ addToast }) => {
     }
   };
 
+  const fetchPipelines = async () => {
+    try {
+      const response = await fetchWithAuth('http://localhost:8000/pipelines/');
+      if (response.ok) {
+        const data = await response.json();
+        const contactPipelines = data.filter(p => p.entity_type === 'contact');
+        setPipelines(contactPipelines);
+        if (contactPipelines.length > 0 && !activePipelineId) {
+          setActivePipelineId(contactPipelines[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao buscar pipelines:", err);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchContacts(), fetchProperties(), fetchCompaniesList()]);
+    await Promise.all([fetchContacts(), fetchProperties(), fetchCompaniesList(), fetchPipelines()]);
     setLoading(false);
   };
 
@@ -103,6 +122,7 @@ const ContactsInner = ({ addToast }) => {
       email: '', 
       phone: '', 
       status: 'active',
+      stage_id: activePipeline?.stages[0]?.id || null,
       properties: {},
       company_ids: []
     });
@@ -117,6 +137,7 @@ const ContactsInner = ({ addToast }) => {
       email: contact.email,
       phone: contact.phone || '',
       status: contact.status,
+      stage_id: contact.stage_id,
       properties: contact.properties || {},
       company_ids: (contact.companies || []).map(c => c.id)
     });
@@ -229,6 +250,27 @@ const ContactsInner = ({ addToast }) => {
     }
   };
 
+  const handleMoveContact = async (contactId, stageId) => {
+    try {
+      const response = await fetchWithAuth('http://localhost:8000/pipelines/move', {
+        method: 'POST',
+        body: JSON.stringify({
+          entity_type: 'contact',
+          entity_id: contactId,
+          stage_id: stageId
+        })
+      });
+      if (!response.ok) throw new Error('Falha ao mover contato');
+      
+      // Atualização otimista na UI
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, stage_id: stageId } : c));
+      addToast('Contato movido com sucesso');
+    } catch (err) {
+      addToast(err.message, 'error');
+      fetchContacts(); // Reverte em caso de erro
+    }
+  };
+
   const handlePropertyChange = (propName, value) => {
     setFormData(prev => ({
       ...prev,
@@ -255,6 +297,10 @@ const ContactsInner = ({ addToast }) => {
       (contact.companies && contact.companies.some(c => c.name.toLowerCase().includes(term)))
     );
   }, [contacts, searchTerm]);
+
+  const activePipeline = useMemo(() => {
+    return pipelines.find(p => p.id === activePipelineId);
+  }, [pipelines, activePipelineId]);
 
   // Agrupar propriedades dinâmicas
   const groupedProperties = propertyDefinitions.reduce((acc, prop) => {
@@ -292,75 +338,111 @@ const ContactsInner = ({ addToast }) => {
             <Filter size={16} />
             Filtros
           </button>
+          
+          <div className="view-toggle">
+             <button 
+               className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+               onClick={() => setViewMode('list')}
+               title="Ver em Lista"
+             >
+               <ListIcon size={16} />
+             </button>
+             <button 
+               className={`toggle-btn ${viewMode === 'board' ? 'active' : ''}`}
+               onClick={() => setViewMode('board')}
+               title="Ver em Quadro (Kanban)"
+             >
+               <LayoutGrid size={16} />
+             </button>
+          </div>
+
+          {viewMode === 'board' && pipelines.length > 1 && (
+            <select 
+              className="hs-select pipeline-select"
+              value={activePipelineId}
+              onChange={(e) => setActivePipelineId(parseInt(e.target.value))}
+            >
+              {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
         </div>
         <button className="hs-button-primary" onClick={handleOpenCreate}>
           + Criar Contato
         </button>
       </div>
 
-      <div className="table-wrapper">
-        <table className="hs-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Email Adicional</th>
-              <th>Status</th>
-              <th>Empresas Vinculadas</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredContacts.map((contact) => (
-              <tr key={contact.id}>
-                <td>
-                  <div className="contact-cell">
-                    <div className="avatar">{contact.name ? contact.name[0] : 'U'}</div>
-                    <div className="name-stack">
-                      <span className="main-name">{contact.name}</span>
-                      <span className="sub-email">{contact.email}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>{contact.properties?.email_profissional || contact.properties?.email_pessoal || '-'}</td>
-                <td>
-                  <span className={`status-badge ${contact.status.toLowerCase().replace(' ', '-')}`}>
-                    {contact.status === 'active' ? 'Ativo' : 
-                     contact.status === 'inactive' ? 'Inativo' : 
-                     contact.status === 'prospect' ? 'Em Prospecção' : contact.status}
-                  </span>
-                </td>
-                <td>
-                  {contact.companies && contact.companies.length > 0 ? (
-                    <ul className="linked-list-table">
-                      {contact.companies.map(c => <li key={c.id}>{c.name}</li>)}
-                    </ul>
-                  ) : '-'}
-                </td>
-                <td className="actions-cell">
-                  <div className="actions-menu-wrapper">
-                    <button 
-                      className="icon-button" 
-                      onClick={() => setActiveMenu(activeMenu === contact.id ? null : contact.id)}
-                    >
-                      < MoreHorizontal size={16} />
-                    </button>
-                    {activeMenu === contact.id && (
-                      <div className="dropdown-menu">
-                        <button onClick={() => handleOpenEdit(contact)}>
-                          <Edit size={14} /> Editar
-                        </button>
-                        <button onClick={() => handleOpenDelete(contact)} className="delete-btn">
-                          <Trash2 size={14} /> Excluir
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </td>
+      {viewMode === 'list' ? (
+        <div className="table-wrapper">
+          <table className="hs-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email Adicional</th>
+                <th>Status</th>
+                <th>Empresas Vinculadas</th>
+                <th>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredContacts.map((contact) => (
+                <tr key={contact.id}>
+                  <td>
+                    <div className="contact-cell">
+                      <div className="avatar">{contact.name ? contact.name[0] : 'U'}</div>
+                      <div className="name-stack">
+                        <span className="main-name">{contact.name}</span>
+                        <span className="sub-email">{contact.email}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{contact.properties?.email_profissional || contact.properties?.email_pessoal || '-'}</td>
+                  <td>
+                    <span className={`status-badge ${contact.status.toLowerCase().replace(' ', '-')}`}>
+                      {contact.status === 'active' ? 'Ativo' : 
+                       contact.status === 'inactive' ? 'Inativo' : 
+                       contact.status === 'prospect' ? 'Em Prospecção' : contact.status}
+                    </span>
+                  </td>
+                  <td>
+                    {contact.companies && contact.companies.length > 0 ? (
+                      <ul className="linked-list-table">
+                        {contact.companies.map(c => <li key={c.id}>{c.name}</li>)}
+                      </ul>
+                    ) : '-'}
+                  </td>
+                  <td className="actions-cell">
+                    <div className="actions-menu-wrapper">
+                      <button 
+                        className="icon-button" 
+                        onClick={() => setActiveMenu(activeMenu === contact.id ? null : contact.id)}
+                      >
+                        < MoreHorizontal size={16} />
+                      </button>
+                      {activeMenu === contact.id && (
+                        <div className="dropdown-menu">
+                          <button onClick={() => handleOpenEdit(contact)}>
+                            <Edit size={14} /> Editar
+                          </button>
+                          <button onClick={() => handleOpenDelete(contact)} className="delete-btn">
+                            <Trash2 size={14} /> Excluir
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <GenericBoard 
+          pipeline={activePipeline}
+          items={filteredContacts}
+          entityType="contact"
+          onMove={handleMoveContact}
+        />
+      )}
 
       {/* Modal de Criar/Editar */}
       <Modal 
@@ -412,6 +494,23 @@ const ContactsInner = ({ addToast }) => {
                     <option value="active">Ativo</option>
                     <option value="inactive">Inativo</option>
                     <option value="prospect">Em Prospecção</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="hs-label">Estágio na Pipeline</label>
+                  <select 
+                    className="hs-select"
+                    value={formData.stage_id || ''}
+                    onChange={e => setFormData({...formData, stage_id: e.target.value ? parseInt(e.target.value) : null})}
+                  >
+                    <option value="">Nenhum</option>
+                    {pipelines.map(p => (
+                      <optgroup key={p.id} label={p.name}>
+                        {p.stages.sort((a,b) => a.order - b.order).map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -728,6 +827,14 @@ const ContactsInner = ({ addToast }) => {
         .actions-cell { position: relative; }
         .icon-button { background: none; border: none; color: var(--hs-text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; }
         .icon-button:hover { background: #f5f8fa; }
+        
+        .view-toggle { display: flex; border: 1px solid var(--hs-border); border-radius: 4px; overflow: hidden; height: 38px; }
+        .toggle-btn { background: white; border: none; padding: 0 12px; cursor: pointer; color: var(--hs-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .toggle-btn:not(:last-child) { border-right: 1px solid var(--hs-border); }
+        .toggle-btn:hover { background: #f5f8fa; color: var(--hs-blue); }
+        .toggle-btn.active { background: #eaf0f6; color: var(--hs-blue); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .pipeline-select { height: 38px; min-width: 200px; font-size: 13px; border: 1px solid var(--hs-border); border-radius: 4px; padding: 0 12px; }
         
         /* Form Sections */
         .form-sections-container { display: flex; flex-direction: column; gap: 24px; padding-bottom: 20px; }

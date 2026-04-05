@@ -10,7 +10,8 @@ import {
   LogOut,
   User as UserIcon,
   HelpCircle,
-  Shield
+  Shield,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,11 +27,13 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
     { icon: <Building2 size={20} />, label: 'Empresas', id: 'companies' },
     { icon: <Handshake size={20} />, label: 'Negócios', id: 'deals' },
     { icon: <BarChart3 size={20} />, label: 'Relatórios', id: 'reports' },
-    { icon: <Settings size={20} />, label: 'Configurações', id: 'settings' },
+    { icon: <Settings size={20} />, label: 'Propriedades', id: 'settings' },
+    { icon: <Shield size={20} />, label: 'Pipelines', id: 'pipeline-settings' },
   ];
 
   if (user?.role === 'admin') {
     menuItems.push({ icon: <Shield size={20} />, label: 'Administração', id: 'admin' });
+    menuItems.push({ icon: <Globe size={20} />, label: 'Sistema', id: 'system-settings' });
   }
 
   return (

@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Users, Shield, Mail, Calendar, Hash, RefreshCw, AlertCircle, ExternalLink, UserCheck, UserX } from 'lucide-react';
+import { 
+    Users, 
+    Shield, 
+    Mail, 
+    RefreshCw, 
+    AlertCircle, 
+    ExternalLink, 
+    UserX, 
+    MoreHorizontal,
+    Search,
+    Filter,
+    Globe
+} from 'lucide-react';
 
 const AdminUsers = () => {
     const { fetchWithAuth } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeMenu, setActiveMenu] = useState(null);
 
     const fetchAllUsers = async () => {
         setLoading(true);
@@ -29,118 +43,467 @@ const AdminUsers = () => {
         fetchAllUsers();
     }, []);
 
+    const filteredUsers = users.filter(u => 
+        u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     if (loading) return (
-        <div className="flex flex-col items-center justify-center h-64">
-            <RefreshCw className="animate-spin text-blue-600 mb-4" size={32} />
-            <span className="text-gray-500 font-medium">Sincronizando base de usuários...</span>
+        <div className="loading-container">
+            <RefreshCw className="spinner" size={40} />
+            <p>Sincronizando base global de usuários...</p>
+            <style jsx>{`
+                .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: var(--hs-text-secondary); }
+                .spinner { animation: spin 1s linear infinite; color: var(--hs-blue); }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            `}</style>
         </div>
     );
 
     if (error) return (
-        <div className="p-12 text-center bg-red-50 rounded-xl border border-red-100 mx-8 mt-8">
-            <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Falha de Autorização</h3>
-            <p className="text-red-700 max-w-md mx-auto">{error}</p>
-            <button onClick={fetchAllUsers} className="mt-6 hs-button-secondary bg-white">Tentar Novamente</button>
+        <div className="error-container">
+            <AlertCircle size={48} />
+            <h3>Falha de Autorização</h3>
+            <p>{error}</p>
+            <button onClick={fetchAllUsers} className="hs-button-secondary">Tentar Novamente</button>
+            <style jsx>{`
+                .error-container { margin: 40px; padding: 40px; text-align: center; background: #fff1f0; border: 1px solid #ffa39e; border-radius: 8px; color: #cf1322; }
+                .error-container h3 { margin: 16px 0 8px; font-weight: 700; color: #2d3e50; }
+                .error-container p { margin-bottom: 24px; color: #516f90; }
+            `}</style>
         </div>
     );
 
     return (
-        <div className="p-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                            <Shield className="text-blue-600" size={24} />
+        <div className="admin-container animate-in">
+            <header className="page-header">
+                <div className="header-title">
+                    <div className="title-row">
+                        <div className="type-badge">
+                            <Globe size={14} />
+                            <span>Global</span>
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                            Administração Global
-                        </h1>
+                        <h1>Administração Global</h1>
                     </div>
-                    <p className="text-gray-500 text-sm">Controle de acesso e visibilidade total de usuários e tenants.</p>
+                    <p className="subtitle">Controle central de acesso e governança de tenants e usuários.</p>
                 </div>
-                
-                <div className="flex gap-3">
-                    <div className="bg-white px-5 py-3 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                            <Users size={20} className="text-blue-600" />
-                        </div>
-                        <div>
-                            <span className="block text-2xl font-bold text-gray-900 leading-none">{users.length}</span>
-                            <span className="text-[11px] uppercase tracking-wider font-bold text-gray-400">Total de Contas</span>
-                        </div>
+                <div className="header-stats">
+                    <div className="stat-card">
+                        <span className="stat-value">{users.length}</span>
+                        <span className="stat-label">Usuários Ativos</span>
                     </div>
                 </div>
+            </header>
+
+            <div className="table-actions">
+                <div className="search-bar">
+                    <Search size={16} />
+                    <input 
+                        type="text" 
+                        placeholder="Pesquisar por nome ou e-mail..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <button className="hs-button-secondary">
+                    <Filter size={16} />
+                    Filtros Avançados
+                </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-[var(--hs-shadow-md)] border border-[var(--hs-border-light)] overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-[var(--hs-bg-main)] border-b border-[var(--hs-border-light)]">
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">ID</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Usuário</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Permissão</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Time (Tenant)</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--hs-border-light)]">
-                            {users.map((u) => (
-                                <tr key={u.id} className="hover:bg-[var(--hs-sidebar-hover)] transition-all group">
-                                    <td className="px-6 py-5 text-sm text-gray-400 font-mono">
-                                        <span className="bg-gray-50 px-2 py-0.5 rounded">#{u.id}</span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                                                {u.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">{u.name}</span>
-                                                <span className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
-                                                    <Mail size={12} className="text-gray-400" /> {u.email}
-                                                </span>
-                                            </div>
+            <div className="table-wrapper">
+                <table className="hs-table">
+                    <thead>
+                        <tr>
+                            <th>IDENTIFICADOR</th>
+                            <th>USUÁRIO</th>
+                            <th>PERMISSÃO</th>
+                            <th>TIME (TENANT)</th>
+                            <th className="actions-header">AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredUsers.map((u) => (
+                            <tr key={u.id}>
+                                <td className="id-cell">
+                                    <code>#{u.id}</code>
+                                </td>
+                                <td>
+                                    <div className="user-cell">
+                                        <div className="user-avatar" style={{ background: u.role === 'admin' ? 'linear-gradient(135deg, #aa3bff, #7a1fff)' : 'linear-gradient(135deg, #0091ae, #007a90)' }}>
+                                            {u.name.charAt(0).toUpperCase()}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex">
-                                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                                u.role === 'admin' 
-                                                ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                                                : 'bg-blue-50 text-blue-600 border border-blue-100'
-                                            }`}>
-                                                {u.role}
-                                            </span>
+                                        <div className="user-info">
+                                            <span className="user-name">{u.name}</span>
+                                            <span className="user-email"><Mail size={12} /> {u.email}</span>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        {u.team_id ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                                                <span className="text-sm font-medium text-gray-700">Team #{u.team_id}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span className={`role-badge ${u.role}`}>
+                                        {u.role === 'admin' ? <Shield size={10} /> : null}
+                                        {u.role}
+                                    </span>
+                                </td>
+                                <td>
+                                    {u.team_id ? (
+                                        <div className="team-indicator">
+                                            <div className="pulse-dot"></div>
+                                            <span>Team #{u.team_id}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="no-team">Órfão (Sem time)</span>
+                                    )}
+                                </td>
+                                <td className="actions-cell">
+                                    <div className="actions-wrapper">
+                                        <button 
+                                            className="icon-button"
+                                            onClick={() => setActiveMenu(activeMenu === u.id ? null : u.id)}
+                                        >
+                                            <MoreHorizontal size={18} />
+                                        </button>
+                                        {activeMenu === u.id && (
+                                            <div className="dropdown-menu">
+                                                <button onClick={() => {}}>
+                                                    <ExternalLink size={14} /> Ver Detalhes
+                                                </button>
+                                                <button onClick={() => {}} className="danger">
+                                                    <UserX size={14} /> Desativar Conta
+                                                </button>
                                             </div>
-                                        ) : (
-                                            <span className="text-xs italic text-gray-400">Sem time</span>
                                         )}
-                                    </td>
-                                    <td className="px-6 py-5 text-right">
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-400 hover:text-blue-600 transition-all border border-transparent hover:border-gray-100" title="Ver Detalhes">
-                                                <ExternalLink size={16} />
-                                            </button>
-                                            <button className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-400 hover:text-red-600 transition-all border border-transparent hover:border-gray-100" title="Desativar">
-                                                <UserX size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
+
+            <style jsx>{`
+                .admin-container {
+                    padding: 32px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    width: 100%;
+                }
+
+                .animate-in {
+                    animation: fadeIn 0.4s ease-out;
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .page-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                }
+
+                .header-title h1 {
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: var(--hs-text-primary);
+                    margin: 0;
+                }
+
+                .title-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 4px;
+                }
+
+                .type-badge {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: var(--hs-blue);
+                    color: white;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 10px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+
+                .subtitle {
+                    color: var(--hs-text-secondary);
+                    font-size: 14px;
+                }
+
+                .stat-card {
+                    background: white;
+                    padding: 12px 24px;
+                    border-radius: var(--hs-radius-lg);
+                    border: 1px solid var(--hs-border-light);
+                    box-shadow: var(--hs-shadow-sm);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .stat-value {
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: var(--hs-blue);
+                    line-height: 1;
+                }
+
+                .stat-label {
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: var(--hs-text-secondary);
+                    text-transform: uppercase;
+                    margin-top: 4px;
+                }
+
+                .table-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                }
+
+                .search-bar {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    background: white;
+                    border: 1px solid var(--hs-border);
+                    border-radius: var(--hs-radius);
+                    padding: 0 16px;
+                    height: 40px;
+                    transition: border-color 0.2s;
+                }
+
+                .search-bar:focus-within {
+                    border-color: var(--hs-blue);
+                    box-shadow: 0 0 0 2px rgba(0, 145, 174, 0.1);
+                }
+
+                .search-bar input {
+                    border: none;
+                    outline: none;
+                    width: 100%;
+                    font-size: 14px;
+                    color: var(--hs-text-primary);
+                }
+
+                .table-wrapper {
+                    background: white;
+                    border: 1px solid var(--hs-border-light);
+                    border-radius: var(--hs-radius-lg);
+                    box-shadow: var(--hs-shadow-md);
+                    overflow: visible; /* Necessário para dropdowns */
+                }
+
+                .hs-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                .hs-table th {
+                    background: var(--hs-bg-main);
+                    padding: 14px 20px;
+                    text-align: left;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--hs-text-secondary);
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                    border-bottom: 1px solid var(--hs-border-light);
+                }
+
+                .hs-table td {
+                    padding: 16px 20px;
+                    border-bottom: 1px solid var(--hs-border-light);
+                    font-size: 14px;
+                }
+
+                .hs-table tr:hover {
+                    background: var(--hs-sidebar-hover);
+                }
+
+                .id-cell code {
+                    font-size: 12px;
+                    color: var(--hs-text-secondary);
+                    background: var(--hs-bg-main);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                }
+
+                .user-cell {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .user-avatar {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: 700;
+                    font-size: 14px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+                .user-info {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .user-name {
+                    font-weight: 600;
+                    color: var(--hs-text-primary);
+                }
+
+                .user-email {
+                    font-size: 12px;
+                    color: var(--hs-text-secondary);
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                .role-badge {
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .role-badge.admin {
+                    background: #f3e8ff;
+                    color: #7e22ce;
+                    border: 1px solid #e9d5ff;
+                }
+
+                .role-badge.user {
+                    background: #e0f2fe;
+                    color: #0369a1;
+                    border: 1px solid #bae6fd;
+                }
+
+                .team-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-weight: 500;
+                    color: var(--hs-text-primary);
+                }
+
+                .pulse-dot {
+                    width: 8px;
+                    height: 8px;
+                    background: var(--hs-blue);
+                    border-radius: 50%;
+                    box-shadow: 0 0 0 rgba(0, 145, 174, 0.4);
+                    animation: pulse 2s infinite;
+                }
+
+                @keyframes pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(0, 145, 174, 0.7); }
+                    70% { box-shadow: 0 0 0 6px rgba(0, 145, 174, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(0, 145, 174, 0); }
+                }
+
+                .no-team {
+                    font-size: 12px;
+                    font-style: italic;
+                    color: var(--hs-text-secondary);
+                }
+
+                .actions-header {
+                    text-align: right;
+                }
+
+                .actions-cell {
+                    text-align: right;
+                    position: relative;
+                }
+
+                .actions-wrapper {
+                    display: flex;
+                    justify-content: flex-end;
+                    position: relative;
+                }
+
+                .icon-button {
+                    background: none;
+                    border: none;
+                    padding: 6px;
+                    border-radius: 4px;
+                    color: var(--hs-text-secondary);
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+
+                .icon-button:hover {
+                    background: var(--hs-border-light);
+                    color: var(--hs-blue);
+                }
+
+                .dropdown-menu {
+                    position: absolute;
+                    top: 100%;
+                    right: 0;
+                    background: white;
+                    border: 1px solid var(--hs-border);
+                    border-radius: var(--hs-radius);
+                    box-shadow: var(--hs-shadow-lg);
+                    z-index: 100;
+                    width: 180px;
+                    padding: 4px;
+                    margin-top: 4px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+
+                .dropdown-menu button {
+                    background: none;
+                    border: none;
+                    padding: 10px 12px;
+                    text-align: left;
+                    font-size: 13px;
+                    color: var(--hs-text-primary);
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border-radius: 2px;
+                }
+
+                .dropdown-menu button:hover {
+                    background: var(--hs-bg-main);
+                    color: var(--hs-blue);
+                }
+
+                .dropdown-menu button.danger {
+                    color: #dc2626;
+                }
+
+                .dropdown-menu button.danger:hover {
+                    background: #fef2f2;
+                }
+            `}</style>
         </div>
     );
 };

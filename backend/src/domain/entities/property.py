@@ -7,6 +7,7 @@ class PropertyDefinition:
     name: str = ""          # slug: "personal_email"
     label: str = ""         # display: "E-mail Pessoal"
     type: str = "text"      # text, number, date, email, select
+    entity_type: str = "contact" # contact, company
     options: Optional[str] = None
     is_system: bool = False
     team_id: Optional[int] = None

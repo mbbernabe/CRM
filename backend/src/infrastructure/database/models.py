@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 class BaseModel(DeclarativeBase):
@@ -23,23 +23,28 @@ class UserModel(BaseModel):
     password = Column(String, nullable=False) # Armazenada em texto plano inicialmente (conforme plano)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     role = Column(String, default="user")
+    reset_password_token = Column(String, nullable=True, index=True)
+    reset_password_expires = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     team = relationship("TeamModel", back_populates="users")
 
 class PropertyGroupModel(BaseModel):
     __tablename__ = "property_groups"
+    __table_args__ = (UniqueConstraint('team_id', 'name', name='_team_group_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)
+    name = Column(String, nullable=False)
     order = Column(Integer, default=0)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
 
 class PropertyDefinitionModel(BaseModel):
     __tablename__ = "property_definitions"
+    __table_args__ = (UniqueConstraint('team_id', 'entity_type', 'name', name='_team_prop_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)  # slug: "personal_email"
+    entity_type = Column(String, index=True, nullable=False, default='contact')
+    name = Column(String, nullable=False)  # slug: "personal_email"
     label = Column(String, nullable=False)                          # display: "E-mail Pessoal"
     type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
     options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
@@ -74,12 +79,14 @@ class CompanyModel(BaseModel):
     name = Column(String, nullable=False)
     domain = Column(String, unique=True, index=True, nullable=True)
     status = Column(String, default="active")
+    stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True) # Pipeline Stage
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamento com propriedades customizadas e contatos vinculados
     property_values = relationship("CompanyPropertyValueModel", back_populates="company", cascade="all, delete-orphan")
     contacts = relationship("ContactModel", secondary="company_contact_links", back_populates="companies")
+    stage = relationship("PipelineStageModel")
 
 class CompanyPropertyValueModel(BaseModel):
     __tablename__ = "company_property_values"
@@ -100,12 +107,14 @@ class ContactModel(BaseModel):
     email = Column(String, unique=True, index=True)
     phone = Column(String, nullable=True)
     status = Column(String, default="active")
+    stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True) # Pipeline Stage
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamento com as propriedades customizadas e empresas vinculadas
     property_values = relationship("ContactPropertyValueModel", back_populates="contact", cascade="all, delete-orphan")
     companies = relationship("CompanyModel", secondary="company_contact_links", back_populates="contacts")
+    stage = relationship("PipelineStageModel")
 
 class ContactPropertyValueModel(BaseModel):
     __tablename__ = "contact_property_values"
@@ -117,3 +126,37 @@ class ContactPropertyValueModel(BaseModel):
 
     contact = relationship("ContactModel", back_populates="property_values")
     property_def = relationship("PropertyDefinitionModel")
+
+class PipelineModel(BaseModel):
+    __tablename__ = "pipelines"
+    __table_args__ = (UniqueConstraint('team_id', 'entity_type', 'name', name='_team_pipeline_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    entity_type = Column(String, nullable=False, default="contact") # contact, company, deal
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    stages = relationship("PipelineStageModel", back_populates="pipeline", order_by="PipelineStageModel.order", cascade="all, delete-orphan")
+
+class PipelineStageModel(BaseModel):
+    __tablename__ = "pipeline_stages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=False)
+    name = Column(String, nullable=False)
+    order = Column(Integer, default=0)
+    color = Column(String, default="#CBD5E0")
+    is_final = Column(Boolean, default=False)
+    metadata_json = Column(Text, nullable=True) # Configurações extras em JSON
+
+    pipeline = relationship("PipelineModel", back_populates="stages")
+
+class SystemSettingsModel(BaseModel):
+    __tablename__ = "system_settings"
+
+    key = Column(String, primary_key=True, index=True)
+    value = Column(Text, nullable=True)
+    description = Column(String, nullable=True)
+    is_encrypted = Column(Boolean, default=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

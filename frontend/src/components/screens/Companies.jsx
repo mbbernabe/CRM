@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import Modal from '../common/Modal';
 import { ToastProvider } from '../common/Toast';
+import GenericBoard from '../common/GenericBoard';
+import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight, LayoutGrid, List as ListIcon } from 'lucide-react';
 
 const Companies = () => {
   return (
@@ -22,6 +23,9 @@ const CompaniesInner = ({ addToast }) => {
   const [selectedContactIdToLink, setSelectedContactIdToLink] = useState('');
   const [isLinking, setIsLinking] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'board'
+  const [pipelines, setPipelines] = useState([]);
+  const [activePipelineId, setActivePipelineId] = useState(null);
   
   // Modals & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +36,7 @@ const CompaniesInner = ({ addToast }) => {
     name: '',
     domain: '',
     status: 'active',
+    stage_id: null,
     properties: {}
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -85,7 +90,7 @@ const CompaniesInner = ({ addToast }) => {
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchCompanies(), fetchProperties(), fetchContactsList()]);
+    await Promise.all([fetchCompanies(), fetchProperties(), fetchContactsList(), fetchPipelines()]);
     setLoading(false);
   };
 
@@ -99,6 +104,7 @@ const CompaniesInner = ({ addToast }) => {
       name: '', 
       domain: '', 
       status: 'active',
+      stage_id: activePipeline?.stages[0]?.id || null,
       properties: {} 
     });
     setSelectedCompany(null);
@@ -111,6 +117,7 @@ const CompaniesInner = ({ addToast }) => {
       name: company.name,
       domain: company.domain || '',
       status: company.status,
+      stage_id: company.stage_id,
       properties: company.properties || {}
     });
     setSelectedCompany(company);
@@ -214,6 +221,26 @@ const CompaniesInner = ({ addToast }) => {
     }
   };
 
+  const handleMoveCompany = async (companyId, stageId) => {
+    try {
+      const response = await fetchWithAuth('http://localhost:8000/pipelines/move', {
+        method: 'POST',
+        body: JSON.stringify({
+          entity_type: 'company',
+          entity_id: companyId,
+          stage_id: stageId
+        })
+      });
+      if (!response.ok) throw new Error('Falha ao mover empresa');
+      
+      setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, stage_id: stageId } : c));
+      addToast('Empresa movida com sucesso');
+    } catch (err) {
+      addToast(err.message, 'error');
+      fetchCompanies();
+    }
+  };
+
   const handlePropertyChange = (propName, value) => {
     setFormData(prev => ({
       ...prev,
@@ -239,6 +266,10 @@ const CompaniesInner = ({ addToast }) => {
       (company.contacts && company.contacts.some(c => c.name.toLowerCase().includes(term)))
     );
   }, [companies, searchTerm]);
+
+  const activePipeline = useMemo(() => {
+    return pipelines.find(p => p.id === activePipelineId);
+  }, [pipelines, activePipelineId]);
 
   // Agrupar propriedades dinâmicas
   const groupedProperties = propertyDefinitions.reduce((acc, prop) => {
@@ -276,84 +307,120 @@ const CompaniesInner = ({ addToast }) => {
             <Filter size={16} />
             Filtros
           </button>
+
+          <div className="view-toggle">
+             <button 
+               className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+               onClick={() => setViewMode('list')}
+               title="Ver em Lista"
+             >
+               <ListIcon size={16} />
+             </button>
+             <button 
+               className={`toggle-btn ${viewMode === 'board' ? 'active' : ''}`}
+               onClick={() => setViewMode('board')}
+               title="Ver em Quadro (Kanban)"
+             >
+               <LayoutGrid size={16} />
+             </button>
+          </div>
+
+          {viewMode === 'board' && pipelines.length > 1 && (
+            <select 
+              className="hs-select pipeline-select"
+              value={activePipelineId}
+              onChange={(e) => setActivePipelineId(parseInt(e.target.value))}
+            >
+              {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
         </div>
         <button className="hs-button-primary" onClick={handleOpenCreate}>
           + Criar Empresa
         </button>
       </div>
 
-      <div className="table-wrapper">
-        <table className="hs-table">
-          <thead>
-            <tr>
-              <th>Empresa / Domínio</th>
-              <th>Status</th>
-              <th>Setor</th>
-              <th>Contatos Vinculados</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCompanies.map((company) => (
-              <tr key={company.id}>
-                <td>
-                  <div className="company-cell">
-                    <div className="avatar">
-                      {company.domain 
-                        ? <img src={`https://logo.clearbit.com/${company.domain}`} alt="Logo" onError={(e)=>{e.target.onerror = null; e.target.style.display='none'; e.target.nextSibling.style.display='flex'}} style={{width: 32, height: 32, borderRadius: 4, objectFit: 'contain'}} />
-                        : null}
-                      <div className="fallback-avatar" style={{display: company.domain ? 'none' : 'flex'}}>
-                        <Building2 size={16} />
-                      </div>
-                    </div>
-                    <div className="name-stack">
-                      <span className="main-name">{company.name}</span>
-                      <span className="sub-domain">{company.domain || '-'}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className={`status-badge ${company.status.toLowerCase().replace(' ', '-')}`}>
-                    {company.status === 'active' ? 'Cliente' : 
-                     company.status === 'inactive' ? 'Inativo' : 
-                     company.status === 'prospect' ? 'Prospecção' : company.status}
-                  </span>
-                </td>
-                <td>
-                  {company.properties?.setor || company.properties?.industria || '-'}
-                </td>
-                <td>
-                  {company.contacts && company.contacts.length > 0 ? (
-                    <ul className="linked-list-table">
-                      {company.contacts.map(c => <li key={c.id}>{c.name}</li>)}
-                    </ul>
-                  ) : '-'}
-                </td>
-                <td className="actions-cell">
-                  <div className="actions-menu-wrapper">
-                    <button 
-                      className="icon-button" 
-                      onClick={() => setActiveMenu(activeMenu === company.id ? null : company.id)}
-                    >
-                      < MoreHorizontal size={16} />
-                    </button>
-                    {activeMenu === company.id && (
-                      <div className="dropdown-menu">
-                        <button onClick={() => handleOpenEdit(company)}>
-                          <Edit size={14} /> Editar
-                        </button>
-                        <button onClick={() => handleOpenDelete(company)} className="delete-btn">
-                          <Trash2 size={14} /> Excluir
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </td>
+      {viewMode === 'list' ? (
+        <div className="table-wrapper">
+          <table className="hs-table">
+            <thead>
+              <tr>
+                <th>Empresa / Domínio</th>
+                <th>Status</th>
+                <th>Setor</th>
+                <th>Contatos Vinculados</th>
+                <th>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredCompanies.map((company) => (
+                <tr key={company.id}>
+                  <td>
+                    <div className="company-cell">
+                      <div className="avatar">
+                        {company.domain 
+                          ? <img src={`https://logo.clearbit.com/${company.domain}`} alt="Logo" onError={(e)=>{e.target.onerror = null; e.target.style.display='none'; e.target.nextSibling.style.display='flex'}} style={{width: 32, height: 32, borderRadius: 4, objectFit: 'contain'}} />
+                          : null}
+                        <div className="fallback-avatar" style={{display: company.domain ? 'none' : 'flex'}}>
+                          <Building2 size={16} />
+                        </div>
+                      </div>
+                      <div className="name-stack">
+                        <span className="main-name">{company.name}</span>
+                        <span className="sub-domain">{company.domain || '-'}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${company.status.toLowerCase().replace(' ', '-')}`}>
+                      {company.status === 'active' ? 'Cliente' : 
+                       company.status === 'inactive' ? 'Inativo' : 
+                       company.status === 'prospect' ? 'Prospecção' : company.status}
+                    </span>
+                  </td>
+                  <td>
+                    {company.properties?.setor || company.properties?.industria || '-'}
+                  </td>
+                  <td>
+                    {company.contacts && company.contacts.length > 0 ? (
+                      <ul className="linked-list-table">
+                        {company.contacts.map(cont => <li key={cont.id}>{cont.name}</li>)}
+                      </ul>
+                    ) : '-'}
+                  </td>
+                  <td className="actions-cell">
+                    <div className="actions-menu-wrapper">
+                      <button 
+                        className="icon-button" 
+                        onClick={() => setActiveMenu(activeMenu === company.id ? null : company.id)}
+                      >
+                        < MoreHorizontal size={16} />
+                      </button>
+                      {activeMenu === company.id && (
+                        <div className="dropdown-menu">
+                          <button onClick={() => handleOpenEdit(company)}>
+                            <Edit size={14} /> Editar
+                          </button>
+                          <button onClick={() => handleOpenDelete(company)} className="delete-btn">
+                            <Trash2 size={14} /> Excluir
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <GenericBoard 
+          pipeline={activePipeline}
+          items={filteredCompanies}
+          entityType="company"
+          onMove={handleMoveCompany}
+        />
+      )}
 
       {/* Modal de Criar/Editar */}
       <Modal 
@@ -396,6 +463,23 @@ const CompaniesInner = ({ addToast }) => {
                     <option value="active">Cliente</option>
                     <option value="prospect">Prospecção</option>
                     <option value="inactive">Inativo</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="hs-label">Estágio na Pipeline</label>
+                  <select 
+                    className="hs-select"
+                    value={formData.stage_id || ''}
+                    onChange={e => setFormData({...formData, stage_id: e.target.value ? parseInt(e.target.value) : null})}
+                  >
+                    <option value="">Nenhum</option>
+                    {pipelines.map(p => (
+                      <optgroup key={p.id} label={p.name}>
+                        {p.stages.sort((a,b) => a.order - b.order).map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -653,6 +737,14 @@ const CompaniesInner = ({ addToast }) => {
         .actions-cell { position: relative; }
         .icon-button { background: none; border: none; color: var(--hs-text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; }
         .icon-button:hover { background: #f5f8fa; }
+        
+        .view-toggle { display: flex; border: 1px solid var(--hs-border); border-radius: 4px; overflow: hidden; height: 38px; }
+        .toggle-btn { background: white; border: none; padding: 0 12px; cursor: pointer; color: var(--hs-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .toggle-btn:not(:last-child) { border-right: 1px solid var(--hs-border); }
+        .toggle-btn:hover { background: #f5f8fa; color: var(--hs-blue); }
+        .toggle-btn.active { background: #eaf0f6; color: var(--hs-blue); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .pipeline-select { height: 38px; min-width: 200px; font-size: 13px; border: 1px solid var(--hs-border); border-radius: 4px; padding: 0 12px; }
         
         .form-sections-container { display: flex; flex-direction: column; gap: 24px; padding-bottom: 20px; }
         .form-section { border-bottom: 1px solid #eaf0f6; padding-bottom: 20px; }

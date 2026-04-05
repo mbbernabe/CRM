@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LogIn, AlertCircle } from 'lucide-react';
 
-const Login = ({ onSwitchToRegister }) => {
+const Login = ({ onSwitchToRegister, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,6 +15,15 @@ const Login = ({ onSwitchToRegister }) => {
       await login(email, password);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleQuickAccess = async () => {
+    setError('');
+    try {
+      await login('mbbernabe@gmail.com', 'mbb1223');
+    } catch (err) {
+      setError('Erro no Acesso Rápido: ' + err.message);
     }
   };
 
@@ -50,7 +59,10 @@ const Login = ({ onSwitchToRegister }) => {
           </div>
 
           <div className="form-group">
-            <label>Senha <span className="required-indicator">*</span></label>
+            <div className="label-row">
+                <label>Senha <span className="required-indicator">*</span></label>
+                <button type="button" onClick={onForgotPassword} className="hs-link-small">Esqueci minha senha</button>
+            </div>
             <input 
               type="password" 
               className="hs-input" 
@@ -64,6 +76,19 @@ const Login = ({ onSwitchToRegister }) => {
           <button type="submit" className="hs-button-primary auth-submit" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
+
+          <div className="dev-separator">
+            <span>OU</span>
+          </div>
+
+          <button 
+            type="button" 
+            className="hs-button-secondary dev-button" 
+            onClick={handleQuickAccess}
+            disabled={loading}
+          >
+            Acesso Rápido (SuperAdmin)
+          </button>
         </form>
 
         <div className="auth-footer">
@@ -73,11 +98,16 @@ const Login = ({ onSwitchToRegister }) => {
 
       <style jsx>{`
         .auth-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          min-height: 100vh;
           background: #f5f8fa;
+          z-index: 9999;
           padding: 20px;
         }
 
@@ -171,6 +201,67 @@ const Login = ({ onSwitchToRegister }) => {
 
         .hs-link:hover {
           color: #006b80;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .label-row label {
+            margin-bottom: 0 !important;
+        }
+
+        .hs-link-small {
+            background: none;
+            border: none;
+            color: #0091ae;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: none;
+        }
+
+        .hs-link-small:hover {
+            text-decoration: underline;
+        }
+
+        .dev-separator {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #cbd5e0;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .dev-separator::before, .dev-separator::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .dev-separator span {
+            padding: 0 10px;
+        }
+
+        .dev-button {
+            width: 100%;
+            height: 44px;
+            border: 1px dashed #0091ae;
+            color: #0091ae;
+            background: #f0f9ff;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .dev-button:hover {
+            background: #e0f2fe;
+            border-style: solid;
         }
       `}</style>
     </div>

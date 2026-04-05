@@ -22,7 +22,9 @@ const Register = ({ onSwitchToLogin }) => {
     try {
       await register(formData);
     } catch (err) {
-      setError(err.message);
+      console.error('Erro no registro:', err);
+      // Garante que o erro seja uma string para exibição na UI
+      setError(err.message || 'Erro de conexão com o servidor. Verifique se o backend está rodando.');
     }
   };
 
@@ -109,14 +111,7 @@ const Register = ({ onSwitchToLogin }) => {
       </div>
 
       <style jsx>{`
-        .auth-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          background: #f5f8fa;
-          padding: 40px 20px;
-        }
+        .auth-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f8fa; z-index: 9999; padding: 20px; }
 
         .auth-card {
           background: white;

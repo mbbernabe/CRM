@@ -6,6 +6,7 @@ from src.domain.repositories.team_repository import ITeamRepository
 from src.domain.repositories.property_repository import IPropertyRepository
 from src.application.use_cases.initialize_team_properties_use_case import InitializeTeamPropertiesUseCase
 from src.application.dtos.user_dto import UserCreateDTO, LoginRequestDTO
+from src.infrastructure.security.auth_utils import SecurityUtils
 
 class RegisterUserUseCase:
     def __init__(self, user_repo: IUserRepository, team_repo: ITeamRepository, property_repo: IPropertyRepository):
@@ -45,7 +46,7 @@ class RegisterUserUseCase:
         user = User(
             name=dto.name,
             email=dto.email,
-            password=dto.password, # Plain text por enquanto (conforme solicitado)
+            password=SecurityUtils.hash_password(dto.password),
             team_id=team_id,
             role=role
         )
@@ -57,6 +58,6 @@ class LoginUseCase:
 
     def execute(self, dto: LoginRequestDTO) -> User:
         user = self.user_repo.get_by_email(dto.email)
-        if not user or user.password != dto.password:
+        if not user or not SecurityUtils.verify_password(dto.password, user.password):
             raise ValueError("Credenciais inválidas")
         return user

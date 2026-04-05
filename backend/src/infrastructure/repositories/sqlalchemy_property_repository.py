@@ -30,6 +30,7 @@ class SqlAlchemyPropertyRepository(IPropertyRepository):
         return [
             PropertyDefinition(
                 id=p.id, name=p.name, label=p.label, type=p.type,
+                entity_type=p.entity_type,
                 options=p.options, is_system=p.is_system, team_id=p.team_id
             )
             for p in db_props
@@ -40,6 +41,7 @@ class SqlAlchemyPropertyRepository(IPropertyRepository):
             name=prop_def.name,
             label=prop_def.label,
             type=prop_def.type,
+            entity_type=prop_def.entity_type,
             options=prop_def.options,
             is_system=prop_def.is_system,
             team_id=team_id
@@ -59,6 +61,7 @@ class SqlAlchemyPropertyRepository(IPropertyRepository):
         if not p: return None
         return PropertyDefinition(
             id=p.id, name=p.name, label=p.label, type=p.type,
+            entity_type=p.entity_type,
             options=p.options, is_system=p.is_system, team_id=p.team_id
         )
 

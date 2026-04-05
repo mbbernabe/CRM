@@ -11,6 +11,10 @@ import AdminUsers from './components/screens/AdminUsers';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
+import SystemSettings from './components/screens/SystemSettings';
+import PipelineSettings from './components/screens/PipelineSettings';
 
 const PIPELINES = [
   {
@@ -69,16 +73,36 @@ function AppInner() {
   const [activePipelineId, setActivePipelineId] = useState('retail');
   const [deals, setDeals] = useState(INITIAL_DEALS);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetting, setIsResetting] = useState(() => {
+    return new URLSearchParams(window.location.search).has('token');
+  });
 
   if (loading) {
      return <div className="loading-screen">Carregando...</div>;
   }
 
+  if (isResetting) {
+    return <ResetPassword onBackToLogin={() => {
+      // Remover token da URL ao voltar
+      const url = new URL(window.location);
+      url.searchParams.delete('token');
+      window.history.replaceState({}, '', url);
+      setIsResetting(false);
+    }} />;
+  }
+
   if (!isAuthenticated) {
+    if (isForgotPassword) {
+      return <ForgotPassword onBackToLogin={() => setIsForgotPassword(false)} />;
+    }
     return isRegistering ? (
       <Register onSwitchToLogin={() => setIsRegistering(false)} />
     ) : (
-      <Login onSwitchToRegister={() => setIsRegistering(true)} />
+      <Login 
+        onSwitchToRegister={() => setIsRegistering(true)} 
+        onForgotPassword={() => setIsForgotPassword(true)}
+      />
     );
   }
 
@@ -126,6 +150,8 @@ function AppInner() {
       );
       case 'reports': return <Reports />;
       case 'settings': return <PropertySettings />;
+      case 'system-settings': return <SystemSettings />;
+      case 'pipeline-settings': return <PipelineSettings />;
       case 'admin': return <AdminUsers />;
       default: return <Dashboard />;
     }
@@ -143,6 +169,8 @@ function AppInner() {
               activeScreen === 'companies' ? 'Empresas' :
               activeScreen === 'reports' ? 'Relatórios' :
               activeScreen === 'settings' ? 'Configurações de Propriedades' : 
+              activeScreen === 'pipeline-settings' ? 'Configuração de Pipelines' : 
+              activeScreen === 'system-settings' ? 'Configurações Globais do Sistema' : 
               activeScreen === 'admin' ? 'Administração de Usuários' : 'CRM'
             }</h1>
             <div className="header-actions">

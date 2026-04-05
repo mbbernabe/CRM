@@ -5,6 +5,8 @@ from src.infrastructure.api.routes.properties import router as properties_router
 from src.infrastructure.api.routes.companies import router as companies_router
 from src.infrastructure.api.routes.auth import router as auth_router
 from src.infrastructure.api.routes.admin import router as admin_router
+from src.infrastructure.api.routes.admin_settings import router as admin_settings_router
+from src.infrastructure.api.routes.pipelines import router as pipelines_router
 from src.infrastructure.database.db import init_db
 
 app = FastAPI(title="CRM API", version="1.0.0")
@@ -12,8 +14,8 @@ app = FastAPI(title="CRM API", version="1.0.0")
 # Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir tudo durante desenvolvimento para evitar problemas com portas dinâmicas do Vite
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -27,6 +29,8 @@ app.include_router(properties_router)
 app.include_router(companies_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(admin_settings_router)
+app.include_router(pipelines_router)
 
 @app.get("/")
 def read_root():

@@ -13,6 +13,7 @@ Os testes devem ser organizados para espelhar a estrutura do código-fonte:
 - `tests/unit/domain/`: Testes para Entidades e Value Objects (foco em invariantes).
 - `tests/unit/application/`: Testes para Use Cases (foco em orquestração e fluxos).
 - `tests/unit/infrastructure/`: Testes para implementações específicas (foco em isolamento e mapeamento).
+- `scripts/testing/`: Scripts de geração de massa de dados (seeding), mocks complexos e stubs reutilizáveis para suporte a testes.
 
 ## 🛠️ Frameworks e Ferramentas
 - **Python**: Use `pytest` e `unittest.mock`.

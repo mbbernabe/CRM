@@ -20,6 +20,8 @@ class SqlAlchemyUserRepository(IUserRepository):
             password=model.password,
             team_id=model.team_id,
             role=model.role,
+            reset_password_token=model.reset_password_token,
+            reset_password_expires=model.reset_password_expires,
             created_at=model.created_at
         )
 
@@ -31,13 +33,17 @@ class SqlAlchemyUserRepository(IUserRepository):
                 model.email = user.email
                 model.password = user.password
                 model.team_id = user.team_id
+                model.reset_password_token = user.reset_password_token
+                model.reset_password_expires = user.reset_password_expires
         else:
             model = UserModel(
                 name=user.name,
                 email=user.email,
                 password=user.password,
                 team_id=user.team_id,
-                role=user.role
+                role=user.role,
+                reset_password_token=user.reset_password_token,
+                reset_password_expires=user.reset_password_expires
             )
             self.db.add(model)
         
@@ -53,7 +59,10 @@ class SqlAlchemyUserRepository(IUserRepository):
             User(
                 id=m.id, name=m.name, email=m.email, 
                 password=m.password, team_id=m.team_id, 
-                role=m.role, created_at=m.created_at
+                role=m.role, 
+                reset_password_token=m.reset_password_token,
+                reset_password_expires=m.reset_password_expires,
+                created_at=m.created_at
             ) for m in models
         ]
 

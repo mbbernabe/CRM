@@ -4,11 +4,11 @@
 Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organizarem suas atividades empresariais, gerenciando fluxos de clientes (CRM), marketing, produção e integração com plataformas externas.
 
 ### 1.1 Objetivos
-- [ ] **Multi-tenancy**: Isolamento completo de dados por organização.
-- [ ] **Flexibilidade Total**: Usuários definem suas próprias propriedades (campos customizados).
-- [ ] **Múltiplos Fluxos**: Suporte a várias pipelines configuráveis (Vendas, Marketing, Produção).
-- [ ] **Integrações Nativa**: Captura automática de leads via WhatsApp, IG, FB e E-mail.
-- [ ] **Segurança**: Autenticação moderna e segura (OAuth2/JWT).
+- [ ] **Workspaces (Multi-tenancy)**: Isolamento de dados por Área de Trabalho (Workspace).
+- [ ] **Estrutura Infinitamente Escalável**: Um Workspace pode conter diversos Times (Teams).
+- [ ] **Flexibilidade Total**: Usuários definem suas próprias propriedades por Workspace.
+- [ ] **Gestão de Convites**: Fluxo robusto para convidar membros para times específicos dentro de uma área.
+- [ ] **Segurança**: Autenticação moderna e segura (OAuth2/JWT) com isolamento estrito.
 
 ### 1.2 Público-Alvo (Personas)
 - **Empreendedor Individual**: Organização pessoal e automação de leads.
@@ -21,19 +21,23 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | ID | Descrição | Prioridade | Status |
 |----|-----------|------------|--------|
 | RF001 | **Propriedades Dinâmicas**: Gerenciamento de metadados (Seleção, Moeda, Múltiplas Linhas, etc). | **P0 (Crítica)** | Em Desenvolvimento |
-| RF002 | **Multi-tenancy (Isolamento)**: Adicionar `tenant_id` em todas as entidades. | **P0 (Crítica)** | Planejado |
-| RF003 | **Gestão de Times**: Criar múltiplos times por usuário e convidar novos membros. | **P1 (Alta)** | Em Definição |
-| RF004 | **Gestão de Pipelines**: Criar múltiplas pipelines com etapas customizáveis. | P1 (Alta) | Pendente |
-| RF005 | **Autenticação**: Login seguro e gestão de permissões de times. | P1 (Alta) | Pendente |
+| RF002 | **Isolamento por Workspace**: Adicionar `workspace_id` em todas as entidades globais do tenant. | **P0 (Crítica)** | Planejado |
+| RF003 | **Gestão de Áreas de Trabalho**: Criar, gerenciar e configurar Workspaces. | **P1 (Alta)** | Em Definição |
+| RF004 | **Gestão de Times (Teams)**: Criar múltiplos times dentro de um mesmo Workspace. | **P1 (Alta)** | Pendente |
+| RF005 | **Convites & Colaboração**: Enviar convites para usuários participarem de times específicos. | **P1 (Alta)** | Pendente |
+| RF006 | **Autenticação & Registro**: Registro de novo usuário associado a um novo Workspace nomeado. | **P1 (Alta)** | **Pendente** |
+| RF010 | **Visibilidade por Time**: Filtro automático de dados (Contatos, Empresas, Negócios) para que usuários vejam apenas o que foi atribuído aos seus times específicos. | **P1 (Alta)** | **Pendente** |
 | RF006 | **Captura de Leads**: API/Webhook para integração com WhatsApp/IG/FB. | P2 (Média) | Pendente |
 | RF007 | **Tipos Complexos & Máscaras**: CPF, CNPJ e Telefone com validação e formatação automática. | P1 (Alta) | Pendente |
 | RF008 | **Interdependência de Campos**: Autopreenchimento (CEP preenche endereço) e cálculos dinâmicos. | P2 (Média) | Pendente |
+| RF009 | **Recuperação de Senha**: Fluxo seguro de redefinição de senha via e-mail com tokens expiráveis. | **P1 (Alta)** | **Pendente** |
+| RF011 | **Pipelines Genéricas (Workflow)**: Motor de estados que permite que qualquer entidade (Contato, Empresa, Negócio, Ticket) percorra fluxos de status customizáveis. | **P1 (Alta)** | **Planejado** |
 
 ---
 
 ## 3. Requisitos Não Funcionais (RNF)
 - **Escalabilidade**: Arquitetura pronta para milhares de tenants.
-- **Segurança**: Criptografia de dados sensíveis e isolamento de banco (Row Level Security ou similar).
+- **Segurança**: Criptografia de dados sensíveis e isolamento estrito: `Workspace` isola a base e `Team` isola a visibilidade dos registros.
 - **Usabilidade**: Interface intuitiva para configuração de fluxos complexos.
 
 ---
@@ -47,8 +51,8 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 ---
 
 ## 5. User Stories (Exemplos Iniciais)
-- **Como** gestor, **eu quero** criar uma propriedade "Data de Renovação" nos meus contatos **para que** eu possa filtrar clientes próximos ao vencimento.
-- **Como** vendedor, **eu quero** que leads vindos do WhatsApp caiam na pipeline "Entrada" automaticamente **para que** eu não perca tempo em cadastros manuais.
+- **Como** um novo usuário, **eu quero** criar um Workspace "Minha Agência" ao me cadastrar **para que** eu possa organizar meus diversos times de "Vendas" e "Sucesso" no mesmo lugar.
+- **Como** administrador de Workspace, **eu quero** convidar membros para times específicos **para que** o acesso aos dados seja restrito conforme a função de cada um.
 - **Como** atendente, **eu quero** que ao digitar o CEP, os campos de endereço sejam preenchidos **para que** eu minimize o erro humano e agilize o atendimento.
 
 ---

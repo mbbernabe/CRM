@@ -9,10 +9,11 @@ description: Especialista em levantamento de requisitos, criação de PRD, manut
 Atuar como a ponte entre as necessidades do usuário e a implementação técnica. Esta skill garante que o software construído resolva problemas reais, tenha requisitos claros e documentação sempre atualizada.
 
 ## 🏗️ Responsabilidades Principais
-1. **Documentação de Requisitos**: Transformar conversas informais em requisitos estruturados (Funcionais e Não Funcionais).
-2. **Manutenção do PRD**: Manter o `docs/requirements/PRD.md` sincronizado com a evolução do projeto.
-3. **Brainstorming & Ideação**: Sugerir melhorias, novas funcionalidades e validar ideias no `docs/requirements/requirements_backlog.md`.
 4. **Análise de Impacto**: Avaliar como novas mudanças afetam os requisitos existentes.
+
+## 🏗️ Estrutura de Diretórios Recomendada
+- `docs/requirements/`: Local central para PRD e Backlog.
+- `scripts/diagnostics/`: Scripts de exploração de dados e auditoria para levantamento de requisitos técnicos.
 
 ## 🛠️ Protocolos de Trabalho
 

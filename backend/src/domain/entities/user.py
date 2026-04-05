@@ -16,6 +16,8 @@ class User:
     password: str = ""
     team_id: Optional[int] = None
     role: str = "user"
+    reset_password_token: Optional[str] = None
+    reset_password_expires: Optional[datetime] = None
     created_at: datetime = datetime.utcnow()
     
     # Relacionamento carreado (opcional)

@@ -8,6 +8,7 @@ class Company:
     name: str = ""
     domain: Optional[str] = None
     status: str = "active"
+    stage_id: Optional[int] = None
     team_id: Optional[int] = None
     properties: Dict[str, Any] = field(default_factory=dict)
     contacts: List[Dict[str, Any]] = field(default_factory=list)

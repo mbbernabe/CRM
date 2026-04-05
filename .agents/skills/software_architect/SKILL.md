@@ -13,6 +13,7 @@ Todo código gerado deve respeitar a seguinte hierarquia:
 - `src/domain/`: Entidades puras e Interfaces (Protocols/Abstract Classes).
 - `src/application/`: Casos de Uso (Use Cases) e DTOs.
 - `src/infrastructure/`: Implementações de Repositórios (SQLAlchemy), API (FastAPI) e Migrations (Alembic).
+- `scripts/`: Scripts auxiliares, ferramentas de diagnóstico e scripts de massa de dados (seeding), organizados por contexto (ex: `scripts/auth/`, `scripts/database/`).
 
 ## 🛠️ Regras Técnicas de Implementação
 

@@ -18,7 +18,13 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password })
       });
       
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Falha ao processar resposta do servidor. Verifique se o backend está ativo.');
+      }
+      
       if (!res.ok) throw new Error(data.detail || 'Erro ao fazer login');
       
       setUser(data.user);
@@ -38,12 +44,50 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify(userData)
       });
       
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Falha no cadastro: Servidor indisponível ou erro inesperado.');
+      }
+      
       if (!res.ok) throw new Error(data.detail || 'Erro ao registrar');
       
       setUser(data.user);
       localStorage.setItem('crm_user', JSON.stringify(data.user));
       return data.user;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erro ao processar solicitação');
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (token, new_password) => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erro ao redefinir senha');
+      return data;
     } finally {
       setLoading(false);
     }
@@ -75,6 +119,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ 
         user, login, register, logout, loading, 
+        forgotPassword, resetPassword,
         isAuthenticated: !!user,
         fetchWithAuth
     }}>
