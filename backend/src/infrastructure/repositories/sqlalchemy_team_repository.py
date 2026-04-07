@@ -41,3 +41,11 @@ class SqlAlchemyTeamRepository(ITeamRepository):
             return self.get_by_id(team_id)
         except ValueError:
             return None
+
+    def delete(self, team_id: int) -> bool:
+        model = self.db.query(TeamModel).filter(TeamModel.id == team_id).first()
+        if model:
+            self.db.delete(model)
+            self.db.commit()
+            return True
+        return False

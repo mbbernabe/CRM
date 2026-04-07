@@ -16,16 +16,22 @@
 - [x] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro).
 - [x] **Associação de Usuário**: Usuários podem ser membros de múltiplos Workspaces e múltiplos Times.
 - [x] **Isolamento de Dados**: `Workspace` isola a base global e `Team` isola a visibilidade (Usuários veem apenas o que o Time possui).
-- [ ] **Sistema de Convites**: Fluxo para convidar usuários para o Workspace e dar acesso a times específicos.
+- [x] **Sistema de Convites**: Fluxo para convidar usuários para o Workspace e dar acesso a times específicos.
 - [ ] **Validação & Máscaras**: Tipos específicos para CPF, CNPJ, Telefone e E-mail com validação e formatação automática.
 - [ ] **Lógica Inter-propriedades**: Autopreenchimento (ex: CEP preenche Logradouro/Cidade/UF) e cálculos entre campos.
 - [ ] **Recuperação de Senha (RF009)**: Link "Esqueci minha senha", envio de e-mail com token temporário e tela de definição de nova senha.
 - [ ] **Responsividade Premium**: Implementar e validar adaptabilidade em todas as telas existentes e futuras (Mobile/Tablet/Desktop).
 
 ## 📋 Gestão de WorkItems & Atividades
-- [ ] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído.
-- [ ] **Histórico de Ações**: Todas as ações em um WorkItem devem ser registradas em atividades.
-- [ ] **Observações/Notas**: O usuário poderá criar observações que também serão registradas em atividades no WorkItem.
+- [x] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído.
+- [x] **Histórico de Ações**: Todas as ações em um WorkItem devem ser registradas em atividades.
+- [x] **Observações/Notas**: O usuário poderá criar observações que também serão registradas em atividades no WorkItem.
+- [ ] **Vinculação entre WorkItems (RF021)**: Um WorkItem pode ser vinculado a um ou mais outros WorkItems.
+  - Na visualização do WorkItem, os vínculos devem ser exibidos em uma seção dedicada, **agrupados por tipo** (ex: "🧑 Contatos (2)", "💼 Negócios (1)", "🎫 Tickets (3)").
+  - O usuário pode pesquisar e adicionar vínculos através de um seletor com busca por nome/título.
+  - O usuário pode remover vínculos existentes individualmente.
+  - A relação é **bidirecional**: ao vincular A→B, B exibe A automaticamente em sua lista de vínculos.
+  - Todo vínculo é isolado por `workspace_id` e registrado no histórico de atividades do WorkItem.
 
 ## 💲 Gestão de Planos & Assinaturas (SaaS)
 - [ ] **Criação de Planos (Super Admin)**: O Super Administrador poderá criar planos de assinatura personalizados aplicáveis às Áreas de Trabalho.

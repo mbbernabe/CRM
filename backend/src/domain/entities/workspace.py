@@ -10,4 +10,5 @@ class Workspace:
     logo_url: Optional[str] = None
     primary_color: str = "#0091ae"
     accent_color: str = "#ff7a59"
+    invitation_expiry_days: int = 7
     created_at: datetime = datetime.utcnow()

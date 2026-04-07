@@ -19,6 +19,8 @@ import WorkspaceSettings from './components/screens/WorkspaceSettings';
 import PipelineBoardScreen from './components/screens/PipelineBoardScreen';
 import PipelineSettings from './components/screens/PipelineSettings';
 import WorkItemTypeSettings from './components/screens/WorkItemTypeSettings';
+import AcceptInvite from './components/auth/AcceptInvite';
+import WorkspaceMembers from './components/screens/WorkspaceMembers';
 
 
 const PIPELINES = [
@@ -81,11 +83,18 @@ function AppInner() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetting, setIsResetting] = useState(() => {
-    return new URLSearchParams(window.location.search).has('token');
+    return new URLSearchParams(window.location.search).has('token') && window.location.pathname.includes('reset');
+  });
+  const [isAcceptingInvite, setIsAcceptingInvite] = useState(() => {
+    return window.location.pathname.includes('accept-invite');
   });
 
   if (loading) {
      return <div className="loading-screen">Carregando...</div>;
+  }
+
+  if (isAcceptingInvite) {
+    return <AcceptInvite />;
   }
 
   if (isResetting) {
@@ -149,6 +158,7 @@ function AppInner() {
       case 'pipeline-board': return 'Quadro de Pipelines';
       case 'admin': return 'Administração';
       case 'object-types': return 'Tipos de Objetos';
+      case 'workspace-members': return 'Membros & Convites';
       default: return 'CRM';
     }
   };
@@ -182,6 +192,7 @@ function AppInner() {
       case 'pipeline-board': return <PipelineBoardScreen />;
       case 'admin': return <AdminUsers />;
       case 'object-types': return <WorkItemTypeSettings />;
+      case 'workspace-members': return <WorkspaceMembers />;
       default: return <Dashboard />;
     }
   };

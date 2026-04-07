@@ -32,5 +32,7 @@ class UpdateWorkspaceUseCase:
             workspace.primary_color = data.primary_color
         if data.accent_color is not None:
             workspace.accent_color = data.accent_color
+        if data.invitation_expiry_days is not None:
+            workspace.invitation_expiry_days = data.invitation_expiry_days
             
         return self.workspace_repo.save(workspace)

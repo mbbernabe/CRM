@@ -54,6 +54,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
   if (isPowerUser) {
     configGroup.children = configGroup.children.filter(c => c.id !== 'workspace-settings');
     configGroup.children.push({ label: 'Área de Trabalho', id: 'workspace-settings' });
+    configGroup.children.push({ label: 'Membros & Convites', id: 'workspace-members' });
     
     if (user?.role === 'superadmin') {
       configGroup.children = configGroup.children.filter(c => c.id !== 'system-settings');

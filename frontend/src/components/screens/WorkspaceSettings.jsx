@@ -9,7 +9,8 @@ import {
     CheckCircle2, 
     AlertCircle,
     Building2,
-    RotateCcw
+    RotateCcw,
+    Shield
 } from 'lucide-react';
 import './WorkspaceSettings.css';
 
@@ -24,7 +25,8 @@ const WorkspaceSettings = () => {
         description: '',
         logo_url: '',
         primary_color: '#0091ae',
-        accent_color: '#ff7a59'
+        accent_color: '#ff7a59',
+        invitation_expiry_days: 7
     });
 
     useEffect(() => {
@@ -34,7 +36,8 @@ const WorkspaceSettings = () => {
                 description: workspace.description || '',
                 logo_url: workspace.logo_url || '',
                 primary_color: workspace.primary_color || '#0091ae',
-                accent_color: workspace.accent_color || '#ff7a59'
+                accent_color: workspace.accent_color || '#ff7a59',
+                invitation_expiry_days: workspace.invitation_expiry_days || 7
             });
         }
     }, [workspace]);
@@ -205,6 +208,28 @@ const WorkspaceSettings = () => {
                                     <code>{formData.accent_color}</code>
                                 </div>
                             </div>
+                        </div>
+                    </section>
+
+                    <section className="form-section">
+                        <div className="section-title">
+                            <Shield size={18} />
+                            <h3>Segurança & Convites</h3>
+                        </div>
+                        <div className="hs-form-group">
+                            <label className="hs-label">Validade dos Convites (dias)</label>
+                            <input
+                                type="number"
+                                className="hs-input"
+                                min="1"
+                                max="90"
+                                value={formData.invitation_expiry_days}
+                                onChange={(e) => setFormData({...formData, invitation_expiry_days: Number(e.target.value)})}
+                                style={{ maxWidth: '180px' }}
+                            />
+                            <p className="input-hint">
+                                Por padrão os convites expiram em 7 dias. Você pode configurar entre 1 e 90 dias.
+                            </p>
                         </div>
                     </section>
 

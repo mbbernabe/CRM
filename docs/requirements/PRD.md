@@ -39,6 +39,7 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF017 | **Configuração de SMTP (Workspace)**: Cada Área de Trabalho deve possuir sua própria configuração de SMTP para envio de e-mails, gerenciável exclusivamente pelo Administrador da área. | **P1 (Alta)** | **Pendente** |
 | RF019 | **API Pública (Leads Inbound)**: Criação de API configurável e segura para receber leads gerados por fontes e aplicações de terceiros (ex: formulário de website) injetando-os direto no CRM. | **P1 (Alta)** | **Pendente** |
 | RF020 | **Gestão de Planos (SaaS)**: O Super Administrador poderá criar e gerenciar planos de assinatura, definindo limites de recursos, preços e permissões atrelados a cada plano da Área de Trabalho. | **P1 (Alta)** | **Pendente** |
+| RF021 | **Vinculação entre WorkItems**: Um WorkItem pode ser vinculado a um ou mais outros WorkItems. Na visualização, os vínculos são exibidos agrupados por tipo de WorkItem (ex: Contatos, Negócios, Tickets). A relação é bidirecional e isolada por `workspace_id`. | **P1 (Alta)** | **Pendente** |
 
 ---
 
@@ -69,6 +70,7 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 - **Como** Administrador de Workspace, **eu quero** configurar os dados de servidor SMTP de minha empresa **para que** os e-mails enviados pelo sistema em nome do meu time utilizem o meu próprio domínio e servidor de forma segura.
 - **Como** gerente de marketing, **eu quero** disponibilizar um endpoint de API do meu CRM para o meu website **para que** os formulários preenchidos caiam diretamente no funil de vendas, sem entrada manual.
 - **Como** Super Administrador (Vendor) da plataforma, **eu quero** ser capaz de criar planos de assinatura parametrizados (ex: preços, limite de licenças e acesso a módulos) **para que** eu consiga gerenciar e monetizar a base de clientes do SaaS sob diferentes esteiras de oferta.
+- **Como** membro de um time, **eu quero** vincular um WorkItem a outros WorkItems relacionados **para que** eu possa enxergar, em um único painel organizado por tipo, todas as relações do objeto — como um Ticket originado de um Contato ou um Negócio ligado a uma Empresa.
 
 ---
 

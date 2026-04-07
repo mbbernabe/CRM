@@ -15,9 +15,11 @@ class WorkspaceModel(BaseModel):
     primary_color = Column(String, default="#0091ae") # HubSpot Blue
     accent_color = Column(String, default="#ff7a59")  # HubSpot Orange
     created_at = Column(DateTime, default=datetime.utcnow)
+    invitation_expiry_days = Column(Integer, default=7)
 
     teams = relationship("TeamModel", back_populates="workspace")
     users = relationship("UserModel", back_populates="workspace")
+    invitations = relationship("WorkspaceInvitationModel", back_populates="workspace")
 
 class TeamModel(BaseModel):
     __tablename__ = "teams"
@@ -239,6 +241,24 @@ class WorkItemHistoryModel(BaseModel):
     changed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
     notes = Column(Text, nullable=True)
+
+class WorkspaceInvitationModel(BaseModel):
+    __tablename__ = "workspace_invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, index=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    role = Column(String, default="user")
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    invited_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    expires_at = Column(DateTime, nullable=False)
+    accepted_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    workspace = relationship("WorkspaceModel", back_populates="invitations")
+    inviter = relationship("UserModel", foreign_keys=[invited_by])
+    team = relationship("TeamModel")
 
 class SystemSettingsModel(BaseModel):
     __tablename__ = "system_settings"

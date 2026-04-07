@@ -90,3 +90,60 @@ class EmailService:
         except Exception as e:
             log_exception(logger, e, f"send_reset_password_email ({self.security})")
             return False
+
+    def send_invitation_email(self, to_email: str, invite_link: str, workspace_name: str, inviter_name: str) -> bool:
+        if not self.host or not self.user or not self.password:
+            logger.warning("Configurações de SMTP incompletas para envio de convite.")
+            return False
+
+        subject = f"Você foi convidado para {workspace_name} — CRM"
+        body = f"""
+        <html>
+            <body style="font-family: sans-serif; color: #2d3e50; line-height: 1.6;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaf0f6; border-radius: 8px;">
+                    <h2 style="color: #0091ae; margin-top: 0;">Você foi convidado! 🎉</h2>
+                    <p>Olá,</p>
+                    <p><strong>{inviter_name}</strong> convidou você para fazer parte da área de trabalho <strong>{workspace_name}</strong> no sistema CRM.</p>
+                    <p>Clique no botão abaixo para aceitar o convite e definir sua senha (este link é válido por alguns dias):</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{invite_link}" style="background-color: #ff7a59; color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 16px;">
+                            Aceitar Convite
+                        </a>
+                    </div>
+                    <p style="font-size: 13px; color: #516f90;">Se o botão acima não funcionar, copie e cole o link a seguir no seu navegador:</p>
+                    <p style="font-size: 11px; word-break: break-all; color: #809fb8;">{invite_link}</p>
+                    <hr style="border: 0; border-top: 1px solid #eaf0f6; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #809fb8;">Se você não esperava este convite, pode ignorar este e-mail com segurança.</p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = self.from_email or self.user
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "html"))
+
+        try:
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+
+            if self.security == "SSL":
+                with smtplib.SMTP_SSL(self.host, self.port, context=context, timeout=self.timeout) as server:
+                    server.login(self.user, self.password)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
+                    if self.security == "STARTTLS":
+                        server.starttls(context=context)
+                    if self.user and self.password:
+                        server.login(self.user, self.password)
+                    server.send_message(msg)
+
+            logger.info(f"E-mail de convite enviado com sucesso para {to_email}")
+            return True
+        except Exception as e:
+            log_exception(logger, e, f"send_invitation_email ({self.security})")
+            return False

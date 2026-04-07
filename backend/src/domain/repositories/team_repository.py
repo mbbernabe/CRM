@@ -13,3 +13,6 @@ class ITeamRepository(Protocol):
         
     def get_by_invite_code(self, code: str) -> Optional[Team]:
         ...
+
+    def delete(self, team_id: int) -> bool:
+        ...

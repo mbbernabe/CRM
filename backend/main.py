@@ -9,6 +9,8 @@ from src.infrastructure.api.routes.admin_settings import router as admin_setting
 from src.infrastructure.api.routes.pipelines import router as pipelines_router
 from src.infrastructure.api.routes.workspaces import router as workspaces_router
 from src.infrastructure.api.routes.work_item_routes import router as work_items_router
+from src.infrastructure.api.routes.invitations import router as invitations_router
+from src.infrastructure.api.routes.teams import router as teams_router
 from src.infrastructure.database.db import init_db
 
 app = FastAPI(title="CRM API", version="1.0.0")
@@ -35,6 +37,8 @@ app.include_router(admin_settings_router)
 app.include_router(pipelines_router)
 app.include_router(workspaces_router)
 app.include_router(work_items_router)
+app.include_router(invitations_router)
+app.include_router(teams_router)
 
 @app.get("/")
 def read_root():
