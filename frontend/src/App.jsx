@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import './App.css';
 import KanbanBoard from './components/KanbanBoard';
 import Dashboard from './components/screens/Dashboard';
 import Contacts from './components/screens/Contacts';
@@ -14,8 +15,10 @@ import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import SystemSettings from './components/screens/SystemSettings';
-import PipelineSettings from './components/screens/PipelineSettings';
 import WorkspaceSettings from './components/screens/WorkspaceSettings';
+import PipelineBoardScreen from './components/screens/PipelineBoardScreen';
+import PipelineSettings from './components/screens/PipelineSettings';
+import WorkItemTypeSettings from './components/screens/WorkItemTypeSettings';
 
 
 const PIPELINES = [
@@ -72,6 +75,7 @@ function App() {
 function AppInner() {
   const { isAuthenticated, loading } = useAuth();
   const [activeScreen, setActiveScreen] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activePipelineId, setActivePipelineId] = useState('retail');
   const [deals, setDeals] = useState(INITIAL_DEALS);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -131,6 +135,24 @@ function AppInner() {
     }
   };
 
+  const getScreenTitle = () => {
+    switch (activeScreen) {
+      case 'dashboard': return 'Dashboard';
+      case 'contacts': return 'Contatos';
+      case 'companies': return 'Empresas';
+      case 'deals': return 'Negócios';
+      case 'reports': return 'Relatórios';
+      case 'settings': return 'Configurações de Propriedades';
+      case 'pipeline-settings': return 'Configuração de Pipelines';
+      case 'workspace-settings': return 'Personalização';
+      case 'system-settings': return 'Configurações Globais';
+      case 'pipeline-board': return 'Quadro de Pipelines';
+      case 'admin': return 'Administração';
+      case 'object-types': return 'Tipos de Objetos';
+      default: return 'CRM';
+    }
+  };
+
   const renderScreen = () => {
     switch (activeScreen) {
       case 'dashboard': return <Dashboard />;
@@ -138,11 +160,13 @@ function AppInner() {
       case 'companies': return <Companies />;
       case 'deals': return (
         <>
-          <Header 
-            pipelines={PIPELINES} 
-            activePipeline={activePipeline} 
-            onPipelineChange={setActivePipelineId} 
-          />
+          <div className="hide-on-mobile">
+            <Header 
+              pipelines={PIPELINES} 
+              activePipeline={activePipeline} 
+              onPipelineChange={setActivePipelineId} 
+            />
+          </div>
           <KanbanBoard 
             pipeline={activePipeline} 
             deals={deals.filter(d => d.pipeline === activePipelineId)} 
@@ -155,73 +179,51 @@ function AppInner() {
       case 'system-settings': return <SystemSettings />;
       case 'pipeline-settings': return <PipelineSettings />;
       case 'workspace-settings': return <WorkspaceSettings />;
+      case 'pipeline-board': return <PipelineBoardScreen />;
       case 'admin': return <AdminUsers />;
+      case 'object-types': return <WorkItemTypeSettings />;
       default: return <Dashboard />;
     }
   };
 
   return (
     <div className="app-layout">
-      <Sidebar activeScreen={activeScreen} onNavigate={setActiveScreen} />
-      <div className="content-area">
-        {activeScreen !== 'deals' && (
-          <header className="simple-header">
-            <h1>{
-              activeScreen === 'dashboard' ? 'Dashboard' :
-              activeScreen === 'contacts' ? 'Contatos' :
-              activeScreen === 'companies' ? 'Empresas' :
-              activeScreen === 'reports' ? 'Relatórios' :
-              activeScreen === 'settings' ? 'Configurações de Propriedades' : 
-              activeScreen === 'pipeline-settings' ? 'Configuração de Pipelines' : 
-              activeScreen === 'workspace-settings' ? 'Personalização da Área de Trabalho' : 
-              activeScreen === 'system-settings' ? 'Configurações Globais do Sistema' : 
-              activeScreen === 'admin' ? 'Administração de Usuários' : 'CRM'
-            }</h1>
-            <div className="header-actions">
-               {/* Add common actions here if needed */}
-            </div>
-          </header>
-        )}
-        {renderScreen()}
+      {isSidebarOpen && (
+        <div className="sidebar-overlay show-on-mobile" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      <Sidebar 
+        activeScreen={activeScreen} 
+        onNavigate={(screen) => {
+          setActiveScreen(screen);
+          setIsSidebarOpen(false);
+        }} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      <div className="main-wrapper">
+        {/* Mobile Header (Fixed) */}
+        <div className="mobile-header show-on-mobile">
+          <button className="menu-toggle" onClick={() => setIsSidebarOpen(true)}>
+            <span className="hamburger"></span>
+          </button>
+          <span className="mobile-title">{getScreenTitle()}</span>
+        </div>
+
+        <div className="content-area">
+          {activeScreen !== 'deals' && (
+            <header className="simple-header hide-on-mobile">
+              <h1>{getScreenTitle()}</h1>
+              <div className="header-actions">
+              </div>
+            </header>
+          )}
+          {renderScreen()}
+        </div>
       </div>
 
-      <style jsx>{`
-        .loading-screen {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          font-size: 18px;
-          color: var(--hs-text-secondary);
-        }
-        .app-layout {
-          display: flex;
-          width: 100%;
-          height: 100vh;
-          overflow: hidden;
-        }
-        .content-area {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        .simple-header {
-          height: var(--header-height);
-          background: var(--hs-white);
-          border-bottom: 1px solid var(--hs-border);
-          display: flex;
-          align-items: center;
-          padding: 0 24px;
-          flex-shrink: 0;
-        }
-        .simple-header h1 {
-          font-size: 20px;
-          font-weight: 700;
-          color: var(--hs-text-primary);
-        }
-      `}</style>
-    </div>
+      </div>
   );
 }
 

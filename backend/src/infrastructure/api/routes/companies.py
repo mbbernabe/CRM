@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from src.infrastructure.database.db import get_db
 from src.infrastructure.repositories.sqlalchemy_company_repository import SqlAlchemyCompanyRepository
@@ -35,8 +35,7 @@ class CompanyResponse(BaseModel):
     properties: dict
     contacts: list = Field(default_factory=list)
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 from src.infrastructure.api.dependencies import get_workspace_id, get_team_id_optional
 

@@ -3,7 +3,21 @@ import { useAuth } from '../../context/AuthContext';
 import Modal from '../common/Modal';
 import { ToastProvider } from '../common/Toast';
 import GenericBoard from '../common/GenericBoard';
-import { Building2, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { 
+  Building2, 
+  LayoutGrid, 
+  List as ListIcon, 
+  Search, 
+  Filter, 
+  Edit, 
+  Trash2, 
+  MoreHorizontal, 
+  ChevronDown, 
+  ChevronRight,
+  AlertCircle,
+  RefreshCw
+} from 'lucide-react';
+import './Contacts.css';
 
 const Contacts = () => {
   return (
@@ -313,18 +327,13 @@ const ContactsInner = ({ addToast }) => {
     <div className="loading-container">
       <RefreshCw size={40} className="spinner" />
       <p>Carregando contatos e configurações...</p>
-      <style jsx>{`
-        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px; color: var(--hs-text-secondary); }
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 
   return (
     <div className="contacts-container">
-      <div className="table-header">
-        <div className="header-actions">
+      <div className="table-header flex-column-mobile">
+        <div className="header-actions flex-wrap">
           <div className="search-box">
             <Search size={16} />
             <input 
@@ -372,7 +381,7 @@ const ContactsInner = ({ addToast }) => {
       </div>
 
       {viewMode === 'list' ? (
-        <div className="table-wrapper">
+        <div className="hs-scroll-x">
           <table className="hs-table">
             <thead>
               <tr>
@@ -789,106 +798,6 @@ const ContactsInner = ({ addToast }) => {
         </div>
       </Modal>
 
-      <style jsx>{`
-        .contacts-container { padding: 24px; display: flex; flex-direction: column; gap: 20px; height: 100%; }
-        .table-header { display: flex; justify-content: space-between; align-items: center; }
-        .header-actions { display: flex; gap: 12px; }
-        .search-box { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid var(--hs-border); padding: 6px 12px; border-radius: var(--hs-radius); width: 300px; }
-        .search-box input { border: none; outline: none; font-size: 14px; width: 100%; }
-        
-        /* HubSpot Buttons */
-        .hs-button-primary { background: var(--hs-orange); color: white; border: none; padding: 10px 20px; border-radius: 3px; font-weight: 600; cursor: pointer; transition: filter 0.2s; }
-        .hs-button-primary:hover { filter: brightness(1.1); }
-        .hs-button-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-        
-        .hs-button-secondary { background: white; border: 1px solid var(--hs-border); padding: 10px 20px; border-radius: 3px; font-weight: 600; cursor: pointer; }
-        .hs-button-secondary:hover { background: #f5f8fa; }
-
-        .hs-button-danger { background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 3px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .hs-button-danger:hover { background: #b91c1c; }
-
-        .table-wrapper { background: white; border: 1px solid var(--hs-border-light); border-radius: var(--hs-radius); box-shadow: var(--hs-shadow); overflow: visible; }
-        .hs-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .hs-table th { background: var(--hs-bg-main); padding: 12px 16px; font-size: 12px; text-transform: uppercase; color: var(--hs-text-secondary); border-bottom: 1px solid var(--hs-border-light); }
-        .hs-table td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--hs-border-light); }
-        .hs-table td ul { margin: 0; padding-left: 16px; list-style-type: disc; }
-        
-        .contact-cell { display: flex; align-items: center; gap: 10px; }
-        .name-stack { display: flex; flex-direction: column; }
-        .main-name { font-weight: 600; color: var(--hs-blue); }
-        .sub-email { font-size: 12px; color: var(--hs-text-secondary); }
-        .avatar { width: 32px; height: 32px; background: #eaf0f6; color: var(--hs-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
-        
-        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-        .status-badge.active { background: #dcfce7; color: #166534; }
-        .status-badge.inactive { background: #fee2e2; color: #991b1b; }
-        .status-badge.prospect { background: #fef9c3; color: #854d0e; }
-
-        .actions-cell { position: relative; }
-        .icon-button { background: none; border: none; color: var(--hs-text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; }
-        .icon-button:hover { background: #f5f8fa; }
-        
-        .view-toggle { display: flex; border: 1px solid var(--hs-border); border-radius: 4px; overflow: hidden; height: 38px; }
-        .toggle-btn { background: white; border: none; padding: 0 12px; cursor: pointer; color: var(--hs-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .toggle-btn:not(:last-child) { border-right: 1px solid var(--hs-border); }
-        .toggle-btn:hover { background: #f5f8fa; color: var(--hs-blue); }
-        .toggle-btn.active { background: #eaf0f6; color: var(--hs-blue); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-        
-        .pipeline-select { height: 38px; min-width: 200px; font-size: 13px; border: 1px solid var(--hs-border); border-radius: 4px; padding: 0 12px; }
-        
-        /* Form Sections */
-        .form-sections-container { display: flex; flex-direction: column; gap: 24px; padding-bottom: 20px; }
-        .form-section { border-bottom: 1px solid #eaf0f6; padding-bottom: 20px; }
-        .form-section:last-child { border-bottom: none; }
-        .section-title { font-size: 16px; font-weight: 700; color: #2d3e50; margin-bottom: 16px; }
-        .section-toggle { width: 100%; display: flex; align-items: center; gap: 8px; background: #f5f8fa; border: none; padding: 10px; font-size: 14px; font-weight: 700; color: #2d3e50; cursor: pointer; text-align: left; border-radius: 4px; margin-bottom: 12px; }
-        .section-toggle:hover { background: #eaf0f6; }
-        
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group.full-width { grid-column: span 2; }
-        .form-group label { font-size: 13px; font-weight: 600; color: #516f90; }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid #cbd6e2; border-radius: 3px; font-size: 14px; }
-        .form-group textarea { font-family: inherit; resize: vertical; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #0091ae; box-shadow: 0 0 0 2px rgba(0, 145, 174, 0.2); }
-        
-        .hs-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #2d3e50; padding: 4px 0; }
-        .hs-checkbox input { width: 16px !important; height: 16px !important; margin: 0; cursor: pointer; }
-        
-        .currency-input-wrapper { position: relative; display: flex; align-items: center; }
-        .currency-prefix { position: absolute; left: 12px; color: #516f90; font-weight: 600; font-size: 14px; }
-        .currency-input-wrapper input { padding-left: 35px !important; width: 100%; }
-        
-        .multiselect-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; background: #f8fafc; padding: 12px; border-radius: 4px; border: 1px solid #cbd6e2; }
-        
-        /* Relationships Section */
-        .relations-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-        .relation-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #eaf0f6; border-radius: 4px; background: #fdfdfd; }
-        .relation-info { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--hs-text-primary); }
-        .unlink-btn { background: none; border: none; font-size: 12px; color: #dc2626; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
-        .unlink-btn:hover { background: #fef2f2; }
-        .no-relations { font-size: 13px; color: #516f90; font-style: italic; }
-        .link-action { display: flex; gap: 8px; align-items: stretch; }
-        .link-select { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #cbd6e2; border-radius: 3px; font-size: 14px; background: white; }
-        .link-btn { white-space: nowrap; height: auto; }
-        .linked-list-table { list-style-type: none !important; padding: 0 !important; margin: 0 !important; display: flex; flex-direction: column; gap: 4px; }
-        .linked-list-table li { display: inline-flex; align-items: center; background: #eaf0f6; color: var(--hs-blue); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap;}
-        
-        .sticky-footer { position: sticky; bottom: 0; background: white; padding-top: 16px; border-top: 1px solid #eaf0f6; margin-top: 12px; display: flex; justify-content: flex-end; gap: 12px; }
-
-        /* Actions Menu */
-        .actions-menu-wrapper { position: relative; display: flex; justify-content: center; }
-        .dropdown-menu { position: absolute; top: 100%; right: 0; background: white; border: 1px solid var(--hs-border); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; min-width: 120px; display: flex; flex-direction: column; padding: 4px; gap: 2px; }
-        .dropdown-menu button { background: none; border: none; padding: 8px 12px; text-align: left; font-size: 13px; color: var(--hs-text-primary); cursor: pointer; display: flex; align-items: center; gap: 8px; border-radius: 2px; }
-        .dropdown-menu button:hover { background: #f5f8fa; color: var(--hs-blue); }
-        .dropdown-menu button.delete-btn:hover { background: #fef2f2; color: #dc2626; }
-
-        /* Delete Confirmation */
-        .delete-confirm-content { text-align: center; }
-        .alert-icon { margin-bottom: 16px; }
-        .delete-confirm-content p { font-size: 16px; color: #2d3e50; margin-bottom: 8px; }
-        .sub-text { font-size: 14px; color: #516f90; }
-      `}</style>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 # Backlog de Requisitos & Brainstorming
 
 ## ⚡ Integrações Externas (Leads Automáticos)
+- [ ] **API de Entrada (Leads Inbound)**: Endpoint(s) de API pública configurável para recebimento direto de leads originados de websites, landing pages ou outros sistemas externos.
 - [ ] **WhatsApp**: Webhook para receber mensagens e criar contatos.
 - [ ] **Instagram Direct**: Integração via API do Meta para capturar leads de DMs.
 - [ ] **Facebook Lead Ads**: Conexão direta para importar formulários de anúncios.
@@ -9,6 +10,8 @@
 ---
 
 ## 🏢 Gestão de Áreas de Trabalho (Workspaces) & Times
+- [ ] **Templates de Workspace (Super Admin)**: O Super Admin poderá criar e configurar pipelines padrões, Tipos de Objetos padrões e campos personalizados. Estes estarão disponíveis (copiados) automaticamente para cada nova área de trabalho criada.
+- [ ] **Configuração de SMTP por Workspace**: Deve existir uma configuração de SMTP isolada para cada Área de Trabalho. Somente o Administrador do Workspace terá permissão para gerenciar essas credenciais.
 - [x] **Workspaces**: A Área de Trabalho é o tenant principal. Todo dado pertence a um Workspace.
 - [x] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro).
 - [x] **Associação de Usuário**: Usuários podem ser membros de múltiplos Workspaces e múltiplos Times.
@@ -17,6 +20,16 @@
 - [ ] **Validação & Máscaras**: Tipos específicos para CPF, CNPJ, Telefone e E-mail com validação e formatação automática.
 - [ ] **Lógica Inter-propriedades**: Autopreenchimento (ex: CEP preenche Logradouro/Cidade/UF) e cálculos entre campos.
 - [ ] **Recuperação de Senha (RF009)**: Link "Esqueci minha senha", envio de e-mail com token temporário e tela de definição de nova senha.
+- [ ] **Responsividade Premium**: Implementar e validar adaptabilidade em todas as telas existentes e futuras (Mobile/Tablet/Desktop).
+
+## 📋 Gestão de WorkItems & Atividades
+- [ ] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído.
+- [ ] **Histórico de Ações**: Todas as ações em um WorkItem devem ser registradas em atividades.
+- [ ] **Observações/Notas**: O usuário poderá criar observações que também serão registradas em atividades no WorkItem.
+
+## 💲 Gestão de Planos & Assinaturas (SaaS)
+- [ ] **Criação de Planos (Super Admin)**: O Super Administrador poderá criar planos de assinatura personalizados aplicáveis às Áreas de Trabalho.
+- [ ] **Precificação e Limites**: Cada plano pode ter preços exclusivos, além de limites de uso (ex: usuários máximos) e configurações de permissões de módulos habilitados.
 
 ## 📅 Notas de Brainstorming [05/04/2026]
 - **Visão**: O CRM deve ser um SaaS para pessoas e times organizarem Atividades Empresariais (Marketing, Fluxo de Clientes, Produção).

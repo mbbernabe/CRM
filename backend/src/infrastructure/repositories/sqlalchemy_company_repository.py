@@ -11,7 +11,10 @@ class SqlAlchemyCompanyRepository(ICompanyRepository):
         self.db = db
 
     def list_all(self, workspace_id: int) -> List[Company]:
-        db_companies = self.db.query(CompanyModel).filter(CompanyModel.workspace_id == workspace_id).all()
+        db_companies = self.db.query(CompanyModel).options(
+            joinedload(CompanyModel.property_values).joinedload(CompanyPropertyValueModel.property_def),
+            joinedload(CompanyModel.contacts)
+        ).filter(CompanyModel.workspace_id == workspace_id).all()
         return [self._map_to_entity(c) for c in db_companies]
 
     def get_by_id(self, company_id: int, workspace_id: int) -> Optional[Company]:

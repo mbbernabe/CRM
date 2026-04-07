@@ -1,0 +1,247 @@
+.type-settings-container {
+    padding: 24px;
+    background-color: #f6f9fb;
+    min-height: 100vh;
+}
+
+.settings-header-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 24px 32px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 24px;
+}
+
+.header-info h2 {
+    font-size: 24px;
+    color: #33475b;
+    margin-bottom: 4px;
+}
+
+.header-info p {
+    color: #516f90;
+    font-size: 14px;
+}
+
+.types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.type-card {
+    background: #fff;
+    border: 1px solid #cbd6e2;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.type-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #00a4bd;
+}
+
+.type-card-body {
+    display: flex;
+    gap: 16px;
+}
+
+.type-icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.type-info h3 {
+    font-size: 16px;
+    color: #33475b;
+    margin-bottom: 2px;
+}
+
+.type-slug {
+    display: block;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    color: #7c98b6;
+    margin-bottom: 8px;
+}
+
+.fields-count {
+    font-size: 13px;
+    color: #516f90;
+    background: #f5f8fa;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.type-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    color: #516f90;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.icon-button:hover {
+    background: #f5f8fa;
+    color: #00a4bd;
+}
+
+.icon-button.delete:hover {
+    color: #d32f2f;
+    background: #ffebee;
+}
+
+/* Modal Form Styles */
+.type-form {
+    padding: 8px;
+}
+
+.section-title {
+    font-size: 14px;
+    color: #516f90;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f5f8fa;
+}
+
+.form-section {
+    margin-bottom: 32px;
+}
+
+.fields-builder {
+    background: #f6f9fb;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px dashed #cbd6e2;
+}
+
+.field-row {
+    background: #fff;
+    border: 1px solid #cbd6e2;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.drag-handle {
+    color: #cbd6e2;
+    cursor: grab;
+    padding-top: 8px;
+}
+
+.field-config-inputs {
+    flex: 1;
+}
+
+.field-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.field-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.field-slug-preview {
+    font-size: 11px;
+    color: #7c98b6;
+    font-family: monospace;
+}
+
+.field-remove {
+    background: none;
+    border: none;
+    color: #cbd6e2;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.field-remove:hover {
+    color: #d32f2f;
+}
+
+.no-fields-alert {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    color: #7c98b6;
+    gap: 12px;
+}
+
+.color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.color-picker {
+    width: 36px;
+    height: 36px;
+    border: none;
+    cursor: pointer;
+    background: none;
+}
+
+.color-code {
+    font-family: monospace;
+    font-size: 14px;
+    color: #516f90;
+}
+
+.delete-confirm {
+    text-align: center;
+    padding: 20px;
+}
+
+.danger-icon {
+    color: #d32f2f;
+    margin-bottom: 20px;
+}
+
+.delete-confirm p {
+    font-size: 16px;
+    color: #33475b;
+}
+
+.subtext {
+    font-size: 14px;
+    color: #7c98b6;
+    margin-top: 8px;
+}
+
+.delete-confirm .actions {
+    margin-top: 32px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}

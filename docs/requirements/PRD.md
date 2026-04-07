@@ -26,11 +26,19 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF005 | **Convites & Colaboração**: Enviar convites para usuários participarem de times específicos. | **P1 (Alta)** | Pendente |
 | RF006 | **Autenticação & Registro**: Registro de novo usuário associado a um novo Workspace nomeado. | **P1 (Alta)** | **Concluído** |
 | RF010 | **Visibilidade por Time**: Filtro automático de dados (Contatos, Empresas, Negócios) para que usuários vejam apenas o que foi atribuído aos seus times específicos. | **P1 (Alta)** | **Pendente** |
-| RF006 | **Captura de Leads**: API/Webhook para integração com WhatsApp/IG/FB. | P2 (Média) | Pendente |
+| RF018 | **Captura de Leads (Redes)**: API/Webhook para integração com WhatsApp/IG/FB. | **P2 (Média)** | **Pendente** |
 | RF007 | **Tipos Complexos & Máscaras**: CPF, CNPJ e Telefone com validação e formatação automática. | P1 (Alta) | Pendente |
 | RF008 | **Interdependência de Campos**: Autopreenchimento (CEP preenche endereço) e cálculos dinâmicos. | P2 (Média) | Pendente |
 | RF009 | **Recuperação de Senha**: Fluxo seguro de redefinição de senha via e-mail com tokens expiráveis. | **P1 (Alta)** | **Pendente** |
 | RF011 | **Pipelines Genéricas (Workflow)**: Motor de estados que permite que qualquer entidade (Contato, Empresa, Negócio, Ticket) percorra fluxos de status customizáveis. | **P1 (Alta)** | **Planejado** |
+| RF012 | **Responsividade Premium**: Padrão de alta qualidade em que todas as telas se adaptam fluidamente a Mobile, Tablet e Desktop. | **P0 (Crítica)** | **Em Andamento** |
+| RF013 | **Atribuição de Dono (WorkItem)**: Todo WorkItem pode ter um usuário atribuído como dono/responsável. | **P1 (Alta)** | **Pendente** |
+| RF014 | **Histórico de Atividades (WorkItem)**: Todas as ações em um WorkItem devem ser registradas automaticamente como atividades. | **P1 (Alta)** | **Pendente** |
+| RF015 | **Observações em WorkItems**: O usuário poderá criar observações que também serão registradas em atividades no WorkItem. | **P1 (Alta)** | **Pendente** |
+| RF016 | **Templates de Workspace (Super Admin)**: O Super Administrador poderá criar e configurar pipelines padrões, Tipos de Objetos padrões e campos personalizados que estarão disponíveis (copiados) para cada nova área de trabalho criada. | **P1 (Alta)** | **Pendente** |
+| RF017 | **Configuração de SMTP (Workspace)**: Cada Área de Trabalho deve possuir sua própria configuração de SMTP para envio de e-mails, gerenciável exclusivamente pelo Administrador da área. | **P1 (Alta)** | **Pendente** |
+| RF019 | **API Pública (Leads Inbound)**: Criação de API configurável e segura para receber leads gerados por fontes e aplicações de terceiros (ex: formulário de website) injetando-os direto no CRM. | **P1 (Alta)** | **Pendente** |
+| RF020 | **Gestão de Planos (SaaS)**: O Super Administrador poderá criar e gerenciar planos de assinatura, definindo limites de recursos, preços e permissões atrelados a cada plano da Área de Trabalho. | **P1 (Alta)** | **Pendente** |
 
 ---
 
@@ -38,6 +46,8 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 - **Escalabilidade**: Arquitetura pronta para milhares de tenants.
 - **Segurança**: Criptografia de dados sensíveis e isolamento estrito: `Workspace` isola a base e `Team` isola a visibilidade dos registros.
 - **Usabilidade**: Interface intuitiva para configuração de fluxos complexos.
+- **Padrão Visual**: Todas as telas e componentes devem seguir um padrão de alta fidelidade (Premium UI), garantindo fluidez em qualquer resolução.
+
 
 ---
 
@@ -53,6 +63,12 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 - **Como** um novo usuário, **eu quero** criar um Workspace "Minha Agência" ao me cadastrar **para que** eu possa organizar meus diversos times de "Vendas" e "Sucesso" no mesmo lugar.
 - **Como** administrador de Workspace, **eu quero** convidar membros para times específicos **para que** o acesso aos dados seja restrito conforme a função de cada um.
 - **Como** atendente, **eu quero** que ao digitar o CEP, os campos de endereço sejam preenchidos **para que** eu minimize o erro humano e agilize o atendimento.
+- **Como** colaborador de um time, **eu quero** ser designado como dono de um WorkItem **para que** eu saiba exatamente quais tarefas são de minha responsabilidade.
+- **Como** gerente ou analista, **eu quero** registrar notas e ver o histórico de ações de um WorkItem **para que** eu possa acompanhar todas as mudanças e contextos associados do histórico e progresso.
+- **Como** Super Administrador da plataforma, **eu quero** criar pipelines, tipos de objetos e propriedades padrões **para que** cada nova área de trabalho seja gerada com uma infraestrutura útil e pronta para uso.
+- **Como** Administrador de Workspace, **eu quero** configurar os dados de servidor SMTP de minha empresa **para que** os e-mails enviados pelo sistema em nome do meu time utilizem o meu próprio domínio e servidor de forma segura.
+- **Como** gerente de marketing, **eu quero** disponibilizar um endpoint de API do meu CRM para o meu website **para que** os formulários preenchidos caiam diretamente no funil de vendas, sem entrada manual.
+- **Como** Super Administrador (Vendor) da plataforma, **eu quero** ser capaz de criar planos de assinatura parametrizados (ex: preços, limite de licenças e acesso a módulos) **para que** eu consiga gerenciar e monetizar a base de clientes do SaaS sob diferentes esteiras de oferta.
 
 ---
 

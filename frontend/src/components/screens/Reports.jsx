@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarChart3, PieChart, LineChart, Download } from 'lucide-react';
+import './Reports.css';
 
 const ReportCard = ({ title, children, icon: Icon }) => (
   <div className="report-card">
@@ -13,36 +14,11 @@ const ReportCard = ({ title, children, icon: Icon }) => (
     <div className="report-content">
       {children}
     </div>
-    <style jsx>{`
-      .report-card {
-        background: white;
-        border: 1px solid var(--hs-border-light);
-        border-radius: var(--hs-radius);
-        padding: 20px;
-        box-shadow: var(--hs-shadow);
-        height: 100%;
-      }
-      .report-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-      .report-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        font-size: 15px;
-        color: var(--hs-text-primary);
-      }
-      .download-icon { color: var(--hs-text-secondary); cursor: pointer; }
-    `}</style>
   </div>
 );
 
 const Reports = () => {
-  return (
+    return (
     <div className="reports-container">
       <div className="reports-grid">
         <ReportCard title="Receita por Canal" icon={PieChart}>
@@ -103,61 +79,6 @@ const Reports = () => {
           </div>
         </ReportCard>
       </div>
-
-      <style jsx>{`
-        .reports-container {
-          padding: 24px;
-          height: 100%;
-          overflow-y: auto;
-        }
-        .reports-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-          gap: 24px;
-        }
-        .pie-visual {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .pie-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 14px;
-        }
-        .pie-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .pie-val { margin-left: auto; font-weight: 600; }
-        
-        .line-visual {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .chart-svg { width: 100%; height: 120px; overflow: visible; }
-        .chart-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 11px;
-          color: var(--hs-text-secondary);
-        }
-
-        .table-mini table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13px;
-        }
-        .table-mini th {
-          text-align: left;
-          padding: 8px;
-          color: var(--hs-text-secondary);
-          border-bottom: 1px solid var(--hs-border-light);
-        }
-        .table-mini td {
-          padding: 10px 8px;
-          border-bottom: 1px solid var(--hs-border-light);
-        }
-      `}</style>
     </div>
   );
 };

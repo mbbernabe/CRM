@@ -151,6 +151,10 @@ export const AuthProvider = ({ children }) => {
       headers['X-User-Role'] = user.role;
     }
 
+    if (user && user.id) {
+      headers['X-User-ID'] = user.id.toString();
+    }
+
     const response = await fetch(url, { ...options, headers });
     return response;
   };

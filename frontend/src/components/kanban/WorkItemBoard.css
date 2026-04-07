@@ -1,0 +1,63 @@
+.work-item-board {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  overflow-x: auto;
+  min-height: calc(100vh - 120px);
+  background-color: var(--hs-bg-main);
+  align-items: flex-start;
+}
+
+.kanban-column {
+  flex: 0 0 300px;
+  background: #f1f4f6;
+  border: 1px solid var(--hs-border-light);
+  border-radius: var(--hs-radius-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.column-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--hs-border-light);
+  border-top: 4px solid transparent;
+  border-radius: var(--hs-radius-lg) var(--hs-radius-lg) 0 0;
+  background: white;
+}
+
+.column-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hs-text-primary);
+  margin: 0;
+}
+
+.item-count {
+  background: var(--hs-border-light);
+  color: var(--hs-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.column-content {
+  padding: 8px;
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 100px;
+}
+
+.board-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  width: 100%;
+  color: var(--hs-text-secondary);
+  font-style: italic;
+}

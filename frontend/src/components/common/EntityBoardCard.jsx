@@ -1,7 +1,8 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { User, Building2, DollarSign, Mail, Phone, Calendar } from 'lucide-react';
+import { User, Building2, DollarSign, Mail, Phone, Calendar, Users, Handshake } from 'lucide-react';
+import './EntityBoardCard.css';
 
 const EntityBoardCard = ({ id, item, entityType }) => {
   const {
@@ -85,42 +86,6 @@ const EntityBoardCard = ({ id, item, entityType }) => {
       className={`entity-board-card ${isDragging ? 'dragging' : ''}`}
     >
       {renderContent()}
-
-      <style jsx>{`
-        .entity-board-card {
-          padding: 12px;
-          background: white;
-          border: 1px solid var(--hs-border);
-          border-radius: 6px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          transition: box-shadow 0.2s, border-color 0.2s;
-          user-select: none;
-        }
-
-        .entity-board-card:hover {
-          border-color: var(--hs-blue);
-          box-shadow: 0 4px 6px rgba(0,0,0,0.08);
-        }
-
-        .card-top { display: flex; align-items: center; gap: 10px; }
-        .avatar.small { width: 24px; height: 24px; font-size: 10px; background: var(--hs-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
-        .avatar.small.company { background: #f1f5f9; color: var(--hs-text-secondary); }
-        .avatar.x-small { width: 18px; height: 18px; font-size: 8px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-        
-        .title { font-size: 14px; font-weight: 600; color: var(--hs-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        .card-body { display: flex; flex-direction: column; gap: 4px; }
-        .info-line { font-size: 11px; color: var(--hs-text-secondary); display: flex; align-items: center; gap: 6px; }
-        
-        .price-tag { font-size: 13px; font-weight: 700; color: var(--hs-text-primary); margin-top: 4px; }
-        
-        .card-footer { display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid var(--hs-border-light); font-size: 11px; color: var(--hs-text-secondary); }
-
-        .dragging { z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: var(--hs-blue); }
-      `}</style>
     </div>
   );
 };

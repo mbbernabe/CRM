@@ -22,7 +22,7 @@ def test_list_contacts_use_case(mock_repository):
     use_case = ListContactsUseCase(mock_repository)
 
     # Act
-    result = use_case.execute()
+    result = use_case.execute(workspace_id=1)
 
     # Assert
     assert len(result) == 2
@@ -37,7 +37,7 @@ def test_get_contact_use_case_success(mock_repository):
     use_case = GetContactUseCase(mock_repository)
 
     # Act
-    result = use_case.execute(1)
+    result = use_case.execute(1, workspace_id=1)
 
     # Assert
     assert result is not None
@@ -51,7 +51,7 @@ def test_get_contact_use_case_not_found(mock_repository):
     use_case = GetContactUseCase(mock_repository)
 
     # Act
-    result = use_case.execute(1)
+    result = use_case.execute(1, workspace_id=1)
 
     # Assert
     assert result is None
@@ -65,7 +65,7 @@ def test_create_contact_use_case(mock_repository):
     use_case = CreateContactUseCase(mock_repository)
 
     # Act
-    result = use_case.execute(dto)
+    result = use_case.execute(dto, workspace_id=1)
 
     # Assert
     assert result.id == 1
@@ -83,7 +83,7 @@ def test_update_contact_use_case_success(mock_repository):
     use_case = UpdateContactUseCase(mock_repository)
 
     # Act
-    result = use_case.execute(1, dto)
+    result = use_case.execute(1, dto, workspace_id=1)
 
     # Assert
     assert result.name == "New Name"
@@ -95,7 +95,7 @@ def test_delete_contact_use_case(mock_repository):
     use_case = DeleteContactUseCase(mock_repository)
 
     # Act
-    result = use_case.execute(1)
+    result = use_case.execute(1, workspace_id=1)
 
     # Assert
     assert result is True

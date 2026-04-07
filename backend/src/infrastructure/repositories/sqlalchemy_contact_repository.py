@@ -31,7 +31,8 @@ class SqlAlchemyContactRepository(IContactRepository):
 
     def list_all(self, workspace_id: int) -> List[Contact]:
         db_contacts = self.db.query(ContactModel).options(
-            joinedload(ContactModel.property_values).joinedload(ContactPropertyValueModel.property_def)
+            joinedload(ContactModel.property_values).joinedload(ContactPropertyValueModel.property_def),
+            joinedload(ContactModel.companies)
         ).filter(ContactModel.workspace_id == workspace_id).all()
         return [self._map_to_domain(c) for c in db_contacts]
 

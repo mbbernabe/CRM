@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Save, Mail, Globe, Server, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import './SystemSettings.css';
 
 const SystemSettings = () => {
     const { fetchWithAuth } = useAuth();
@@ -71,11 +72,6 @@ const SystemSettings = () => {
         <div className="loading-container">
             <RefreshCw className="spinner" size={32} />
             <p>Carregando configurações globais...</p>
-            <style jsx>{`
-                .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 12px; color: var(--hs-text-secondary); }
-                .spinner { animation: spin 1s linear infinite; color: var(--hs-blue); }
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-            `}</style>
         </div>
     );
 
@@ -167,44 +163,6 @@ const SystemSettings = () => {
                     </button>
                 </div>
             </form>
-
-            <style jsx>{`
-                .settings-page { 
-                    padding: 32px; 
-                    max-width: 1000px; 
-                    margin: 0 auto;
-                    flex: 1;
-                    overflow-y: auto;
-                    height: 100%;
-                }
-                .settings-header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--hs-border-light); }
-                .settings-header h2 { font-size: 24px; font-weight: 700; color: #2d3e50; margin-bottom: 8px; }
-                .settings-header p { color: var(--hs-text-secondary); font-size: 14px; }
-                
-                .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-                .settings-section { background: white; border: 1px solid var(--hs-border-light); border-radius: 8px; box-shadow: var(--hs-shadow-sm); display: flex; flex-direction: column; }
-                .section-title { padding: 16px 20px; border-bottom: 1px solid var(--hs-border-light); display: flex; align-items: center; gap: 12px; color: var(--hs-blue); }
-                .section-title h3 { font-size: 16px; font-weight: 700; color: #2d3e50; margin: 0; }
-                .section-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-                
-                .form-group { display: flex; flex-direction: column; gap: 6px; }
-                .form-row { display: flex; gap: 16px; }
-                .half { flex: 1; }
-                label { font-size: 13px; font-weight: 600; color: #2d3e50; }
-                input, select { padding: 10px 12px; border: 1px solid var(--hs-border); border-radius: 4px; font-size: 14px; outline: none; }
-                input:focus { border-color: var(--hs-blue); box-shadow: 0 0 0 2px rgba(0,145,174,0.1); }
-                
-                .field-hint { font-size: 12px; color: var(--hs-text-secondary); margin: -2px 0 2px; }
-                .info-box { display: flex; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; padding: 12px; border-radius: 4px; font-size: 12px; color: #0369a1; line-height: 1.4; margin-top: 10px; }
-                
-                .settings-footer { margin-top: 32px; display: flex; justify-content: flex-end; align-items: center; gap: 20px; padding-top: 24px; border-top: 1px solid var(--hs-border-light); }
-                .status-msg { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
-                .status-msg.success { color: #22c55e; }
-                .status-msg.error { color: #dc2626; }
-                
-                .hs-button-primary { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 24px; }
-                @media (max-width: 850px) { .settings-grid { grid-template-columns: 1fr; } }
-            `}</style>
         </div>
     );
 };

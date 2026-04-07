@@ -20,9 +20,13 @@ class IPipelineRepository(ABC):
         pass
 
     @abstractmethod
-    def update_stages(self, pipeline_id: int, stages: List[PipelineStage], workspace_id: int) -> bool:
+    def update(self, pipeline: Pipeline, workspace_id: int) -> bool:
         pass
 
     @abstractmethod
     def move_entity(self, entity_type: str, entity_id: int, stage_id: int, workspace_id: int) -> bool:
+        pass
+
+    @abstractmethod
+    def get_stage_by_id(self, stage_id: int, workspace_id: int) -> Optional[PipelineStage]:
         pass

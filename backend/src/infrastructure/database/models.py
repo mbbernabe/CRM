@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, UniqueConstraint, JSON
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 class BaseModel(DeclarativeBase):
@@ -162,6 +162,10 @@ class PipelineModel(BaseModel):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     stages = relationship("PipelineStageModel", back_populates="pipeline", order_by="PipelineStageModel.order", cascade="all, delete-orphan")
+    
+    # Friendly Labels for UI
+    item_label_singular = Column(String, nullable=True) # Ex: "Oportunidade"
+    item_label_plural = Column(String, nullable=True)   # Ex: "Oportunidades"
 
 class PipelineStageModel(BaseModel):
     __tablename__ = "pipeline_stages"
@@ -175,6 +179,66 @@ class PipelineStageModel(BaseModel):
     metadata_json = Column(Text, nullable=True) # Configurações extras em JSON
 
     pipeline = relationship("PipelineModel", back_populates="stages")
+
+class WorkItemTypeModel(BaseModel):
+    __tablename__ = "work_item_types"
+    __table_args__ = (UniqueConstraint('workspace_id', 'name', name='_workspace_item_type_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False) # slug
+    label = Column(String, nullable=False) # display
+    icon = Column(String, nullable=True)
+    color = Column(String, nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+
+    field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="work_item_type", cascade="all, delete-orphan")
+
+class WorkItemFieldDefinitionModel(BaseModel):
+    __tablename__ = "work_item_field_definitions"
+    __table_args__ = (UniqueConstraint('type_id', 'name', name='_type_field_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
+    name = Column(String, nullable=False) # slug
+    label = Column(String, nullable=False) # display
+    field_type = Column(String, default="text")
+    options_json = Column(Text, nullable=True) # JSON string for options
+    is_required = Column(Boolean, default=False)
+    order = Column(Integer, default=0)
+
+    work_item_type = relationship("WorkItemTypeModel", back_populates="field_definitions")
+
+class WorkItemModel(BaseModel):
+    __tablename__ = "work_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=False)
+    stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=False)
+    type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
+    custom_fields = Column(JSON, nullable=True) # Central store for dynamic fields
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Responsibility owner
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    pipeline = relationship("PipelineModel")
+    stage = relationship("PipelineStageModel")
+    work_item_type = relationship("WorkItemTypeModel")
+    owner = relationship("UserModel")
+
+class WorkItemHistoryModel(BaseModel):
+    __tablename__ = "work_item_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    work_item_id = Column(Integer, ForeignKey("work_items.id"), nullable=False)
+    from_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True)
+    to_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=False)
+    changed_at = Column(DateTime, default=datetime.utcnow)
+    changed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    notes = Column(Text, nullable=True)
 
 class SystemSettingsModel(BaseModel):
     __tablename__ = "system_settings"

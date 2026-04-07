@@ -26,6 +26,8 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
             entity_type=db_pipeline.entity_type,
             team_id=db_pipeline.team_id,
             workspace_id=db_pipeline.workspace_id,
+            item_label_singular=db_pipeline.item_label_singular or "Item",
+            item_label_plural=db_pipeline.item_label_plural or "Itens",
             stages=stages
         )
 
@@ -49,7 +51,9 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
             name=pipeline.name,
             entity_type=pipeline.entity_type,
             team_id=pipeline.team_id,
-            workspace_id=workspace_id
+            workspace_id=workspace_id,
+            item_label_singular=pipeline.item_label_singular,
+            item_label_plural=pipeline.item_label_plural
         )
         self.db.add(db_pipeline)
         self.db.flush() 
@@ -70,17 +74,22 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
         self.db.refresh(db_pipeline)
         return self._map_to_domain(db_pipeline)
 
-    def update_stages(self, pipeline_id: int, stages: List[PipelineStage], workspace_id: int) -> bool:
+    def update(self, pipeline: Pipeline, workspace_id: int) -> bool:
         db_pipeline = self.db.query(PipelineModel).filter(
-            PipelineModel.id == pipeline_id, 
+            PipelineModel.id == pipeline.id, 
             PipelineModel.workspace_id == workspace_id
         ).first()
         
         if not db_pipeline:
             return False
             
+        db_pipeline.name = pipeline.name
+        db_pipeline.entity_type = pipeline.entity_type
+        db_pipeline.item_label_singular = pipeline.item_label_singular
+        db_pipeline.item_label_plural = pipeline.item_label_plural
+
         current_stage_ids = [s.id for s in db_pipeline.stages]
-        new_stage_ids = [s.id for s in stages if s.id is not None]
+        new_stage_ids = [s.id for s in pipeline.stages if s.id is not None]
         
         # Deleta os que não estão na nova lista
         for stage in db_pipeline.stages:
@@ -88,7 +97,7 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
                 self.db.delete(stage)
                 
         # Atualiza ou Cria
-        for s in stages:
+        for s in pipeline.stages:
             if s.id and s.id in current_stage_ids:
                 db_stage = self.db.query(PipelineStageModel).filter(PipelineStageModel.id == s.id).first()
                 if db_stage:
@@ -99,7 +108,7 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
                     db_stage.metadata_json = s.metadata
             else:
                 db_stage = PipelineStageModel(
-                    pipeline_id=pipeline_id,
+                    pipeline_id=pipeline.id,
                     name=s.name,
                     order=s.order,
                     color=s.color,
@@ -107,6 +116,9 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
                     metadata_json=s.metadata
                 )
                 self.db.add(db_stage)
+                
+        self.db.commit()
+        return True
                 
         self.db.commit()
         return True
@@ -150,3 +162,22 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
             self.db.commit()
             return True
         return False
+
+    def get_stage_by_id(self, stage_id: int, workspace_id: int) -> Optional[PipelineStage]:
+        db_stage = self.db.query(PipelineStageModel).join(PipelineModel).filter(
+            PipelineStageModel.id == stage_id,
+            PipelineModel.workspace_id == workspace_id
+        ).first()
+        
+        if not db_stage:
+            return None
+            
+        return PipelineStage(
+            id=db_stage.id,
+            pipeline_id=db_stage.pipeline_id,
+            name=db_stage.name,
+            order=db_stage.order,
+            color=db_stage.color,
+            is_final=db_stage.is_final,
+            metadata=db_stage.metadata_json
+        )

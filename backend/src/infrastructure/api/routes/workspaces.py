@@ -10,6 +10,12 @@ from src.infrastructure.utils.logger import get_logger, log_exception
 logger = get_logger(__name__)
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
+@router.get("/{workspace_id}/users")
+def list_workspace_users(workspace_id: int, db: Session = Depends(get_db)):
+    from src.infrastructure.database.models import UserModel
+    users = db.query(UserModel).filter(UserModel.workspace_id == workspace_id).all()
+    return [{"id": u.id, "name": u.name, "email": u.email} for u in users]
+
 @router.get("/{workspace_id}", response_model=WorkspaceReadDTO)
 def get_workspace(workspace_id: int, db: Session = Depends(get_db)):
     workspace_repo = SqlAlchemyWorkspaceRepository(db)

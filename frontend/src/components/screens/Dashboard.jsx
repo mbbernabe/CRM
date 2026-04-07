@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp, Users, DollarSign, Target } from 'lucide-react';
+import './Dashboard.css';
 
 const StatCard = ({ title, value, change, icon, color }) => (
   <div className="stat-card">
@@ -13,50 +14,6 @@ const StatCard = ({ title, value, change, icon, color }) => (
     <div className={`stat-change ${change.startsWith('+') ? 'positive' : 'negative'}`}>
       {change} em relação ao mês passado
     </div>
-
-    <style jsx>{`
-      .stat-card {
-        background: var(--hs-white);
-        border: 1px solid var(--hs-border-light);
-        border-radius: var(--hs-radius);
-        padding: 20px;
-        flex: 1;
-        box-shadow: var(--hs-shadow);
-      }
-      .stat-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 12px;
-      }
-      .stat-title {
-        color: var(--hs-text-secondary);
-        font-size: 14px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .stat-icon {
-        padding: 8px;
-        border-radius: 8px;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .stat-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--hs-text-primary);
-        margin-bottom: 8px;
-      }
-      .stat-change {
-        font-size: 12px;
-        font-weight: 500;
-      }
-      .positive { color: #15803d; }
-      .negative { color: #b91c1c; }
-    `}</style>
   </div>
 );
 
@@ -120,92 +77,6 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        .dashboard-container {
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          height: 100%;
-          overflow-y: auto;
-        }
-        .stats-grid {
-          display: flex;
-          gap: 20px;
-        }
-        .dashboard-content {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 24px;
-        }
-        .chart-placeholder, .activity-list {
-          background: var(--hs-white);
-          border: 1px solid var(--hs-border-light);
-          border-radius: var(--hs-radius);
-          padding: 24px;
-          box-shadow: var(--hs-shadow);
-        }
-        .chart-header h3, .activity-list h3 {
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 16px;
-        }
-        .visual-bars {
-          display: flex;
-          align-items: flex-end;
-          gap: 20px;
-          height: 200px;
-          padding-top: 20px;
-        }
-        .bar-column {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-        }
-        .bar {
-          width: 32px;
-          background: var(--hs-blue-hover);
-          opacity: 0.8;
-          border-radius: 4px 4px 0 0;
-          transition: all 0.3s ease;
-        }
-        .bar:hover {
-          opacity: 1;
-          background: var(--hs-blue);
-        }
-        .bar-label {
-          font-size: 12px;
-          color: var(--hs-text-secondary);
-        }
-        .activity-item {
-          display: flex;
-          gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid var(--hs-border-light);
-        }
-        .activity-avatar {
-          width: 32px;
-          height: 32px;
-          background: var(--hs-border-light);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 14px;
-        }
-        .activity-info p {
-          font-size: 13px;
-          margin: 0;
-        }
-        .activity-time {
-          font-size: 11px;
-          color: var(--hs-text-secondary);
-        }
-      `}</style>
     </div>
   );
 };

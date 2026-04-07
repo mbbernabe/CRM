@@ -1,1 +1,115 @@
-/* Scoped styles are handled within components or in index.css */
+/* Main layout defined in index.css */
+
+.main-wrapper {
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  position: relative;
+  background-color: var(--hs-bg-main);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.content-area {
+  flex-grow: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.simple-header {
+  height: var(--header-height);
+  background: var(--hs-white);
+  border-bottom: 1px solid var(--hs-border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  flex-shrink: 0;
+  z-index: 10; /* Abaixo da sidebar */
+}
+
+.simple-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--hs-text-primary);
+}
+
+/* Mobile Header Styles */
+.mobile-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--mobile-header-height);
+  background: var(--hs-white);
+  border-bottom: 1px solid var(--hs-border);
+  padding: 0 16px;
+  align-items: center;
+  gap: 16px;
+  z-index: 100;
+  display: none; /* Hidden by default, shown by media query */
+}
+
+@media (max-width: 767px) {
+  .mobile-header {
+    display: flex;
+  }
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger {
+  width: 20px;
+  height: 2px;
+  background: var(--hs-text-primary);
+  position: relative;
+}
+
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  background: var(--hs-text-primary);
+  left: 0;
+}
+
+.hamburger::before { top: -6px; }
+.hamburger::after { top: 6px; }
+
+.mobile-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--hs-text-primary);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 767px) {
+  .content-area {
+    height: auto;
+    overflow: visible;
+  }
+}

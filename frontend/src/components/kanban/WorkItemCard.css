@@ -1,0 +1,112 @@
+.work-item-card {
+  background: var(--hs-white);
+  border: 1px solid var(--hs-border-light);
+  border-radius: var(--hs-radius);
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: var(--hs-shadow-sm);
+  cursor: grab;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.work-item-card:hover {
+  box-shadow: var(--hs-shadow-md);
+  border-color: var(--hs-border);
+}
+
+.work-item-card.dragging {
+  opacity: 0.3;
+  cursor: grabbing;
+}
+
+.work-item-card.is-overlay {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  transform: rotate(3deg) scale(1.05);
+  cursor: grabbing;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.type-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: white;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hs-text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-field-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--hs-text-secondary);
+}
+
+.field-label {
+  font-weight: 500;
+}
+
+.field-value {
+  font-weight: 600;
+  color: var(--hs-text-primary);
+}
+
+.card-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hs-border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.owner-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--hs-blue-light, #eaf0f6);
+  color: var(--hs-blue, #0091ae);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  border: 1px solid var(--hs-border-light);
+  cursor: help;
+  transition: all 0.2s;
+}
+
+.owner-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: var(--hs-shadow-sm);
+}
+
+.time-stamp {
+  font-size: 10px;
+  color: var(--hs-text-secondary);
+}

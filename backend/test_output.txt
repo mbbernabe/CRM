@@ -1,0 +1,44 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.0, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\Marcelo\Documents\Code\CRM\backend
+plugins: anyio-4.13.0, base-url-2.1.0, playwright-0.7.2
+collected 11 items / 1 error
+
+=================================== ERRORS ====================================
+________________ ERROR collecting tests/e2e/test_auth_flow.py _________________
+import file mismatch:
+imported module 'test_auth_flow' has this __file__ attribute:
+  C:\Users\Marcelo\Documents\Code\CRM\backend\scripts\testing\test_auth_flow.py
+which is not the same as the test file we want to collect:
+  C:\Users\Marcelo\Documents\Code\CRM\backend\tests\e2e\test_auth_flow.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+============================== warnings summary ===============================
+src\domain\entities\user.py:10
+  C:\Users\Marcelo\Documents\Code\CRM\backend\src\domain\entities\user.py:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: datetime = datetime.utcnow()
+
+src\domain\entities\user.py:24
+  C:\Users\Marcelo\Documents\Code\CRM\backend\src\domain\entities\user.py:24: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: datetime = datetime.utcnow()
+
+src\domain\entities\team.py:10
+  C:\Users\Marcelo\Documents\Code\CRM\backend\src\domain\entities\team.py:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: datetime = datetime.utcnow()
+
+src\domain\entities\workspace.py:13
+  C:\Users\Marcelo\Documents\Code\CRM\backend\src\domain\entities\workspace.py:13: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at: datetime = datetime.utcnow()
+
+src\application\dtos\pipeline_dto.py:4
+  C:\Users\Marcelo\Documents\Code\CRM\backend\src\application\dtos\pipeline_dto.py:4: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class PipelineStageDTO(BaseModel):
+
+src\application\dtos\pipeline_dto.py:15
+  C:\Users\Marcelo\Documents\Code\CRM\backend\src\application\dtos\pipeline_dto.py:15: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class PipelineReadDTO(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/e2e/test_auth_flow.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+======================== 6 warnings, 1 error in 14.87s ========================

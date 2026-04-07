@@ -28,13 +28,26 @@ class PipelineUseCases:
             entity_type=dto.entity_type,
             workspace_id=workspace_id,
             team_id=team_id,
+            item_label_singular=dto.item_label_singular or "Item",
+            item_label_plural=dto.item_label_plural or "Itens",
             stages=stages
         )
         return self.repository.save(pipeline, workspace_id)
 
     def update_pipeline(self, pipeline_id: int, dto: PipelineUpdateDTO, workspace_id: int) -> bool:
+        pipeline = self.repository.get_by_id(pipeline_id, workspace_id)
+        if not pipeline:
+            return False
+
+        if dto.name is not None:
+            pipeline.name = dto.name
+        if dto.item_label_singular is not None:
+            pipeline.item_label_singular = dto.item_label_singular
+        if dto.item_label_plural is not None:
+            pipeline.item_label_plural = dto.item_label_plural
+        
         if dto.stages is not None:
-            stages = [
+            pipeline.stages = [
                 PipelineStage(
                     id=s.id,
                     name=s.name,
@@ -44,8 +57,8 @@ class PipelineUseCases:
                     metadata=s.metadata
                 ) for s in dto.stages
             ]
-            return self.repository.update_stages(pipeline_id, stages, workspace_id)
-        return True # Se não houver estágios para atualizar, consideramos sucesso
+        
+        return self.repository.update(pipeline, workspace_id)
 
     def delete_pipeline(self, pipeline_id: int, workspace_id: int) -> bool:
         return self.repository.delete(pipeline_id, workspace_id)

@@ -13,6 +13,7 @@ Garantir que o CRM não seja apenas funcional, mas também intuitivo, esteticame
 
 - `docs/ui_ux/`: Documentação de design, guias de estilo e tokens.
 - `scripts/ui/`: Scripts determinísticos de geração de massa de dados visual para prototipagem real e testes de componentes em `frontend/scripts` ou `backend/scripts`.
+- **Uso do Stitch MCP**: Utilize ativamente as ferramentas do Stitch MCP (`generate_screen_from_text`, `edit_screens`, `create_design_system`, etc.) para projetar, prototipar e validar designs de forma ágil, sempre que julgar necessário ou quando precisar materializar visualmente uma nova funcionalidade antes da codificação profunda.
 
 ## 🛠️ Protocolos de Trabalho e Feedback do Usuário
 
@@ -28,7 +29,8 @@ Garantir que o CRM não seja apenas funcional, mas também intuitivo, esteticame
 ### 1. Proposta de Nova Tela/Funcionalidade
 Sempre que uma nova funcionalidade for planejada:
 - **Fluxo do Usuário**: Definir os passos que o usuário percorre.
-- **Wireframe/Mockup**: Descrever a disposição dos elementos (pode usar Mermaid ou descrições detalhadas).
+- **Prototipagem de Alta Fidelidade (Stitch MCP)**: Sempre que possível, utilize as ferramentas do Stitch MCP (ex: `generate_screen_from_text`) para gerar e iterar rapidamente sobre o visual da tela, apresentando uma prova de conceito atraente para o usuário.
+- **Wireframe/Mockup**: Descrever a disposição dos elementos (pode usar Mermaid ou descrições detalhadas baseadas nas imagens geradas pelo Stitch).
 - **Componentização**: Identificar componentes reutilizáveis (botões, cards, inputs).
 
 ### 2. Análise de Tela Existente (UX Audit)

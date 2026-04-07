@@ -16,7 +16,9 @@ class PipelineReadDTO(BaseModel):
     id: int
     name: str
     entity_type: str
-    team_id: int
+    team_id: Optional[int] = None
+    item_label_singular: Optional[str] = "Item"
+    item_label_plural: Optional[str] = "Itens"
     stages: List[PipelineStageDTO]
 
     class Config:
@@ -25,10 +27,14 @@ class PipelineReadDTO(BaseModel):
 class PipelineCreateDTO(BaseModel):
     name: str
     entity_type: str
+    item_label_singular: Optional[str] = "Item"
+    item_label_plural: Optional[str] = "Itens"
     stages: List[PipelineStageDTO]
 
 class PipelineUpdateDTO(BaseModel):
     name: Optional[str] = None
+    item_label_singular: Optional[str] = None
+    item_label_plural: Optional[str] = None
     stages: Optional[List[PipelineStageDTO]] = None
 
 class EntityMoveDTO(BaseModel):

@@ -19,6 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Modal from '../common/Modal';
 import { ToastProvider } from '../common/Toast';
+import './PipelineSettings.css';
 
 // --- Sortable Stage Item ---
 const SortableStage = ({ stage, onEdit, onDelete }) => {
@@ -59,7 +60,7 @@ const SortableStage = ({ stage, onEdit, onDelete }) => {
 // --- Main Inner Component ---
 const PipelineSettingsInner = ({ addToast }) => {
   const { fetchWithAuth } = useAuth();
-  const [activeTab, setActiveTab] = useState('contact'); // contact, company, deal
+  const [activeTab, setActiveTab] = useState('contact'); // contact, company, deal, workItem
   const [pipelines, setPipelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,6 +70,8 @@ const PipelineSettingsInner = ({ addToast }) => {
   const [formData, setFormData] = useState({
     name: '',
     entity_type: 'contact',
+    item_label_singular: 'Item',
+    item_label_plural: 'Itens',
     stages: []
   });
 
@@ -103,13 +106,15 @@ const PipelineSettingsInner = ({ addToast }) => {
     fetchPipelines();
   }, []);
 
-  const filteredPipelines = pipelines.filter(p => p.entity_type === activeTab);
+  const filteredPipelines = Array.isArray(pipelines) ? pipelines.filter(p => p.entity_type === activeTab) : [];
 
   const handleOpenCreate = () => {
     setModalType('create');
     setFormData({
       name: '',
       entity_type: activeTab,
+      item_label_singular: activeTab === 'workItem' ? 'Processo' : (activeTab === 'contact' ? 'Contato' : (activeTab === 'company' ? 'Empresa' : 'Negócio')),
+      item_label_plural: activeTab === 'workItem' ? 'Processos' : (activeTab === 'contact' ? 'Contatos' : (activeTab === 'company' ? 'Empresas' : 'Negócios')),
       stages: [
         { name: 'Novo', order: 0, color: '#3182CE', is_final: false },
         { name: 'Em Andamento', order: 1, color: '#F6AD55', is_final: false },
@@ -125,7 +130,9 @@ const PipelineSettingsInner = ({ addToast }) => {
     setFormData({
       name: p.name,
       entity_type: p.entity_type,
-      stages: [...p.stages].sort((a, b) => a.order - b.order)
+      item_label_singular: p.item_label_singular || 'Item',
+      item_label_plural: p.item_label_plural || 'Itens',
+      stages: [...(p.stages || [])].sort((a, b) => a.order - b.order)
     });
     setIsModalOpen(true);
   };
@@ -136,7 +143,9 @@ const PipelineSettingsInner = ({ addToast }) => {
       const payload = {
         name: formData.name,
         entity_type: formData.entity_type,
-        stages: formData.stages.map((s, i) => ({ ...s, order: i }))
+        item_label_singular: formData.item_label_singular,
+        item_label_plural: formData.item_label_plural,
+        stages: (formData.stages || []).map((s, i) => ({ ...s, order: i }))
       };
 
       if (modalType === 'create') {
@@ -231,13 +240,14 @@ const PipelineSettingsInner = ({ addToast }) => {
         <button className={`tab-btn ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => setActiveTab('contact')}>Contatos</button>
         <button className={`tab-btn ${activeTab === 'company' ? 'active' : ''}`} onClick={() => setActiveTab('company')}>Empresas</button>
         <button className={`tab-btn ${activeTab === 'deal' ? 'active' : ''}`} onClick={() => setActiveTab('deal')}>Negócios</button>
+        <button className={`tab-btn ${activeTab === 'workItem' ? 'active' : ''}`} onClick={() => setActiveTab('workItem')}>Processos</button>
       </div>
 
       <div className="pipelines-list">
         {filteredPipelines.length === 0 ? (
           <div className="empty-state">
             <Layout size={48} />
-            <p>Nenhuma pipeline configurada para {activeTab === 'deal' ? 'Negócios' : (activeTab === 'contact' ? 'Contatos' : 'Empresas')}.</p>
+            <p>Nenhuma pipeline configurada para {activeTab === 'deal' ? 'Negócios' : (activeTab === 'contact' ? 'Contatos' : (activeTab === 'company' ? 'Empresas' : (activeTab === 'workItem' ? 'Processos' : 'Itens')))}.</p>
             <button className="hs-button-secondary" onClick={handleOpenCreate}>Criar primeira pipeline</button>
           </div>
         ) : (
@@ -246,7 +256,7 @@ const PipelineSettingsInner = ({ addToast }) => {
               <div className="pipeline-card-header">
                 <div className="pipeline-info">
                   <h3>{p.name}</h3>
-                  <span className="pipeline-meta">{p.stages.length} estágios</span>
+                  <span className="pipeline-meta">{(p.stages || []).length} estágios</span>
                 </div>
                 <div className="pipeline-actions">
                   <button className="hs-button-secondary hs-button-sm" onClick={() => handleOpenEdit(p)}>
@@ -258,7 +268,7 @@ const PipelineSettingsInner = ({ addToast }) => {
                 </div>
               </div>
               <div className="pipeline-visual-flow">
-                {p.stages.sort((a,b) => a.order - b.order).map((s, idx) => (
+                {[...(p.stages || [])].sort((a,b) => a.order - b.order).map((s, idx) => (
                   <React.Fragment key={s.id}>
                     <div className="visual-stage">
                       <div className="visual-dot" style={{ backgroundColor: s.color }}></div>
@@ -286,6 +296,45 @@ const PipelineSettingsInner = ({ addToast }) => {
               placeholder="Ex: Funil de Vendas Direct"
             />
           </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Tipo de Objeto</label>
+              <select 
+                className="hs-input"
+                value={formData.entity_type}
+                onChange={e => setFormData({ ...formData, entity_type: e.target.value })}
+              >
+                <option value="contact">Contato</option>
+                <option value="company">Empresa</option>
+                <option value="deal">Negócio</option>
+                <option value="workItem">Processo (Genérico)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Nome Singular do Item</label>
+              <input 
+                type="text" 
+                className="hs-input" 
+                value={formData.item_label_singular}
+                onChange={e => setFormData({ ...formData, item_label_singular: e.target.value })}
+                placeholder="Ex: Oportunidade"
+              />
+            </div>
+            <div className="form-group">
+              <label>Nome Plural do Item</label>
+              <input 
+                type="text" 
+                className="hs-input" 
+                value={formData.item_label_plural}
+                onChange={e => setFormData({ ...formData, item_label_plural: e.target.value })}
+                placeholder="Ex: Oportunidades"
+              />
+            </div>
+          </div>
           
           <div className="stages-editor">
             <div className="editor-header">
@@ -296,9 +345,9 @@ const PipelineSettingsInner = ({ addToast }) => {
             </div>
             
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={formData.stages.map((s, i) => s.id || `temp-${s.name}`)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={(formData.stages || []).map((s, i) => s.id || `temp-${s.name}`)} strategy={verticalListSortingStrategy}>
                 <div className="stages-list">
-                  {formData.stages.map((stage, index) => (
+                  {(formData.stages || []).map((stage, index) => (
                     <SortableStage 
                       key={stage.id || `temp-${stage.name}`} 
                       stage={stage} 
@@ -362,59 +411,6 @@ const PipelineSettingsInner = ({ addToast }) => {
           </div>
         </div>
       </Modal>
-
-      <style jsx>{`
-        .pipeline-settings {
-          padding: 32px;
-          max-width: 1000px;
-          margin: 0 auto;
-        }
-        .header-left h2 { font-size: 24px; font-weight: 700; color: var(--hs-text-primary); margin-bottom: 4px; }
-        .description { color: var(--hs-text-secondary); font-size: 14px; margin-bottom: 24px; }
-        
-        .tabs-container { display: flex; gap: 8px; border-bottom: 1px solid var(--hs-border); margin-bottom: 32px; }
-        .tab-btn { padding: 12px 24px; border: none; background: none; color: var(--hs-text-secondary); cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
-        .tab-btn.active { color: var(--hs-blue); border-bottom-color: var(--hs-blue); }
-        
-        .pipelines-list { display: flex; flex-direction: column; gap: 20px; }
-        .pipeline-card { background: white; border: 1px solid var(--hs-border); border-radius: 8px; padding: 20px; transition: box-shadow 0.2s; }
-        .pipeline-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .pipeline-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .pipeline-info h3 { font-size: 18px; font-weight: 700; color: var(--hs-text-primary); margin-bottom: 4px; }
-        .pipeline-meta { font-size: 12px; color: var(--hs-text-secondary); }
-        .pipeline-actions { display: flex; gap: 8px; }
-        .pipeline-actions button.delete:hover { border-color: #dc2626; color: #dc2626; }
-        
-        .pipeline-visual-flow { display: flex; align-items: center; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
-        .visual-stage { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--hs-text-primary); white-space: nowrap; }
-        .visual-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .flow-arrow { color: var(--hs-border); flex-shrink: 0; }
-        
-        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px; color: var(--hs-text-secondary); text-align: center; }
-        .empty-state p { margin: 16px 0 24px; font-size: 16px; }
-
-        .pipeline-form { display: flex; flex-direction: column; gap: 24px; }
-        .stages-editor { background: #f8fafc; border: 1px solid var(--hs-border); border-radius: 8px; padding: 20px; }
-        .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .editor-header label { font-weight: 600; color: var(--hs-text-primary); }
-        .stages-list { display: flex; flex-direction: column; gap: 8px; }
-        
-        .stage-item { background: white; border: 1px solid var(--hs-border); border-radius: 6px; padding: 12px; display: flex; align-items: center; gap: 12px; }
-        .stage-drag-handle { color: var(--hs-text-secondary); cursor: grab; display: flex; }
-        .stage-color { width: 16px; height: 16px; border-radius: 3px; }
-        .stage-info { flex: 1; display: flex; align-items: center; gap: 8px; }
-        .stage-name { font-size: 14px; font-weight: 500; }
-        .stage-badge { font-size: 10px; background: #edf2f7; padding: 2px 6px; border-radius: 10px; color: var(--hs-text-secondary); text-transform: uppercase; }
-        .stage-actions { display: flex; gap: 4px; }
-        
-        .color-picker { display: flex; gap: 8px; }
-        .color-picker input[type="color"] { width: 40px; height: 40px; padding: 0; border: 1px solid var(--hs-border); border-radius: 4px; overflow: hidden; cursor: pointer; }
-        .checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; }
-        
-        .icon-btn { background: none; border: none; color: var(--hs-text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; }
-        .icon-btn:hover { background: #f1f5f9; color: var(--hs-blue); }
-        .icon-btn.delete:hover { color: #dc2626; }
-      `}</style>
     </div>
   );
 };

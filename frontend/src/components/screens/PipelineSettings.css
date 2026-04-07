@@ -1,0 +1,61 @@
+.pipeline-settings {
+  padding: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.header-left h2 { font-size: 24px; font-weight: 700; color: var(--hs-text-primary); margin-bottom: 4px; }
+.description { color: var(--hs-text-secondary); font-size: 14px; margin-bottom: 24px; }
+
+.tabs-container { display: flex; gap: 8px; border-bottom: 1px solid var(--hs-border); margin-bottom: 32px; }
+.tab-btn { padding: 12px 24px; border: none; background: none; color: var(--hs-text-secondary); cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent; }
+.tab-btn.active { color: var(--hs-blue); border-bottom-color: var(--hs-blue); }
+
+.pipelines-list { display: flex; flex-direction: column; gap: 20px; }
+.pipeline-card { background: white; border: 1px solid var(--hs-border); border-radius: 8px; padding: 20px; transition: box-shadow 0.2s; }
+.pipeline-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.pipeline-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.pipeline-info h3 { font-size: 18px; font-weight: 700; color: var(--hs-text-primary); margin-bottom: 4px; }
+.pipeline-meta { font-size: 12px; color: var(--hs-text-secondary); }
+.pipeline-actions { display: flex; gap: 8px; }
+.pipeline-actions button.delete:hover { border-color: #dc2626; color: #dc2626; }
+
+.pipeline-visual-flow { display: flex; align-items: center; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.visual-stage { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--hs-text-primary); white-space: nowrap; }
+.visual-dot { width: 10px; height: 10px; border-radius: 50%; }
+.flow-arrow { color: var(--hs-border); flex-shrink: 0; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px; color: var(--hs-text-secondary); text-align: center; }
+.empty-state p { margin: 16px 0 24px; font-size: 16px; }
+
+.pipeline-form { display: flex; flex-direction: column; gap: 24px; }
+.stages-editor { background: #f8fafc; border: 1px solid var(--hs-border); border-radius: 8px; padding: 20px; }
+.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.editor-header label { font-weight: 600; color: var(--hs-text-primary); }
+.stages-list { display: flex; flex-direction: column; gap: 8px; }
+
+.stage-item { background: white; border: 1px solid var(--hs-border); border-radius: 6px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+.stage-drag-handle { color: var(--hs-text-secondary); cursor: grab; display: flex; }
+.stage-color { width: 16px; height: 16px; border-radius: 3px; }
+.stage-info { flex: 1; display: flex; align-items: center; gap: 8px; }
+.stage-name { font-size: 14px; font-weight: 500; }
+.stage-badge { font-size: 10px; background: #edf2f7; padding: 2px 6px; border-radius: 10px; color: var(--hs-text-secondary); text-transform: uppercase; }
+.stage-actions { display: flex; gap: 4px; }
+
+.color-picker { display: flex; gap: 8px; }
+.color-picker input[type="color"] { width: 40px; height: 40px; padding: 0; border: 1px solid var(--hs-border); border-radius: 4px; overflow: hidden; cursor: pointer; }
+.checkbox-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; }
+
+.icon-btn { background: none; border: none; color: var(--hs-text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; }
+.icon-btn:hover { background: #f1f5f9; color: var(--hs-blue); }
+.icon-btn.delete:hover { color: #dc2626; }
+
+.loading-container { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 40px; 
+  gap: 16px; 
+}
+.spinner { animation: pipelineSpin 1s linear infinite; color: var(--hs-blue); }
+@keyframes pipelineSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

@@ -14,19 +14,24 @@ import {
   Globe,
   Palette,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  GitBranch
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import './Sidebar.css';
 
-const Sidebar = ({ activeScreen, onNavigate }) => {
+const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({ 'settings-group': true });
+  const [isHovered, setIsHovered] = useState(false);
   const { user, workspace, logout } = useAuth();
   
   const userInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
 
+  // ... (menuItems definition stays same)
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', id: 'dashboard' },
+    { icon: <GitBranch size={20} />, label: 'Processos', id: 'pipeline-board' },
     { icon: <Users size={20} />, label: 'Contatos', id: 'contacts' },
     { icon: <Building2 size={20} />, label: 'Empresas', id: 'companies' },
     { icon: <Handshake size={20} />, label: 'Negócios', id: 'deals' },
@@ -40,26 +45,32 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
     children: [
       { label: 'Propriedades', id: 'settings' },
       { label: 'Pipelines', id: 'pipeline-settings' },
+      { label: 'Tipos de Objetos', id: 'object-types' },
     ]
   };
 
   const isPowerUser = user?.role === 'superadmin' || user?.role === 'admin';
 
   if (isPowerUser) {
+    configGroup.children = configGroup.children.filter(c => c.id !== 'workspace-settings');
     configGroup.children.push({ label: 'Área de Trabalho', id: 'workspace-settings' });
     
     if (user?.role === 'superadmin') {
+      configGroup.children = configGroup.children.filter(c => c.id !== 'system-settings');
       configGroup.children.push({ label: 'E-mail (SMTP)', id: 'system-settings' });
     }
     
-    menuItems.push(configGroup);
+    if (!menuItems.find(m => m.id === 'settings-group')) {
+      menuItems.push(configGroup);
+    }
     
-    if (user?.role === 'superadmin') {
+    if (user?.role === 'superadmin' && !menuItems.find(m => m.id === 'admin')) {
       menuItems.push({ icon: <Shield size={20} />, label: 'Administração', id: 'admin' });
     }
   } else {
-    // For non-admins, if they have access to some config
-    menuItems.push(configGroup);
+    if (!menuItems.find(m => m.id === 'settings-group')) {
+      menuItems.push(configGroup);
+    }
   }
 
   const toggleMenu = (id) => {
@@ -71,14 +82,23 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        {workspace?.logo_url ? (
-          <img src={workspace.logo_url} alt="Logo" className="workspace-logo-img" />
-        ) : (
-          <div className="logo-placeholder">{workspace?.name?.charAt(0) || 'C'}</div>
-        )}
-        <span className="logo-text">{workspace?.name || 'CRM'}</span>
+    <aside 
+      className={`sidebar ${isOpen ? 'mobile-open' : ''} ${isHovered ? 'expanded' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="sidebar-header">
+        <div className="sidebar-logo">
+          {workspace?.logo_url ? (
+            <img src={workspace.logo_url} alt="Logo" className="workspace-logo-img" />
+          ) : (
+            <div className="logo-placeholder">{workspace?.name?.charAt(0) || 'C'}</div>
+          )}
+          <span className="logo-text">{workspace?.name || 'CRM'}</span>
+        </div>
+        <button className="close-sidebar show-on-mobile" onClick={onClose}>
+          <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+        </button>
       </div>
       
       <nav className="sidebar-nav">
@@ -86,6 +106,7 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
           <div key={item.id} className="menu-group">
             <div 
               className={`nav-item ${activeScreen === item.id || isChildActive(item) ? 'active' : ''}`}
+              title={item.label}
               onClick={() => {
                 if (item.children) {
                   toggleMenu(item.id);
@@ -103,7 +124,7 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
               )}
             </div>
             
-            {item.children && expandedMenus[item.id] && (
+            {item.children && (expandedMenus[item.id] || isHovered) && (
               <div className="sub-menu">
                 {item.children.map(child => (
                   <div 
@@ -132,14 +153,8 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
                 </div>
               </div>
               <div className="dropdown-divider"></div>
-              <div className="dropdown-item">
+              <div className="dropdown-item" onClick={() => onNavigate('profile')}>
                 <UserIcon size={16} /> <span>Meu Perfil</span>
-              </div>
-              <div className="dropdown-item">
-                <Settings size={16} /> <span>Configurações</span>
-              </div>
-              <div className="dropdown-item">
-                <HelpCircle size={16} /> <span>Ajuda</span>
               </div>
               <div className="dropdown-divider"></div>
               <div className="dropdown-item logout" onClick={logout}>
@@ -162,185 +177,6 @@ const Sidebar = ({ activeScreen, onNavigate }) => {
         </div>
       </div>
 
-      <style jsx>{`
-        .sidebar {
-          width: var(--sidebar-width);
-          background: var(--hs-white);
-          border-right: 1px solid var(--hs-border);
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          flex-shrink: 0;
-          position: relative;
-        }
-
-        .sidebar-logo {
-          padding: 24px 20px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          border-bottom: 1px solid var(--hs-border-light);
-        }
-
-        .workspace-logo-img {
-          width: 32px;
-          height: 32px;
-          object-fit: contain;
-          border-radius: 4px;
-        }
-
-        .logo-placeholder {
-          width: 32px;
-          height: 32px;
-          background: var(--hs-orange);
-          color: white;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 800;
-          font-size: 14px;
-        }
-
-        .logo-text {
-          font-weight: 700;
-          color: var(--hs-text-primary);
-          font-size: 18px;
-        }
-
-        .sidebar-nav {
-          padding: 16px 8px;
-          flex: 1;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
-          border-radius: var(--hs-radius);
-          color: var(--hs-text-secondary);
-          cursor: pointer;
-          transition: all 0.2s;
-          margin-bottom: 4px;
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .nav-item:hover {
-          background: var(--hs-sidebar-hover);
-          color: var(--hs-blue);
-        }
-
-        .nav-item.active {
-          background: var(--hs-sidebar-hover);
-          color: var(--hs-blue);
-          font-weight: 600;
-        }
-
-        .chevron-icon {
-          margin-left: auto;
-          display: flex;
-          color: var(--hs-text-secondary);
-        }
-
-        .sub-menu {
-          margin-top: 2px;
-          margin-bottom: 8px;
-        }
-
-        .sub-item {
-          padding-left: 44px;
-          margin-bottom: 2px;
-          color: var(--hs-text-secondary);
-        }
-
-        .sub-item:hover {
-          color: var(--hs-blue);
-        }
-
-        .sub-item.active {
-          background: transparent;
-          color: var(--hs-blue);
-          font-weight: 600;
-        }
-
-        .nav-icon { display: flex; align-items: center; }
-
-        .sidebar-footer {
-          padding: 12px 8px;
-          border-top: 1px solid var(--hs-border-light);
-          position: relative;
-        }
-
-        .profile-container { position: relative; }
-
-        .user-profile {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px;
-          border-radius: var(--hs-radius);
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .user-profile:hover { background: var(--hs-sidebar-hover); }
-
-        .avatar {
-          width: 32px;
-          height: 32px;
-          background: var(--hs-blue);
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 12px;
-        }
-
-        .user-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-        .user-name { font-size: 13px; font-weight: 600; color: var(--hs-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .user-role { font-size: 11px; color: var(--hs-text-secondary); }
-        .chevron { color: var(--hs-text-secondary); transition: transform 0.2s; }
-        .chevron.open { transform: rotate(180deg); }
-
-        .profile-dropdown {
-          position: absolute;
-          bottom: 100%;
-          left: 0;
-          right: 0;
-          background: white;
-          border: 1px solid var(--hs-border);
-          border-radius: var(--hs-radius);
-          box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-          margin-bottom: 8px;
-          padding: 8px;
-          z-index: 100;
-          min-width: 200px;
-        }
-
-        .dropdown-header { display: flex; align-items: center; gap: 10px; padding: 12px 8px; }
-        .user-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-        .user-email { font-size: 11px; color: var(--hs-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .dropdown-divider { height: 1px; background: var(--hs-border-light); margin: 8px 0; }
-        
-        .dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 12px;
-          font-size: 13px;
-          color: var(--hs-text-secondary);
-          border-radius: var(--hs-radius);
-          cursor: pointer;
-        }
-
-        .dropdown-item:hover { background: var(--hs-sidebar-hover); color: var(--hs-blue); }
-        .dropdown-item.logout { color: #dc2626; }
-        .dropdown-item.logout:hover { background: #fef2f2; }
-      `}</style>
     </aside>
   );
 };
