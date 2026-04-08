@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
-from src.domain.entities.work_item import WorkItem, WorkItemType, CustomFieldDefinition, IWorkItemRepository
-from src.infrastructure.database.models import WorkItemModel, WorkItemTypeModel, WorkItemFieldDefinitionModel
+from src.domain.entities.work_item import WorkItem, WorkItemType, CustomFieldDefinition, WorkItemFieldGroup, IWorkItemRepository
+from src.infrastructure.database.models import WorkItemModel, WorkItemTypeModel, WorkItemFieldDefinitionModel, WorkItemFieldGroupModel
 import json
 
 class WorkItemRepository(IWorkItemRepository):
@@ -94,6 +94,15 @@ class WorkItemRepository(IWorkItemRepository):
         ).all()
         return [self._to_entity(m) for m in models]
 
+    def list_by_type(self, type_id: int, workspace_id: int) -> List[WorkItem]:
+        models = self.db.query(WorkItemModel).options(
+            joinedload(WorkItemModel.owner)
+        ).filter(
+            WorkItemModel.type_id == type_id,
+            WorkItemModel.workspace_id == workspace_id
+        ).all()
+        return [self._to_entity(m) for m in models]
+
     def delete(self, id: int, workspace_id: int) -> bool:
         model = self.db.query(WorkItemModel).filter(
             WorkItemModel.id == id,
@@ -111,7 +120,8 @@ class WorkItemRepository(IWorkItemRepository):
             label=work_item_type.label,
             icon=work_item_type.icon,
             color=work_item_type.color,
-            workspace_id=work_item_type.workspace_id
+            workspace_id=work_item_type.workspace_id,
+            is_system=work_item_type.is_system
         )
         self.db.add(model)
         self.db.commit()
@@ -121,37 +131,54 @@ class WorkItemRepository(IWorkItemRepository):
 
     def list_types(self, workspace_id: int) -> List[WorkItemType]:
         models = self.db.query(WorkItemTypeModel).filter(
-            WorkItemTypeModel.workspace_id == workspace_id
+            (WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None)
         ).all()
         types = []
         for m in models:
-            item_type = WorkItemType(
-                id=m.id,
-                name=m.name,
-                label=m.label,
-                icon=m.icon,
-                color=m.color,
-                workspace_id=m.workspace_id
-            )
-            # Load field definitions
-            item_type.field_definitions = [
-                CustomFieldDefinition(
-                    id=fd.id,
-                    name=fd.name,
-                    label=fd.label,
-                    field_type=fd.field_type,
-                    options=json.loads(fd.options_json) if fd.options_json else None,
-                    required=fd.is_required,
-                    order=fd.order,
-                    workspace_id=m.workspace_id
-                ) for fd in m.field_definitions
-            ]
+            item_type = self._type_model_to_entity(m)
             types.append(item_type)
         return types
+
+    def _type_model_to_entity(self, m: WorkItemTypeModel) -> WorkItemType:
+        item_type = WorkItemType(
+            id=m.id,
+            name=m.name,
+            label=m.label,
+            icon=m.icon,
+            color=m.color,
+            workspace_id=m.workspace_id,
+            is_system=m.is_system
+        )
+        # Load field groups
+        item_type.field_groups = [
+            WorkItemFieldGroup(
+                id=g.id,
+                name=g.name,
+                order=g.order,
+                workspace_id=g.workspace_id,
+                type_id=g.type_id
+            ) for g in m.field_groups
+        ]
+        # Load field definitions
+        item_type.field_definitions = [
+            CustomFieldDefinition(
+                id=fd.id,
+                name=fd.name,
+                label=fd.label,
+                field_type=fd.field_type,
+                options=json.loads(fd.options_json) if fd.options_json else None,
+                required=fd.is_required,
+                order=fd.order,
+                group_id=fd.group_id,
+                workspace_id=m.workspace_id
+            ) for fd in m.field_definitions
+        ]
+        return item_type
 
     def create_field_definition(self, type_id: int, field_def: CustomFieldDefinition) -> CustomFieldDefinition:
         model = WorkItemFieldDefinitionModel(
             type_id=type_id,
+            group_id=field_def.group_id,
             name=field_def.name,
             label=field_def.label,
             field_type=field_def.field_type,
@@ -165,19 +192,43 @@ class WorkItemRepository(IWorkItemRepository):
         field_def.id = model.id
         return field_def
 
-    def update_type(self, type_id: int, workspace_id: int, label: Optional[str] = None, icon: Optional[str] = None, color: Optional[str] = None, field_definitions: Optional[List[CustomFieldDefinition]] = None) -> Optional[WorkItemType]:
+    def update_type(self, type_id: int, workspace_id: int, label: Optional[str] = None, icon: Optional[str] = None, color: Optional[str] = None, field_definitions: Optional[List[CustomFieldDefinition]] = None, field_groups: Optional[List[WorkItemFieldGroup]] = None) -> Optional[WorkItemType]:
         model = self.db.query(WorkItemTypeModel).filter(
-            WorkItemTypeModel.id == type_id,
-            WorkItemTypeModel.workspace_id == workspace_id
+            (WorkItemTypeModel.id == type_id) & 
+            ((WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None))
         ).first()
         
         if not model:
             return None
             
+        # Protect system types from changes by non-superadmins (simplified for now: anyone can edit label/icon but not name)
         if label is not None: model.label = label
         if icon is not None: model.icon = icon
         if color is not None: model.color = color
         
+        if field_groups is not None:
+             # Sync field groups
+             group_ids = [g.id for g in field_groups if g.id is not None]
+             for g_model in model.field_groups:
+                 if g_model.id not in group_ids:
+                     self.db.delete(g_model)
+             
+             for g_entity in field_groups:
+                 if g_entity.id:
+                     g_model = self.db.query(WorkItemFieldGroupModel).filter(WorkItemFieldGroupModel.id == g_entity.id).first()
+                     if g_model:
+                         g_model.name = g_entity.name
+                         g_model.order = g_entity.order
+                 else:
+                     new_g = WorkItemFieldGroupModel(
+                         type_id=type_id,
+                         name=g_entity.name,
+                         order=g_entity.order,
+                         workspace_id=workspace_id
+                     )
+                     self.db.add(new_g)
+             self.db.flush()
+
         if field_definitions is not None:
             # Sync field definitions
             current_field_ids = [fd.id for fd in model.field_definitions]
@@ -199,10 +250,12 @@ class WorkItemRepository(IWorkItemRepository):
                         fd_model.options_json = json.dumps(fd_entity.options) if fd_entity.options else None
                         fd_model.is_required = fd_entity.required
                         fd_model.order = fd_entity.order
+                        fd_model.group_id = fd_entity.group_id
                 else:
                     # Create
                     new_fd_model = WorkItemFieldDefinitionModel(
                         type_id=type_id,
+                        group_id=fd_entity.group_id,
                         name=fd_entity.name,
                         label=fd_entity.label,
                         field_type=fd_entity.field_type,
@@ -233,30 +286,10 @@ class WorkItemRepository(IWorkItemRepository):
 
     def get_type_by_id(self, type_id: int, workspace_id: int) -> Optional[WorkItemType]:
         m = self.db.query(WorkItemTypeModel).filter(
-            WorkItemTypeModel.id == type_id,
-            WorkItemTypeModel.workspace_id == workspace_id
+            (WorkItemTypeModel.id == type_id) & 
+            ((WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None))
         ).first()
         if not m:
             return None
             
-        item_type = WorkItemType(
-            id=m.id,
-            name=m.name,
-            label=m.label,
-            icon=m.icon,
-            color=m.color,
-            workspace_id=m.workspace_id
-        )
-        item_type.field_definitions = [
-            CustomFieldDefinition(
-                id=fd.id,
-                name=fd.name,
-                label=fd.label,
-                field_type=fd.field_type,
-                options=json.loads(fd.options_json) if fd.options_json else None,
-                required=fd.is_required,
-                order=fd.order,
-                workspace_id=m.workspace_id
-            ) for fd in m.field_definitions
-        ]
-        return item_type
+        return self._type_model_to_entity(m)

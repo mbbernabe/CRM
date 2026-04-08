@@ -144,6 +144,27 @@ def delete_item(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.get("/types/{type_id}/items", response_model=List[Dict[str, Any]])
+def list_items_by_type(
+    type_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    repo = WorkItemRepository(db)
+    items = repo.list_by_type(type_id, workspace_id)
+    return [
+        {
+            "id": item.id,
+            "title": item.title,
+            "description": item.description,
+            "type_id": item.type_id,
+            "custom_fields": item.custom_fields,
+            "pipeline_id": item.pipeline_id,
+            "stage_id": item.stage_id,
+            "workspace_id": item.workspace_id,
+            "owner_id": item.owner_id
+        } for item in items
+    ]
 @router.get("/types", response_model=List[WorkItemTypeReadDTO])
 def list_types(
     workspace_id: int = Depends(get_workspace_id),

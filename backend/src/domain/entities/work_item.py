@@ -14,6 +14,14 @@ class FieldType(str, Enum):
     CURRENCY = "currency"
 
 @dataclass
+class WorkItemFieldGroup:
+    id: Optional[int] = None
+    name: str = ""
+    order: int = 0
+    workspace_id: Optional[int] = None
+    type_id: int = 0
+
+@dataclass
 class CustomFieldDefinition:
     id: Optional[int] = None
     name: str = "" # slug: "expected_revenue"
@@ -22,6 +30,7 @@ class CustomFieldDefinition:
     options: Optional[List[str]] = None # For select types
     required: bool = False
     order: int = 0
+    group_id: Optional[int] = None
     workspace_id: Optional[int] = None
 
 @dataclass
@@ -32,8 +41,10 @@ class WorkItemType:
     icon: Optional[str] = None
     color: Optional[str] = None
     workspace_id: Optional[int] = None
+    is_system: bool = False
     # Field definitions specifically for this type
     field_definitions: List[CustomFieldDefinition] = field(default_factory=list)
+    field_groups: List[WorkItemFieldGroup] = field(default_factory=list)
 
 @dataclass
 class WorkItem:

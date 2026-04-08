@@ -202,20 +202,89 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    background: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #cbd6e2;
+    max-width: fit-content;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.color-picker {
-    width: 36px;
-    height: 36px;
+.color-input-wrapper:focus-within {
+    border-color: #00a4bd;
+    box-shadow: 0 0 0 2px rgba(0, 164, 189, 0.1);
+}
+
+.color-picker-input {
+    appearance: none;
+    -webkit-appearance: none;
     border: none;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
     background: none;
+    padding: 0;
+    margin: 0;
+    display: block;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.color-code {
-    font-family: monospace;
-    font-size: 14px;
-    color: #516f90;
+.color-picker-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-picker-input::-webkit-color-swatch {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+.color-code-display {
+    font-size: 13px;
+    font-weight: 500;
+    color: #33475b;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+}
+
+/* Options Manager */
+.options-manager { 
+    border: 1px solid #cbd6e2; 
+    border-radius: 4px; 
+    padding: 12px; 
+    background: #fdfdfd; 
+}
+
+.options-list { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    margin-bottom: 12px; 
+}
+
+.option-chip { 
+    background: #eaf0f6; 
+    padding: 4px 10px; 
+    border-radius: 20px; 
+    font-size: 12px; 
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+    color: #33475b;
+}
+
+.option-chip button { 
+    background: none; 
+    border: none; 
+    cursor: pointer; 
+    color: #516f90; 
+    padding: 0; 
+    display: flex; 
+}
+
+.option-input-group {
+    display: flex;
+    gap: 8px;
 }
 
 .delete-confirm {
@@ -244,4 +313,42 @@
     display: flex;
     justify-content: center;
     gap: 16px;
+}
+
+/* Groups Configuration */
+.groups-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: #fdfdfd;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #eaf0f6;
+    margin-top: 12px;
+}
+
+.group-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    padding: 6px 10px;
+    border: 1px solid #cbd6e2;
+    border-radius: 6px;
+}
+
+.groups-config .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.empty-text {
+    font-size: 13px;
+    color: #7c98b6;
+    font-style: italic;
+}
+
+.field-main {
+    grid-template-columns: 1fr 1fr 1fr !important; /* Update to 3 columns for Group select */
 }

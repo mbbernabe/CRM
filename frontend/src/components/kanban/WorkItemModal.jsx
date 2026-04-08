@@ -1,9 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useAuth } from '../../context/AuthContext';
-import { Save, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle, ChevronDown, Check, X } from 'lucide-react';
 import WorkItemHistoryPanel from './WorkItemHistoryPanel';
+import { validateEmail, validateCPF, maskCPF, maskPhone, maskCEP, validateCEP } from '../../utils/validation';
 import './WorkItemModal.css';
+
+// --- Sub-component: MultiSelect Tags ---
+const MultiSelectTags = ({ options, value = [], onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    const toggleOption = (opt) => {
+        const newValue = value.includes(opt)
+            ? value.filter(v => v !== opt)
+            : [...value, opt];
+        onChange(newValue);
+    };
+
+    return (
+        <div className="multiselect-tags-container">
+            <div className="multiselect-tags-trigger" onClick={() => setIsOpen(!isOpen)}>
+                <div className="selected-tags">
+                    {value.length === 0 ? <span className="placeholder">Selecione...</span> : 
+                        value.map(v => (
+                            <span key={v} className="tag-chip">
+                                {v} <X size={10} onClick={(e) => { e.stopPropagation(); toggleOption(v); }} />
+                            </span>
+                        ))
+                    }
+                </div>
+                <ChevronDown size={16} />
+            </div>
+            {isOpen && (
+                <div className="multiselect-dropdown">
+                    {options.map(opt => (
+                        <div 
+                            key={opt} 
+                            className={`dropdown-item ${value.includes(opt) ? 'selected' : ''}`}
+                            onClick={() => toggleOption(opt)}
+                        >
+                            {opt} {value.includes(opt) && <Check size={14} />}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialData }) => {
   const { user, fetchWithAuth } = useAuth();
@@ -106,6 +149,24 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
         pipeline_id: pipeline.id || pipeline.pipeline_id
       };
       
+      // Validações Especiais
+      if (selectedType && selectedType.field_definitions) {
+        for (const field of selectedType.field_definitions) {
+           const val = formData.custom_fields[field.name];
+           if (!val) continue;
+
+           if (field.field_type === 'email' && !validateEmail(val)) {
+             throw new Error(`O campo ${field.label} deve ser um e-mail válido.`);
+           }
+           if (field.field_type === 'cpf' && !validateCPF(val)) {
+             throw new Error(`O campo ${field.label} deve conter um CPF válido.`);
+           }
+           if (field.field_type === 'cep' && !validateCEP(val)) {
+             throw new Error(`O campo ${field.label} deve conter um CEP válido.`);
+           }
+        }
+      }
+
       const method = formData.id ? 'PUT' : 'POST';
       const url = formData.id 
         ? `http://localhost:8000/workitems/${formData.id}` 
@@ -131,27 +192,98 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
   const renderDynamicFields = () => {
     if (!selectedType || !selectedType.field_definitions) return null;
     
-    return selectedType.field_definitions.map(field => (
-      <div key={field.id} className="form-group">
-        <label>{field.label} {field.required && <span className="required">*</span>}</label>
-        {field.field_type === 'textarea' ? (
-          <textarea 
-            className="hs-input"
-            required={field.required}
-            value={formData.custom_fields[field.name] || ''}
-            onChange={e => handleFieldChange(field.name, e.target.value)}
-          />
-        ) : (
-          <input 
-            type={field.field_type === 'number' ? 'number' : 'text'}
-            className="hs-input"
-            required={field.required}
-            value={formData.custom_fields[field.name] || ''}
-            onChange={e => handleFieldChange(field.name, e.target.value)}
-          />
-        )}
-      </div>
-    ));
+    return selectedType.field_definitions.map(field => {
+      const val = formData.custom_fields[field.name] || '';
+      const options = Array.isArray(field.options) ? field.options : 
+                     (typeof field.options === 'string' ? field.options.split(';') : []);
+
+      return (
+        <div key={field.id} className="form-group">
+          <label>{field.label} {field.required && <span className="required">*</span>}</label>
+          
+          {field.field_type === 'textarea' ? (
+            <textarea 
+              className="hs-input"
+              required={field.required}
+              value={val}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+            />
+          ) : field.field_type === 'select' ? (
+            <select 
+              className="hs-input" 
+              required={field.required}
+              value={val}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+            >
+              <option value="">Selecione...</option>
+              {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          ) : field.field_type === 'multiselect' ? (
+            field.displayMode === 'tags' ? (
+                <MultiSelectTags 
+                    options={options} 
+                    value={Array.isArray(val) ? val : (val ? val.split(';') : [])}
+                    onChange={newVal => handleFieldChange(field.name, newVal.join(';'))}
+                />
+            ) : (
+                <div className="checkbox-group">
+                    {options.map(opt => (
+                        <label key={opt} className="hs-checkbox">
+                            <input 
+                                type="checkbox"
+                                checked={Array.isArray(val) ? val.includes(opt) : (val ? val.split(';').includes(opt) : false)}
+                                onChange={e => {
+                                    const current = Array.isArray(val) ? val : (val ? val.split(';') : []);
+                                    const next = e.target.checked 
+                                        ? [...current, opt]
+                                        : current.filter(v => v !== opt);
+                                    handleFieldChange(field.name, next.join(';'));
+                                }}
+                            />
+                            <span>{opt}</span>
+                        </label>
+                    ))}
+                </div>
+            )
+          ) : field.field_type === 'cpf' ? (
+            <input 
+              type="text"
+              className="hs-input"
+              required={field.required}
+              value={maskCPF(val)}
+              onChange={e => handleFieldChange(field.name, maskCPF(e.target.value))}
+              placeholder="000.000.000-00"
+            />
+          ) : field.field_type === 'cep' ? (
+            <input 
+              type="text"
+              className="hs-input"
+              required={field.required}
+              value={maskCEP(val)}
+              onChange={e => handleFieldChange(field.name, maskCEP(e.target.value))}
+              placeholder="00000-000"
+            />
+          ) : field.field_type === 'phone' ? (
+            <input 
+              type="text"
+              className="hs-input"
+              required={field.required}
+              value={maskPhone(val)}
+              onChange={e => handleFieldChange(field.name, maskPhone(e.target.value))}
+              placeholder="(00) 00000-0000"
+            />
+          ) : (
+            <input 
+              type={field.field_type === 'number' ? 'number' : field.field_type === 'email' ? 'email' : 'text'}
+              className="hs-input"
+              required={field.required}
+              value={val}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+            />
+          )}
+        </div>
+      );
+    });
   };
 
   return (

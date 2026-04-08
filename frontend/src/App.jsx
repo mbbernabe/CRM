@@ -4,8 +4,7 @@ import Header from './components/Header';
 import './App.css';
 import KanbanBoard from './components/KanbanBoard';
 import Dashboard from './components/screens/Dashboard';
-import Contacts from './components/screens/Contacts';
-import Companies from './components/screens/Companies';
+import GenericEntityScreen from './components/screens/GenericEntityScreen';
 import Reports from './components/screens/Reports';
 import PropertySettings from './components/screens/PropertySettings';
 import AdminUsers from './components/screens/AdminUsers';
@@ -20,6 +19,7 @@ import PipelineBoardScreen from './components/screens/PipelineBoardScreen';
 import PipelineSettings from './components/screens/PipelineSettings';
 import WorkItemTypeSettings from './components/screens/WorkItemTypeSettings';
 import AcceptInvite from './components/auth/AcceptInvite';
+import { ToastProvider } from './components/common/Toast';
 import WorkspaceMembers from './components/screens/WorkspaceMembers';
 
 
@@ -69,7 +69,9 @@ const INITIAL_DEALS = [
 function App() {
   return (
     <AuthProvider>
-      <AppInner />
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
     </AuthProvider>
   );
 }
@@ -166,8 +168,8 @@ function AppInner() {
   const renderScreen = () => {
     switch (activeScreen) {
       case 'dashboard': return <Dashboard />;
-      case 'contacts': return <Contacts />;
-      case 'companies': return <Companies />;
+      case 'contacts': return <GenericEntityScreen typeName="contact" />;
+      case 'companies': return <GenericEntityScreen typeName="company" />;
       case 'deals': return (
         <>
           <div className="hide-on-mobile">

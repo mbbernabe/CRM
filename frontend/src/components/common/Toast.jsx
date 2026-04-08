@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 import './Toast.css';
+
+const ToastContext = createContext(null);
 
 const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
   const [isExiting, setIsExiting] = useState(false);
@@ -14,7 +16,7 @@ const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
 
   const handleClose = () => {
     setIsExiting(true);
-    setTimeout(onClose, 300); // Aguarda animação de saída
+    setTimeout(onClose, 300);
   };
 
   const icons = {
@@ -40,18 +42,18 @@ const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = (message, type = 'success') => {
+  const addToast = useCallback((message, type = 'success') => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
-  };
+  }, []);
 
-  const removeToast = (id) => {
+  const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   return (
-    <>
-      {children(addToast)}
+    <ToastContext.Provider value={{ addToast }}>
+      {children}
       <div className="toast-portal">
         {toasts.map((toast) => (
           <Toast 
@@ -61,8 +63,14 @@ export const ToastProvider = ({ children }) => {
           />
         ))}
       </div>
-    </>
+    </ToastContext.Provider>
   );
+};
+
+export const useToast = () => {
+  const context = useContext(ToastContext);
+  if (!context) throw new Error('useToast must be used within a ToastProvider');
+  return context;
 };
 
 export default Toast;

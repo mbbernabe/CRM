@@ -1,8 +1,17 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 
+class WorkItemFieldGroupDTO(BaseModel):
+    id: Optional[int] = None
+    name: str
+    order: int = 0
+    type_id: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 class CustomFieldDefinitionDTO(BaseModel):
     id: Optional[int] = None
+    group_id: Optional[int] = None
     name: str # slug: "expected_revenue"
     label: str # display: "Receita Esperada"
     field_type: str = "text"
@@ -18,7 +27,9 @@ class WorkItemTypeReadDTO(BaseModel):
     label: str
     icon: Optional[str] = None
     color: Optional[str] = None
+    is_system: bool = False
     field_definitions: List[CustomFieldDefinitionDTO] = Field(default_factory=list)
+    field_groups: List[WorkItemFieldGroupDTO] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,12 +39,14 @@ class WorkItemTypeCreateDTO(BaseModel):
     icon: Optional[str] = None
     color: Optional[str] = None
     field_definitions: List[CustomFieldDefinitionDTO] = Field(default_factory=list)
+    field_groups: List[WorkItemFieldGroupDTO] = Field(default_factory=list)
 
 class WorkItemTypeUpdateDTO(BaseModel):
     label: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
     field_definitions: Optional[List[CustomFieldDefinitionDTO]] = None
+    field_groups: Optional[List[WorkItemFieldGroupDTO]] = None
 
 from datetime import datetime
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Plus, Edit, Trash2, Save, X, Settings2, Code, 
@@ -6,18 +6,76 @@ import {
   AlignLeft, Hash, Calendar, DollarSign, GripVertical, AlertCircle, RefreshCw
 } from 'lucide-react';
 import Modal from '../common/Modal';
-import { ToastProvider } from '../common/Toast';
+import { useToast } from '../common/Toast';
 import './WorkItemTypeSettings.css';
 
-const WorkItemTypeSettings = () => {
-    return (
-        <ToastProvider>
-             {(addToast) => <WorkItemTypeSettingsInner addToast={addToast} />}
-        </ToastProvider>
-    );
+// --- Utils ---
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '_');
 };
 
-const WorkItemTypeSettingsInner = ({ addToast }) => {
+// --- Options Manager ---
+const OptionsManager = ({ value, onChange }) => {
+  const [inputValue, setInputValue] = useState('');
+  const options = useMemo(() => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return value.split(';').map(o => o.trim()).filter(x => x);
+  }, [value]);
+
+  const addOption = () => {
+    if (!inputValue.trim()) return;
+    if (options.includes(inputValue.trim())) {
+      setInputValue('');
+      return;
+    }
+    const newOptions = [...options, inputValue.trim()];
+    onChange(newOptions);
+    setInputValue('');
+  };
+
+  const removeOption = (opt) => {
+    const newOptions = options.filter(x => x !== opt);
+    onChange(newOptions);
+  };
+
+  return (
+    <div className="options-manager">
+      <div className="options-list">
+        {options.map((opt, i) => (
+          <div key={i} className="option-chip">
+            <span>{opt}</span>
+            <button type="button" onClick={() => removeOption(opt)}><X size={12} /></button>
+          </div>
+        ))}
+      </div>
+      <div className="option-input-group">
+        <input 
+          type="text" 
+          placeholder="Adicionar opção..." 
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
+          className="hs-input hs-input-sm"
+        />
+        <button type="button" className="hs-button-secondary hs-button-sm" onClick={addOption}>
+          <Plus size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const WorkItemTypeSettings = () => {
+  const { addToast } = useToast();
   const { fetchWithAuth } = useAuth();
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +92,8 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
     label: '',
     icon: 'Package',
     color: '#0091ae',
-    field_definitions: []
+    field_definitions: [],
+    field_groups: []
   });
 
   const fetchTypes = async () => {
@@ -64,7 +123,8 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
       color: '#0091ae',
       field_definitions: [
         { name: 'priority', label: 'Prioridade', field_type: 'select', options: ['Baixa', 'Média', 'Alta'], required: false, order: 0 }
-      ]
+      ],
+      field_groups: []
     });
     setSelectedType(null);
     setIsModalOpen(true);
@@ -78,7 +138,8 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
       label: type.label,
       icon: type.icon || 'Package',
       color: type.color || '#0091ae',
-      field_definitions: [...(type.field_definitions || [])]
+      field_definitions: [...(type.field_definitions || [])],
+      field_groups: [...(type.field_groups || [])]
     });
     setIsModalOpen(true);
   };
@@ -106,12 +167,37 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
     
     // Auto-generate name slug from label if empty
     if (field === 'label' && !newFields[index].id && !newFields[index].name) {
-        newFields[index].name = value.toLowerCase()
-            .replace(/ /g, '_')
-            .replace(/[^\w-]+/g, '');
+        newFields[index].name = slugify(value);
     }
     
     setFormData({ ...formData, field_definitions: newFields });
+  };
+
+  const handleAddGroup = () => {
+    setFormData({
+        ...formData,
+        field_groups: [
+            ...formData.field_groups,
+            { name: '', order: formData.field_groups.length }
+        ]
+    });
+  };
+
+  const handleRemoveGroup = (index) => {
+    const groupToRemove = formData.field_groups[index];
+    setFormData({
+        ...formData,
+        field_groups: formData.field_groups.filter((_, i) => i !== index),
+        field_definitions: formData.field_definitions.map(f => 
+            f.group_id === groupToRemove.id ? { ...f, group_id: null } : f
+        )
+    });
+  };
+
+  const handleGroupChange = (index, value) => {
+    const newGroups = [...formData.field_groups];
+    newGroups[index] = { ...newGroups[index], name: value };
+    setFormData({ ...formData, field_groups: newGroups });
   };
 
   const handleSave = async (e) => {
@@ -162,20 +248,6 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
     }
   };
 
-  const getFieldIcon = (type) => {
-    switch (type) {
-        case 'text': return <AlignLeft size={14} />;
-        case 'textarea': return <AlignLeft size={14} />;
-        case 'number': return <Hash size={14} />;
-        case 'date': return <Calendar size={14} />;
-        case 'select': return <ListIcon size={14} />;
-        case 'multiselect': return <ListIcon size={14} />;
-        case 'boolean': return <CheckSquare size={14} />;
-        case 'currency': return <DollarSign size={14} />;
-        default: return <AlignLeft size={14} />;
-    }
-  };
-
   if (loading) return (
     <div className="loading-container">
       <RefreshCw size={40} className="spinner" />
@@ -217,14 +289,15 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
               </div>
               <div className="type-card-actions">
                  <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
-                 <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
+                 {!type.is_system && (
+                   <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
+                 )}
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Modal Criar/Editar */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
@@ -236,43 +309,54 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
             <div className="form-section main-config">
               <h4 className="section-title">Informações Básicas</h4>
               <div className="form-grid">
-                <div className="form-group">
+                <div className="hs-form-group">
                   <label className="hs-label">Rótulo Exibido (Display Name)</label>
                   <input 
                     type="text" className="hs-input" required
                     value={formData.label}
                     onChange={e => {
                         const val = e.target.value;
-                        setFormData({
-                            ...formData, 
+                        setFormData(prev => ({
+                            ...prev, 
                             label: val,
-                            name: modalType === 'create' ? val.toLowerCase().replace(/ /g, '_').replace(/[^\w-]+/g, '') : formData.name
-                        });
+                            name: modalType === 'create' ? slugify(val) : prev.name
+                        }));
                     }}
                     placeholder="Ex: Oportunidade, Chamado..."
                   />
                 </div>
-                <div className="form-group">
-                  <label className="hs-label">Identificador Interno (Slug)</label>
-                  <input 
-                    type="text" className="hs-input" required disabled={modalType === 'edit'}
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    placeholder="ex: oportunidade_vendas"
-                  />
-                  <small>Usado na API. Não pode ser alterado após a criação.</small>
-                </div>
-                <div className="form-group">
+                <div className="hs-form-group">
                     <label className="hs-label">Cor de Identificação</label>
                     <div className="color-input-wrapper">
                         <input 
-                            type="color" className="color-picker"
-                            value={formData.color}
-                            onChange={e => setFormData({...formData, color: e.target.value})}
+                            type="color" 
+                            className="color-picker-input"
+                            value={formData.color || '#0091ae'}
+                            onInput={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
                         />
-                        <span className="color-code">{formData.color}</span>
+                        <code className="color-code-display">{formData.color || '#0091ae'}</code>
                     </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="form-section groups-config">
+              <div className="section-header">
+                <h4 className="section-title">Grupos de Campos</h4>
+                <button type="button" className="hs-button-link" onClick={handleAddGroup}>+ Adicionar Grupo</button>
+              </div>
+              <div className="groups-list">
+                {formData.field_groups.map((group, idx) => (
+                    <div key={idx} className="group-row">
+                        <input 
+                            type="text" className="hs-input hs-input-sm" 
+                            value={group.name} placeholder="Nome do Grupo (ex: Pessoal)"
+                            onChange={e => handleGroupChange(idx, e.target.value)}
+                        />
+                        <button type="button" className="icon-button danger" onClick={() => handleRemoveGroup(idx)}><Trash2 size={14} /></button>
+                    </div>
+                ))}
+                {formData.field_groups.length === 0 && <p className="empty-text">Sem grupos. Os campos serao exibidos em uma lista unica.</p>}
               </div>
             </div>
 
@@ -306,19 +390,60 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
                             <option value="currency">Moeda</option>
                             <option value="date">Data</option>
                             <option value="select">Seleção Única</option>
+                            <option value="multiselect">Seleção Múltipla</option>
+                            <option value="email">E-mail</option>
+                            <option value="cpf">CPF</option>
+                            <option value="cep">CEP</option>
+                            <option value="phone">Telefone</option>
                             <option value="boolean">Sim/Não (Toggle)</option>
+                            </select>
+
+                            <select 
+                                className="hs-select hs-select-sm"
+                                value={field.group_id || ''}
+                                onChange={e => handleFieldChange(idx, 'group_id', e.target.value ? parseInt(e.target.value) : null)}
+                            >
+                                <option value="">Sem Grupo</option>
+                                {formData.field_groups.map((g, gi) => (
+                                    <option key={gi} value={g.id || `temp-${gi}`}>{g.name || `Grupo #${gi + 1}`}</option>
+                                ))}
                             </select>
                         </div>
 
                         {['select', 'multiselect'].includes(field.field_type) && (
                             <div className="options-input">
-                                <label>Opções (separadas por ponto e vírgula)</label>
-                                <input 
-                                    type="text" className="hs-input hs-input-sm"
-                                    placeholder="Opção 1; Opção 2..."
-                                    value={Array.isArray(field.options) ? field.options.join('; ') : field.options}
-                                    onChange={e => handleFieldChange(idx, 'options', e.target.value.split(';').map(o => o.trim()))}
+                                <label>Opções do Campo</label>
+                                <OptionsManager 
+                                    value={field.options}
+                                    onChange={val => handleFieldChange(idx, 'options', val)}
                                 />
+                                {field.field_type === 'multiselect' && (
+                                    <div className="display-mode-config">
+                                        <label className="hs-label">Exibição do Multiselect:</label>
+                                        <div className="radio-group">
+                                            <label className="hs-radio">
+                                                <input 
+                                                    type="radio" 
+                                                    name={`displayMode-${idx}`} 
+                                                    value="checkbox"
+                                                    checked={field.displayMode !== 'tags'}
+                                                    onChange={() => handleFieldChange(idx, 'displayMode', 'checkbox')}
+                                                />
+                                                <span>Checkboxes</span>
+                                            </label>
+                                            <label className="hs-radio">
+                                                <input 
+                                                    type="radio" 
+                                                    name={`displayMode-${idx}`} 
+                                                    value="tags"
+                                                    checked={field.displayMode === 'tags'}
+                                                    onChange={() => handleFieldChange(idx, 'displayMode', 'tags')}
+                                                />
+                                                <span>Tags (Dropdown)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                         
@@ -360,7 +485,6 @@ const WorkItemTypeSettingsInner = ({ addToast }) => {
         </form>
       </Modal>
 
-      {/* Modal de Confirmação de Exclusão */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Tipo de Objeto">
         <div className="delete-confirm">
            <AlertCircle size={48} className="danger-icon" />

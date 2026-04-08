@@ -182,6 +182,19 @@ class PipelineStageModel(BaseModel):
 
     pipeline = relationship("PipelineModel", back_populates="stages")
 
+class WorkItemFieldGroupModel(BaseModel):
+    __tablename__ = "work_item_field_groups"
+    __table_args__ = (UniqueConstraint('type_id', 'name', name='_type_group_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
+    name = Column(String, nullable=False)
+    order = Column(Integer, default=0)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+
+    work_item_type = relationship("WorkItemTypeModel", back_populates="field_groups")
+    field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="group")
+
 class WorkItemTypeModel(BaseModel):
     __tablename__ = "work_item_types"
     __table_args__ = (UniqueConstraint('workspace_id', 'name', name='_workspace_item_type_uc'),)
@@ -191,9 +204,11 @@ class WorkItemTypeModel(BaseModel):
     label = Column(String, nullable=False) # display
     icon = Column(String, nullable=True)
     color = Column(String, nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+    is_system = Column(Boolean, default=False)
 
     field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="work_item_type", cascade="all, delete-orphan")
+    field_groups = relationship("WorkItemFieldGroupModel", back_populates="work_item_type", cascade="all, delete-orphan")
 
 class WorkItemFieldDefinitionModel(BaseModel):
     __tablename__ = "work_item_field_definitions"
@@ -201,6 +216,7 @@ class WorkItemFieldDefinitionModel(BaseModel):
 
     id = Column(Integer, primary_key=True, index=True)
     type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("work_item_field_groups.id"), nullable=True)
     name = Column(String, nullable=False) # slug
     label = Column(String, nullable=False) # display
     field_type = Column(String, default="text")
@@ -209,6 +225,7 @@ class WorkItemFieldDefinitionModel(BaseModel):
     order = Column(Integer, default=0)
 
     work_item_type = relationship("WorkItemTypeModel", back_populates="field_definitions")
+    group = relationship("WorkItemFieldGroupModel", back_populates="field_definitions")
 
 class WorkItemModel(BaseModel):
     __tablename__ = "work_items"
