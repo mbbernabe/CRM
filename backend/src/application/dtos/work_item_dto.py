@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Union
 
 class WorkItemFieldGroupDTO(BaseModel):
     id: Optional[int] = None
@@ -11,7 +11,7 @@ class WorkItemFieldGroupDTO(BaseModel):
 
 class CustomFieldDefinitionDTO(BaseModel):
     id: Optional[int] = None
-    group_id: Optional[int] = None
+    group_id: Optional[Union[int, str]] = None
     name: str # slug: "expected_revenue"
     label: str # display: "Receita Esperada"
     field_type: str = "text"

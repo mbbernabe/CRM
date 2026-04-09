@@ -54,7 +54,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Falha ao processar resposta do servidor. Verifique se o backend está ativo.');
       }
       
-      if (!res.ok) throw new Error(data.detail || 'Erro ao fazer login');
+      if (!res.ok) {
+        const errorDetail = data.detail;
+        const errorMessage = typeof errorDetail === 'string' 
+          ? errorDetail 
+          : (Array.isArray(errorDetail) ? errorDetail[0]?.msg : JSON.stringify(errorDetail));
+        throw new Error(errorMessage || 'Erro ao fazer login');
+      }
       
       setUser(data.user);
       setWorkspace(data.workspace);
@@ -82,7 +88,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Falha no cadastro: Servidor indisponível ou erro inesperado.');
       }
       
-      if (!res.ok) throw new Error(data.detail || 'Erro ao registrar');
+      if (!res.ok) {
+        const errorDetail = data.detail;
+        const errorMessage = typeof errorDetail === 'string' 
+          ? errorDetail 
+          : (Array.isArray(errorDetail) ? errorDetail[0]?.msg : JSON.stringify(errorDetail));
+        throw new Error(errorMessage || 'Erro ao registrar');
+      }
       
       setUser(data.user);
       setWorkspace(data.workspace);

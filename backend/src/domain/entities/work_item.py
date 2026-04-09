@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from enum import Enum
 
 class FieldType(str, Enum):
@@ -12,6 +12,10 @@ class FieldType(str, Enum):
     TEXTAREA = "textarea"
     BOOLEAN = "boolean"
     CURRENCY = "currency"
+    EMAIL = "email"
+    CPF = "cpf"
+    CEP = "cep"
+    PHONE = "phone"
 
 @dataclass
 class WorkItemFieldGroup:
@@ -30,7 +34,7 @@ class CustomFieldDefinition:
     options: Optional[List[str]] = None # For select types
     required: bool = False
     order: int = 0
-    group_id: Optional[int] = None
+    group_id: Optional[Union[int, str]] = None
     workspace_id: Optional[int] = None
 
 @dataclass

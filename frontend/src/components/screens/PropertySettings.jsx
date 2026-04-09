@@ -56,7 +56,7 @@ const SortableItem = ({ id, children, isSystem }) => {
   );
 };
 
-const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps, onRenameGroup, isGlobalMode }) => {
+const SortableGroup = ({ id, group, props, onEdit, onDelete, onRenameGroup, isGlobalMode }) => {
   const {
     attributes,
     listeners,
@@ -69,13 +69,8 @@ const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps, onR
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
 
   return (
     <div ref={isGlobalMode ? null : setNodeRef} style={style} className="property-group-card">
@@ -100,69 +95,82 @@ const SortableGroup = ({ id, group, props, onEdit, onDelete, onDragEndProps, onR
         </div>
       </div>
       <div className="props-table-wrapper hs-scroll-x">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndProps}>
-          <SortableContext items={props.map(p => p.id)} strategy={verticalListSortingStrategy}>
-            <table className="props-table">
-              <thead>
-                <tr>
-                  {!isGlobalMode && <th style={{ width: '30px' }}></th>}
-                  <th>Rótulo (Label)</th>
-                  <th>Nome Interno</th>
-                  <th>Tipo</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {props.map(prop => {
-                  const content = (
-                    <>
-                      <td>
-                        <div className="label-cell">
-                          {prop.label}
-                          {prop.is_system && <Shield size={12} className="system-icon" title="Propriedade de Sistema" />}
-                        </div>
-                      </td>
-                      <td><code>{prop.name}</code></td>
-                      <td>
-                        <span className={`type-badge ${prop.type}`}>
-                          {prop.type}
-                        </span>
-                      </td>
-                      <td className="actions-cell">
-                        <button className="icon-btn edit" onClick={() => onEdit(prop)} title="Editar">
-                          <Edit size={14} />
+        <SortableContext items={props.map(p => `prop-${p.id}`)} strategy={verticalListSortingStrategy}>
+          <table className="props-table">
+            <thead>
+              <tr>
+                {!isGlobalMode && <th style={{ width: '30px' }}></th>}
+                <th>Rótulo (Label)</th>
+                <th>Nome Interno</th>
+                <th>Tipo</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.map(prop => {
+                const content = (
+                  <>
+                    <td className="drag-handle-cell">
+                      {!prop.is_system && !isGlobalMode && (
+                        <SortableHandle id={`prop-${prop.id}`} />
+                      )}
+                    </td>
+                    <td>
+                      <div className="label-cell">
+                        {prop.label}
+                        {prop.is_system && <Shield size={12} className="system-icon" title="Propriedade de Sistema" />}
+                      </div>
+                    </td>
+                    <td><code>{prop.name}</code></td>
+                    <td>
+                      <span className={`type-badge ${prop.type}`}>
+                        {prop.type}
+                      </span>
+                    </td>
+                    <td className="actions-cell">
+                      <button className="icon-btn edit" onClick={() => onEdit(prop)} title="Editar">
+                        <Edit size={14} />
+                      </button>
+                      {!prop.is_system && (
+                        <button className="icon-btn delete" onClick={() => onDelete(prop)} title={isGlobalMode ? "Excluir Globalmente" : "Desvincular"}>
+                          <Trash2 size={14} />
                         </button>
-                        {!prop.is_system && (
-                          <button className="icon-btn delete" onClick={() => onDelete(prop)} title={isGlobalMode ? "Excluir Globalmente" : "Desvincular"}>
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </td>
-                    </>
-                  );
-                  
-                  if (isGlobalMode) {
-                     return (
-                       <tr key={prop.id} className={prop.is_system ? 'system-prop' : ''}>
-                         {content}
-                       </tr>
-                     );
-                  }
+                      )}
+                    </td>
+                  </>
+                );
+                
+                if (isGlobalMode) {
+                   return (
+                     <tr key={prop.id} className={prop.is_system ? 'system-prop' : ''}>
+                       {content}
+                     </tr>
+                   );
+                }
 
-                  return (
-                    <SortableItem key={prop.id} id={prop.id} isSystem={prop.is_system}>
-                      {content}
-                    </SortableItem>
-                  );
-                })}
-              </tbody>
-            </table>
-          </SortableContext>
-        </DndContext>
+                return (
+                  <SortableItem key={prop.id} id={`prop-${prop.id}`} isSystem={prop.is_system}>
+                    {content}
+                  </SortableItem>
+                );
+              })}
+            </tbody>
+          </table>
+        </SortableContext>
       </div>
     </div>
   );
 };
+
+const SortableHandle = ({ id }) => {
+    const { attributes, listeners } = useSortable({ id });
+    return (
+        <button className="drag-handle" {...attributes} {...listeners}>
+            <GripVertical size={14} />
+        </button>
+    );
+};
+;
 
 // --- Options Manager Component ---
 
@@ -229,13 +237,15 @@ const slugify = (text) => {
 const PropertySettings = () => {
   return (
     <ToastProvider>
-      {(addToast) => <PropertySettingsInner addToast={addToast} />}
+      <PropertySettingsInner />
     </ToastProvider>
   );
 };
 
-const PropertySettingsInner = ({ addToast }) => {
+const PropertySettingsInner = () => {
+  const { addToast } = useToast();
   const { fetchWithAuth } = useAuth();
+  // ... rest of the code ...
   const [activeTab, setActiveTab] = useState('contact'); // contact, company, global
   const [properties, setProperties] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -496,46 +506,86 @@ const PropertySettingsInner = ({ addToast }) => {
     }
   };
 
-  const handleDragEndGroups = async (event) => {
-    if (activeTab === 'global') return;
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = groups.findIndex(g => g.id === active.id);
-    const newIndex = groups.findIndex(g => g.id === over.id);
-    const newGroups = arrayMove(groups, oldIndex, newIndex);
-    setGroups(newGroups);
+    // 1. Reordenação de Grupos
+    if (active.id.toString().startsWith('group-') && over.id.toString().startsWith('group-')) {
+        const oldId = parseInt(active.id.toString().replace('group-', ''));
+        const overId = parseInt(over.id.toString().replace('group-', ''));
+        
+        const oldIndex = groups.findIndex(g => g.id === oldId);
+        const newIndex = groups.findIndex(g => g.id === overId);
+        
+        const newGroups = arrayMove(groups, oldIndex, newIndex);
+        setGroups(newGroups);
 
-    const orders = newGroups.map((g, index) => ({ id: g.id, order: index }));
-    await fetchWithAuth('http://localhost:8000/properties/groups/reorder', {
-      method: 'POST',
-      body: JSON.stringify(orders)
-    });
-  };
+        const orders = newGroups.map((g, index) => ({ id: g.id, order: index }));
+        await fetchWithAuth('http://localhost:8000/properties/groups/reorder', {
+            method: 'POST',
+            body: JSON.stringify(orders)
+        });
+        return;
+    }
 
-  const handleDragEndProps = async (event, groupId) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    // 2. Reordenação de Propriedades
+    if (active.id.toString().startsWith('prop-')) {
+        const activeId = parseInt(active.id.toString().replace('prop-', ''));
+        const property = properties.find(p => p.id === activeId);
+        if (!property) return;
 
-    const groupProps = [...groupedProps[groupId]];
-    const oldIndex = groupProps.findIndex(p => p.id === active.id);
-    const newIndex = groupProps.findIndex(p => p.id === over.id);
-    const newProps = arrayMove(groupProps, oldIndex, newIndex);
-    
-    setProperties(prev => {
-      const otherProps = prev.filter(p => p.group_id !== groupId || !newProps.some(np => np.id === p.id));
-      return [...otherProps, ...newProps];
-    });
+        let targetGroupId = property.group_id;
+        let isOverAnotherProp = over.id.toString().startsWith('prop-');
 
-    const orders = newProps.map((p, index) => {
-      const originalLink = properties.find(prop => prop.id === p.id);
-      return { id: originalLink.link_id, order: index };
-    });
+        if (isOverAnotherProp) {
+            const overPropId = parseInt(over.id.toString().replace('prop-', ''));
+            const overProp = properties.find(p => p.id === overPropId);
+            targetGroupId = overProp ? overProp.group_id : targetGroupId;
+        } else if (over.id.toString().startsWith('group-')) {
+            targetGroupId = parseInt(over.id.toString().replace('group-', ''));
+        }
 
-    await fetchWithAuth(`http://localhost:8000/properties/entity/reorder`, {
-      method: 'POST',
-      body: JSON.stringify(orders)
-    });
+        // Se mudou de grupo, atualizar vínculo no backend
+        if (targetGroupId !== property.group_id) {
+            try {
+                await fetchWithAuth(`http://localhost:8000/properties/entity/link/${property.link_id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ group_id: targetGroupId, is_required: property.is_required })
+                });
+                // Atualizar localmente
+                setProperties(prev => prev.map(p => p.id === activeId ? { ...p, group_id: targetGroupId } : p));
+            } catch (err) {
+                console.error("Erro ao mover propriedade:", err);
+            }
+        }
+
+        // Se houver reordenação (mesmo grupo ou após mover de grupo)
+        if (isOverAnotherProp) {
+            const overPropId = parseInt(over.id.toString().replace('prop-', ''));
+            const groupProps = properties.filter(p => p.group_id === targetGroupId).sort((a, b) => a.order - b.order);
+            
+            const oldIndex = groupProps.findIndex(p => p.id === activeId);
+            const newIndex = groupProps.findIndex(p => p.id === overPropId);
+            
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const newGroupProps = arrayMove(groupProps, oldIndex, newIndex);
+                
+                // Atualizar estado local para refletir a nova ordem no grupo
+                setProperties(prev => {
+                    const others = prev.filter(p => p.group_id !== targetGroupId || !newGroupProps.some(np => np.id === p.id));
+                    return [...others, ...newGroupProps];
+                });
+
+                // Salvar ordens no backend
+                const orders = newGroupProps.map((p, index) => ({ id: p.link_id, order: index }));
+                await fetchWithAuth(`http://localhost:8000/properties/entity/reorder`, {
+                    method: 'POST',
+                    body: JSON.stringify(orders)
+                });
+            }
+        }
+    }
   };
 
   if (loading) return <div className="loading-container"><RefreshCw className="spinner" /><p>Carregando...</p></div>;
@@ -595,20 +645,20 @@ const PropertySettingsInner = ({ addToast }) => {
       </div>
 
       <div className="scroll-vessel">
-        {activeTab === 'global' ? (
-           <div className="groups-list">
-             <SortableGroup 
-                  id="global" 
-                  group="Global" 
-                  props={groupedProps['global'] || []}
-                  onEdit={handleOpenEdit}
-                  onDelete={(p) => { setSelectedProperty(p); setIsDeleteModalOpen(true); }}
-                  isGlobalMode={true}
-                />
-           </div>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndGroups}>
-            <SortableContext items={groups.map(g => g.id)} strategy={verticalListSortingStrategy}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          {activeTab === 'global' ? (
+             <div className="groups-list">
+               <SortableGroup 
+                    id="global" 
+                    group="Global" 
+                    props={groupedProps['global'] || []}
+                    onEdit={handleOpenEdit}
+                    onDelete={(p) => { setSelectedProperty(p); setIsDeleteModalOpen(true); }}
+                    isGlobalMode={true}
+                  />
+             </div>
+          ) : (
+            <SortableContext items={groups.map(g => `group-${g.id}`)} strategy={verticalListSortingStrategy}>
               <div className="groups-list">
                 {groups.map(g => {
                   const groupProps = groupedProps[g.id];
@@ -617,12 +667,11 @@ const PropertySettingsInner = ({ addToast }) => {
                   return (
                     <SortableGroup 
                       key={g.id} 
-                      id={g.id} 
+                      id={`group-${g.id}`} 
                       group={g.name} 
                       props={groupProps}
                       onEdit={handleOpenEdit}
                       onDelete={(p) => { setSelectedProperty(p); setIsDeleteModalOpen(true); }}
-                      onDragEndProps={(e) => handleDragEndProps(e, g.id)}
                       onRenameGroup={handleRenameGroup}
                       isGlobalMode={false}
                     />
@@ -636,8 +685,8 @@ const PropertySettingsInner = ({ addToast }) => {
                 )}
               </div>
             </SortableContext>
-          </DndContext>
-        )}
+          )}
+        </DndContext>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Propriedade">

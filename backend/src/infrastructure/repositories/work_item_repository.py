@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from src.domain.entities.work_item import WorkItem, WorkItemType, CustomFieldDefinition, WorkItemFieldGroup, IWorkItemRepository
 from src.infrastructure.database.models import WorkItemModel, WorkItemTypeModel, WorkItemFieldDefinitionModel, WorkItemFieldGroupModel
 import json
+import logging
 
 class WorkItemRepository(IWorkItemRepository):
     def __init__(self, db: Session):
@@ -193,80 +194,130 @@ class WorkItemRepository(IWorkItemRepository):
         return field_def
 
     def update_type(self, type_id: int, workspace_id: int, label: Optional[str] = None, icon: Optional[str] = None, color: Optional[str] = None, field_definitions: Optional[List[CustomFieldDefinition]] = None, field_groups: Optional[List[WorkItemFieldGroup]] = None) -> Optional[WorkItemType]:
-        model = self.db.query(WorkItemTypeModel).filter(
-            (WorkItemTypeModel.id == type_id) & 
-            ((WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None))
-        ).first()
-        
-        if not model:
-            return None
+        logger = logging.getLogger(__name__)
+        try:
+            model = self.db.query(WorkItemTypeModel).filter(
+                (WorkItemTypeModel.id == type_id) & 
+                ((WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None))
+            ).first()
             
-        # Protect system types from changes by non-superadmins (simplified for now: anyone can edit label/icon but not name)
-        if label is not None: model.label = label
-        if icon is not None: model.icon = icon
-        if color is not None: model.color = color
-        
-        if field_groups is not None:
-             # Sync field groups
-             group_ids = [g.id for g in field_groups if g.id is not None]
-             for g_model in model.field_groups:
-                 if g_model.id not in group_ids:
-                     self.db.delete(g_model)
-             
-             for g_entity in field_groups:
-                 if g_entity.id:
-                     g_model = self.db.query(WorkItemFieldGroupModel).filter(WorkItemFieldGroupModel.id == g_entity.id).first()
-                     if g_model:
-                         g_model.name = g_entity.name
-                         g_model.order = g_entity.order
-                 else:
-                     new_g = WorkItemFieldGroupModel(
-                         type_id=type_id,
-                         name=g_entity.name,
-                         order=g_entity.order,
-                         workspace_id=workspace_id
-                     )
-                     self.db.add(new_g)
-             self.db.flush()
+            if not model:
+                logger.warning(f"Tipo {type_id} não encontrado para workspace {workspace_id}")
+                return None
+                
+            if label is not None: model.label = label
+            if icon is not None: model.icon = icon
+            if color is not None: model.color = color
+            
+            # Map for resolving group_id (temp_identifier -> real_id)
+            group_id_map = {} # Can be name or temp-ID
 
-        if field_definitions is not None:
-            # Sync field definitions
-            current_field_ids = [fd.id for fd in model.field_definitions]
-            new_field_ids = [fd.id for fd in field_definitions if fd.id is not None]
+            if field_groups is not None:
+                # Sync field groups
+                # Use int conversion for safety if frontend sends strings
+                try:
+                    new_group_ids = [int(g.id) for g in field_groups if g.id is not None]
+                except (ValueError, TypeError):
+                    # Fallback if some IDs are not numeric strings
+                    new_group_ids = [g.id for g in field_groups if isinstance(g.id, int)]
+
+                for g_model in list(model.field_groups): # Use list() to avoid mutation issues
+                    if g_model.id not in new_group_ids:
+                        self.db.delete(g_model)
+                
+                for g_entity in field_groups:
+                    # Resolve numeric IDs
+                    actual_id = None
+                    try:
+                        if g_entity.id is not None and str(g_entity.id).isdigit():
+                            actual_id = int(g_entity.id)
+                    except: pass
+
+                    if actual_id:
+                        g_model = self.db.query(WorkItemFieldGroupModel).filter(WorkItemFieldGroupModel.id == actual_id).first()
+                        if g_model:
+                            g_model.name = g_entity.name
+                            g_model.order = g_entity.order
+                            group_id_map[str(g_entity.id)] = g_model.id
+                            group_id_map[g_entity.name] = g_model.id
+                    else:
+                        new_g = WorkItemFieldGroupModel(
+                            type_id=type_id,
+                            name=g_entity.name,
+                            order=g_entity.order,
+                            workspace_id=workspace_id
+                        )
+                        self.db.add(new_g)
+                        self.db.flush() # Get the new ID immediately
+                        group_id_map[g_entity.name] = new_g.id
+                        if g_entity.id: # Capture temp ID if present
+                             group_id_map[str(g_entity.id)] = new_g.id
+                
+                self.db.flush()
+
+            if field_definitions is not None:
+                # Sync field definitions
+                current_field_ids = [fd.id for fd in model.field_definitions]
+                
+                resolved_field_definitions = []
+                for fd in field_definitions:
+                    # Resolve group_id
+                    final_group_id = None
+                    if fd.group_id is not None:
+                        if isinstance(fd.group_id, int):
+                            final_group_id = fd.group_id
+                        elif str(fd.group_id) in group_id_map:
+                            final_group_id = group_id_map[str(fd.group_id)]
+                        elif str(fd.group_id).isdigit():
+                            final_group_id = int(fd.group_id)
+                    
+                    fd.group_id = final_group_id
+                    resolved_field_definitions.append(fd)
+
+                new_field_ids = [int(fd.id) for fd in resolved_field_definitions if fd.id is not None]
+                
+                # Remove
+                for fd_model in list(model.field_definitions):
+                    if fd_model.id not in new_field_ids:
+                        self.db.delete(fd_model)
+                
+                # Add or Update
+                for fd_entity in resolved_field_definitions:
+                    actual_fd_id = None
+                    if fd_entity.id is not None:
+                        try: actual_fd_id = int(fd_entity.id)
+                        except: pass
+
+                    if actual_fd_id and actual_fd_id in current_field_ids:
+                        # Update
+                        fd_model = self.db.query(WorkItemFieldDefinitionModel).filter(WorkItemFieldDefinitionModel.id == actual_fd_id).first()
+                        if fd_model:
+                            fd_model.label = fd_entity.label
+                            fd_model.field_type = fd_entity.field_type
+                            fd_model.options_json = json.dumps(fd_entity.options) if fd_entity.options else None
+                            fd_model.is_required = fd_entity.required
+                            fd_model.order = fd_entity.order
+                            fd_model.group_id = fd_entity.group_id
+                    else:
+                        # Create
+                        new_fd_model = WorkItemFieldDefinitionModel(
+                            type_id=type_id,
+                            group_id=fd_entity.group_id,
+                            name=fd_entity.name,
+                            label=fd_entity.label,
+                            field_type=fd_entity.field_type,
+                            options_json=json.dumps(fd_entity.options) if fd_entity.options else None,
+                            is_required=fd_entity.required,
+                            order=fd_entity.order
+                        )
+                        self.db.add(new_fd_model)
             
-            # Remove
-            for fd in model.field_definitions:
-                if fd.id not in new_field_ids:
-                    self.db.delete(fd)
-            
-            # Add or Update
-            for fd_entity in field_definitions:
-                if fd_entity.id and fd_entity.id in current_field_ids:
-                    # Update
-                    fd_model = self.db.query(WorkItemFieldDefinitionModel).filter(WorkItemFieldDefinitionModel.id == fd_entity.id).first()
-                    if fd_model:
-                        fd_model.label = fd_entity.label
-                        fd_model.field_type = fd_entity.field_type
-                        fd_model.options_json = json.dumps(fd_entity.options) if fd_entity.options else None
-                        fd_model.is_required = fd_entity.required
-                        fd_model.order = fd_entity.order
-                        fd_model.group_id = fd_entity.group_id
-                else:
-                    # Create
-                    new_fd_model = WorkItemFieldDefinitionModel(
-                        type_id=type_id,
-                        group_id=fd_entity.group_id,
-                        name=fd_entity.name,
-                        label=fd_entity.label,
-                        field_type=fd_entity.field_type,
-                        options_json=json.dumps(fd_entity.options) if fd_entity.options else None,
-                        is_required=fd_entity.required,
-                        order=fd_entity.order
-                    )
-                    self.db.add(new_fd_model)
-        
-        self.db.commit()
-        return self.get_type_by_id(type_id, workspace_id)
+            self.db.commit()
+            return self.get_type_by_id(type_id, workspace_id)
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Erro ao atualizar WorkItemType {type_id}: {str(e)}", exc_info=True)
+            raise e
 
     def delete_type(self, type_id: int, workspace_id: int) -> bool:
         model = self.db.query(WorkItemTypeModel).filter(

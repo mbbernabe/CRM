@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserPlus, AlertCircle } from 'lucide-react';
+import { useToast } from '../common/Toast';
 import './Register.css';
 
 const Register = ({ onSwitchToLogin }) => {
@@ -12,6 +13,7 @@ const Register = ({ onSwitchToLogin }) => {
   });
   const [error, setError] = useState('');
   const { register, loading } = useAuth();
+  const { addToast } = useToast();
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -24,8 +26,9 @@ const Register = ({ onSwitchToLogin }) => {
       await register(formData);
     } catch (err) {
       console.error('Erro no registro:', err);
-      // Garante que o erro seja uma string para exibição na UI
-      setError(err.message || 'Erro de conexão com o servidor. Verifique se o backend está rodando.');
+      const msg = err.message || 'Erro de conexão com o servidor. Verifique se o backend está rodando.';
+      setError(msg);
+      addToast(msg, 'error');
     }
   };
 

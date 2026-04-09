@@ -27,6 +27,9 @@ class RegisterUserUseCase:
     def execute(self, dto: UserCreateDTO) -> User:
         # 1. Verificar se usuário já existe
         if self.user_repo.get_by_email(dto.email):
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Tentativa de registro com e-mail já existente: {dto.email}")
             raise AuthenticationException("Este e-mail já está em uso. Tente fazer login ou use outro e-mail.")
 
         workspace_id = None

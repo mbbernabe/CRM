@@ -44,6 +44,7 @@ class UserModel(BaseModel):
     role = Column(String, default="user")
     reset_password_token = Column(String, nullable=True, index=True)
     reset_password_expires = Column(DateTime, nullable=True)
+    preferences = Column(JSON, nullable=True) # UI and user settings
     created_at = Column(DateTime, default=datetime.utcnow)
 
     team = relationship("TeamModel", back_populates="users")
@@ -207,8 +208,8 @@ class WorkItemTypeModel(BaseModel):
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
     is_system = Column(Boolean, default=False)
 
-    field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="work_item_type", cascade="all, delete-orphan")
-    field_groups = relationship("WorkItemFieldGroupModel", back_populates="work_item_type", cascade="all, delete-orphan")
+    field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="work_item_type", order_by="WorkItemFieldDefinitionModel.order", cascade="all, delete-orphan")
+    field_groups = relationship("WorkItemFieldGroupModel", back_populates="work_item_type", order_by="WorkItemFieldGroupModel.order", cascade="all, delete-orphan")
 
 class WorkItemFieldDefinitionModel(BaseModel):
     __tablename__ = "work_item_field_definitions"
