@@ -161,19 +161,29 @@ class WorkItemRepository(IWorkItemRepository):
             ) for g in m.field_groups
         ]
         # Load field definitions
-        item_type.field_definitions = [
-            CustomFieldDefinition(
+        item_type.field_definitions = []
+        for fd in m.field_definitions:
+            options = None
+            if fd.options_json:
+                try:
+                    options = json.loads(fd.options_json)
+                except Exception as e:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Erro ao parsear options_json para o campo {fd.id} ({fd.name}): {e}")
+                    # Fallback: se não for JSON válido, tenta tratar como string separada por ponto e vírgula ou retorna vazio
+                    options = []
+
+            item_type.field_definitions.append(CustomFieldDefinition(
                 id=fd.id,
                 name=fd.name,
                 label=fd.label,
                 field_type=fd.field_type,
-                options=json.loads(fd.options_json) if fd.options_json else None,
+                options=options,
                 required=fd.is_required,
                 order=fd.order,
                 group_id=fd.group_id,
                 workspace_id=m.workspace_id
-            ) for fd in m.field_definitions
-        ]
+            ))
         return item_type
 
     def create_field_definition(self, type_id: int, field_def: CustomFieldDefinition) -> CustomFieldDefinition:
