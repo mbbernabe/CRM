@@ -25,7 +25,7 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
     // Credenciais do dev (usado após reset ou fluxo normal)
     const devCredentials = [
       { email: 'admin@crm.com', password: 'admin' },
-      { email: 'mbbernabe@gmail.com', password: 'mbb1223' },
+      { email: 'mbbernabe@gmail.com', password: 'admin1234' },
     ];
 
     // Tentar logar com cada conjunto de credenciais existentes
@@ -50,13 +50,13 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
         body: JSON.stringify({
           name: 'Marcelo Bernabe (Dev)',
           email: 'mbbernabe@gmail.com',
-          password: 'mbb1223',
+          password: 'admin1234',
           workspace_name: 'Minha Empresa Dev'
         })
       });
 
       if (registerRes.ok) {
-        await login('mbbernabe@gmail.com', 'mbb1223');
+        await login('mbbernabe@gmail.com', 'admin1234');
       } else {
         const data = await registerRes.json();
         setError('Falha ao criar superadmin: ' + (data.detail || 'Erro desconhecido'));

@@ -17,6 +17,16 @@ class SqlAlchemyPropertyRepository(IPropertyRepository):
         return [PropertyGroup(id=g.id, name=g.name, order=g.order, team_id=g.team_id, workspace_id=g.workspace_id) for g in db_groups]
 
     def save_group(self, group: PropertyGroup, workspace_id: int) -> PropertyGroup:
+        existing = self.db.query(PropertyGroupModel).filter(
+            PropertyGroupModel.workspace_id == workspace_id,
+            PropertyGroupModel.name == group.name
+        ).first()
+        
+        if existing:
+            group.id = existing.id
+            group.workspace_id = workspace_id
+            return group
+
         db_group = PropertyGroupModel(
             name=group.name, 
             order=group.order, 
@@ -43,6 +53,17 @@ class SqlAlchemyPropertyRepository(IPropertyRepository):
         ]
 
     def save_definition(self, prop_def: PropertyDefinition, workspace_id: int) -> PropertyDefinition:
+        existing = self.db.query(PropertyDefinitionModel).filter(
+            PropertyDefinitionModel.workspace_id == workspace_id,
+            PropertyDefinitionModel.entity_type == prop_def.entity_type,
+            PropertyDefinitionModel.name == prop_def.name
+        ).first()
+        
+        if existing:
+            prop_def.id = existing.id
+            prop_def.workspace_id = workspace_id
+            return prop_def
+
         db_prop = PropertyDefinitionModel(
             name=prop_def.name,
             label=prop_def.label,
@@ -109,6 +130,17 @@ class SqlAlchemyPropertyRepository(IPropertyRepository):
         return result
 
     def save_entity_link(self, link: EntityPropertyLink, workspace_id: int) -> EntityPropertyLink:
+        existing = self.db.query(EntityPropertyLinkModel).filter(
+            EntityPropertyLinkModel.workspace_id == workspace_id,
+            EntityPropertyLinkModel.entity_type == link.entity_type,
+            EntityPropertyLinkModel.property_id == link.property_id
+        ).first()
+        
+        if existing:
+            link.id = existing.id
+            link.workspace_id = workspace_id
+            return link
+
         db_link = EntityPropertyLinkModel(
             entity_type=link.entity_type,
             property_id=link.property_id,

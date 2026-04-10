@@ -27,6 +27,18 @@ app.add_middleware(
 # Inicializa o banco de dados
 init_db()
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+import logging
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    logging.error(f"Erro de Validação 422: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
+
 # Inclui as rotas
 app.include_router(contacts_router)
 app.include_router(properties_router)

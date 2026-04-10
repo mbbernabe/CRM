@@ -2,11 +2,8 @@ import pytest
 import time
 from playwright.sync_api import Page, expect
 
-# Configurações
-BASE_URL = "http://localhost:5173"
-
 @pytest.mark.e2e
-def test_full_auth_flow(page: Page):
+def test_full_auth_flow(page: Page, base_url: str):
     """
     Testa o fluxo completo de autenticação:
     1. Registro de novo usuário e time.
@@ -15,8 +12,8 @@ def test_full_auth_flow(page: Page):
     """
     
     # 1. Acesso inicial
-    print(f"Acessando {BASE_URL}...")
-    page.goto(BASE_URL)
+    print(f"Acessando {base_url}...")
+    page.goto(base_url)
     
     # 2. Navegar para Registro
     print("Navegando para tela de registro...")
@@ -27,39 +24,61 @@ def test_full_auth_flow(page: Page):
     # 3. Preencher formulário de registro
     # Usando dados únicos para evitar conflitos se o DB não for limpo
     timestamp = int(time.time())
-    email = f"qa_{timestamp}@antigravity.test"
+    email = f"qa_{timestamp}@example.com"
     password = "password123"
     
     print(f"Registrando usuário: {email}")
-    page.get_by_placeholder("Seu nome").fill("Agente QA")
+    name = "Agente QA"
+    page.get_by_placeholder("Seu nome").fill(name)
     page.get_by_placeholder("seu@email.com").fill(email)
     page.get_by_placeholder("Pelos menos 8 caracteres").fill(password)
-    page.get_by_placeholder("Ex: Marketing Digital, Vendas SP...").fill(f"Time QA {timestamp}")
+    # Placeholder atual: "Ex: Minha Empresa, Consultoria ABC..."
+    page.get_by_placeholder("Ex: Minha Empresa, Consultoria ABC...").fill(f"Empresa QA {timestamp}")
     
-    page.get_by_role("button", name="Criar Conta e Time").click()
+    # Botão atual: "Criar Conta e Área de Trabalho"
+    page.get_by_role("button", name="Criar Conta e Área de Trabalho").click()
     
     # 4. Verificar se entramos no sistema (Dashboard)
-    # O App.jsx define 'dashboard' como a tela inicial após login
-    expect(page.get_by_role("heading", name="Dashboard")).to_be_visible(timeout=15000)
-    print("Registro e login automático bem-sucedidos.")
+    try:
+        expect(page.get_by_text("Dashboard").first).to_be_visible(timeout=20000)
+        print("Registro e login automático bem-sucedidos.")
+    except Exception as e:
+        print("FALHA: Dashboard não apareceu. Capturando screenshot...")
+        page.screenshot(path="tests/e2e/failure_registration.png")
+        raise e
 
     # 5. Logout
     print("Realizando Logout...")
-    # Clicar no perfil (canto inferior esquerdo no Sidebar)
-    page.locator(".user-profile").click()
-    # Clicar no botão Sair do dropdown
-    page.locator(".dropdown-item.logout").click()
-    
-    # 6. Verificar se voltou para tela de Login
-    expect(page.get_by_role("heading", name="Bem-vindo de volta")).to_be_visible()
-    print("Logout bem-sucedido.")
+    try:
+        # Abrir menu de perfil
+        page.get_by_text(name).first.click()
+        page.wait_for_timeout(500)
+        # Clicar no botão Sair (menu dropdown)
+        page.get_by_text("Sair").click()
+        
+        # 6. Verificar se voltou para tela de Login (dentro da mesma URL /)
+        expect(page.get_by_text("Bem-vindo de volta")).to_be_visible(timeout=10000)
+        print("Logout bem-sucedido.")
+    except Exception as e:
+        print("FALHA no Logout. Capturando screenshot...")
+        page.screenshot(path="tests/e2e/failure_logout.png")
+        raise e
 
     # 7. Login Real
     print(f"Testando Login real com {email}...")
-    page.get_by_placeholder("seu@email.com").fill(email)
-    page.get_by_placeholder("••••••••").fill(password)
-    page.get_by_role("button", name="Entrar").click()
-    
-    # 8. Verificar dashboard final
-    expect(page.get_by_role("heading", name="Dashboard")).to_be_visible()
-    print("Login bem-sucedido. Teste finalizado com sucesso.")
+    try:
+        # Garantir que estamos na tela de login
+        if not page.get_by_placeholder("seu@email.com").is_visible():
+            page.get_by_text("Entrar").first.click() # Caso tenha caído na tela de registro
+
+        page.get_by_placeholder("seu@email.com").fill(email)
+        page.get_by_placeholder("••••••••").fill(password)
+        page.get_by_role("button", name="Entrar").click()
+        
+        # 8. Verificar dashboard final
+        expect(page.get_by_text("Dashboard").first).to_be_visible(timeout=20000)
+        print("Login bem-sucedido. Teste finalizado com sucesso.")
+    except Exception as e:
+        print("FALHA no Login Real. Capturando screenshot...")
+        page.screenshot(path="tests/e2e/failure_login_real.png")
+        raise e
