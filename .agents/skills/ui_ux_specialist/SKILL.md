@@ -48,6 +48,9 @@ Ao revisar uma tela:
 - **Idioma**: Interface em Português do Brasil (PT-BR) ou Inglês (conforme configurado).
 - **Consistência**: Seguir o sistema de design definido para o projeto (frontend/src/styles).
 - **Campos Obrigatórios**: Todos os campos obrigatórios devem ser identificados com um asterisco (`*`) utilizando a classe CSS `.required-indicator` (Cor: Laranja Vibrante / `--hs-orange`).
+- **Gerenciamento de Rolagem (Scroll)**: O CRM utiliza um padrão de **Single Page Application (SPA)** onde a rolagem é gerenciada globalmente pelo contêiner pai (`.content-area`). 
+    - NUNCA aplicar `overflow-y: auto` ou `height: 100%` em contêineres de novas telas, a menos que seja um componente com scroll interno funcional (ex: Colunas de Kanban ou Modais). 
+    - Garanta que a barra de rolagem seja única e esteja sempre na extremidade direita da janela.
 
 ## 🚀 Comandos de Saída (Output)
 Ao atuar nesta skill, você deve fornecer:

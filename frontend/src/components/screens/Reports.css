@@ -1,7 +1,5 @@
 .reports-container {
   padding: 24px;
-  height: 100%;
-  overflow-y: auto;
 }
 
 .reports-grid {

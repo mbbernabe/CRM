@@ -2,9 +2,8 @@
     padding: 32px; 
     max-width: 1000px; 
     margin: 0 auto;
-    flex: 1;
-    overflow-y: auto;
-    height: 100%;
+    width: 100%;
+    overflow: visible;
 }
 
 .settings-header { 

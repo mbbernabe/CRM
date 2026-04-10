@@ -138,7 +138,6 @@
 
 .scroll-vessel { 
   flex-grow: 1; 
-  overflow-y: auto; 
   padding-right: 8px;
   margin-right: -8px;
 }

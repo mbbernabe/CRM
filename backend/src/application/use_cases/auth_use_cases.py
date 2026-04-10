@@ -91,9 +91,18 @@ class LoginUseCase:
         self.workspace_repo = workspace_repo
 
     def execute(self, dto: LoginRequestDTO) -> (User, Workspace):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         user = self.user_repo.get_by_email(dto.email)
-        if not user or not SecurityUtils.verify_password(dto.password, user.password):
+        if not user:
+            logger.warning(f"Tentativa de login: Usuário não encontrado - {dto.email}")
+            raise AuthenticationException("E-mail ou senha incorretos. Por favor, tente novamente.")
+            
+        if not SecurityUtils.verify_password(dto.password, user.password):
+            logger.warning(f"Tentativa de login: Senha incorreta para o usuário - {dto.email}")
             raise AuthenticationException("E-mail ou senha incorretos. Por favor, tente novamente.")
         
+        logger.info(f"Login bem-sucedido: {dto.email}")
         workspace = self.workspace_repo.get_by_id(user.workspace_id)
         return user, workspace
