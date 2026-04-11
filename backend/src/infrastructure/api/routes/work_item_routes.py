@@ -237,3 +237,24 @@ def add_workitem_note(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.get("/templates", response_model=List[WorkItemTypeReadDTO])
+def list_templates(
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """Lista todos os modelos de tipos de objetos globais disponíveis na biblioteca."""
+    use_case = ManageItemTypesUseCase(WorkItemRepository(db))
+    return use_case.list_templates(workspace_id)
+
+@router.post("/import-template/{template_id}", response_model=WorkItemTypeReadDTO)
+def import_template(
+    template_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """Importa (clona) um modelo global para o workspace atual."""
+    use_case = ManageItemTypesUseCase(WorkItemRepository(db))
+    try:
+        return use_case.import_template(template_id, workspace_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

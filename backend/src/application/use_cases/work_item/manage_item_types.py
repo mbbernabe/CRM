@@ -84,3 +84,10 @@ class ManageItemTypesUseCase:
 
     def delete_type(self, type_id: int, workspace_id: int) -> bool:
         return self.repository.delete_type(type_id, workspace_id)
+
+    def list_templates(self, workspace_id: int) -> List[WorkItemType]:
+        return self.repository.list_system_templates(workspace_id)
+
+    def import_template(self, template_id: int, workspace_id: int) -> WorkItemType:
+        return self.repository.clone_type(template_id, workspace_id)
+

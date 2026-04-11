@@ -46,6 +46,7 @@ class WorkItemType:
     color: Optional[str] = None
     workspace_id: Optional[int] = None
     is_system: bool = False
+    is_installed: bool = False
     # Field definitions specifically for this type
     field_definitions: List[CustomFieldDefinition] = field(default_factory=list)
     field_groups: List[WorkItemFieldGroup] = field(default_factory=list)
@@ -93,6 +94,12 @@ class IWorkItemRepository:
         raise NotImplementedError
 
     def list_types(self, workspace_id: int) -> List[WorkItemType]:
+        raise NotImplementedError
+
+    def list_system_templates(self, workspace_id: int) -> List[WorkItemType]:
+        raise NotImplementedError
+
+    def clone_type(self, template_id: int, target_workspace_id: int) -> WorkItemType:
         raise NotImplementedError
 
     def create_field_definition(self, type_id: int, field_def: CustomFieldDefinition) -> CustomFieldDefinition:

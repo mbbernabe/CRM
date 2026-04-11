@@ -4,7 +4,7 @@ import {
   Plus, Edit, Trash2, Save, X, Settings2, Code, 
   Palette, Type, List as ListIcon, CheckSquare, 
   AlignLeft, Hash, Calendar, DollarSign, GripVertical, AlertCircle, RefreshCw, ChevronDown, ChevronRight,
-  BookOpen, Download
+  ShieldCheck
 } from 'lucide-react';
 import {
   DndContext,
@@ -13,8 +13,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
-  defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -28,8 +26,7 @@ import Modal from '../common/Modal';
 import { useToast } from '../common/Toast';
 import './WorkItemTypeSettings.css';
 
-// --- Sortable Components ---
-
+// Reuse the same sortable components from WorkItemTypeSettings or define locally
 const SortableField = ({ id, field, onRemove, onChange, groups }) => {
   const {
     attributes,
@@ -193,7 +190,6 @@ const SortableGroupPanel = ({ id, group, fields, onAddField, onRemoveGroup, onGr
   );
 };
 
-// --- Utils ---
 const slugify = (text) => {
   return text
     .toString()
@@ -206,7 +202,6 @@ const slugify = (text) => {
     .replace(/--+/g, '_');
 };
 
-// --- Options Manager ---
 const OptionsManager = ({ value, onChange }) => {
   const [inputValue, setInputValue] = useState('');
   const options = useMemo(() => {
@@ -258,21 +253,17 @@ const OptionsManager = ({ value, onChange }) => {
   );
 };
 
-const WorkItemTypeSettings = () => {
+const AdminTemplates = () => {
   const { addToast } = useToast();
   const { fetchWithAuth } = useAuth();
-  const [types, setTypes] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [modalType, setModalType] = useState('create');
-  const [selectedType, setSelectedType] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [templates, setTemplates] = useState([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [isImporting, setIsImporting] = useState(null); // ID of template being imported
 
   // Form State
   const [formData, setFormData] = useState({
@@ -284,13 +275,13 @@ const WorkItemTypeSettings = () => {
     field_groups: []
   });
 
-  const fetchTypes = async () => {
+  const fetchTemplates = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('http://localhost:8000/workitems/types');
-      if (!res.ok) throw new Error('Erro ao buscar tipos de objetos');
+      const res = await fetchWithAuth('http://localhost:8000/admin/templates');
+      if (!res.ok) throw new Error('Erro ao buscar biblioteca global');
       const data = await res.json();
-      setTypes(data);
+      setTemplates(data);
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
@@ -299,7 +290,7 @@ const WorkItemTypeSettings = () => {
   };
 
   useEffect(() => {
-    fetchTypes();
+    fetchTemplates();
   }, []);
 
   const handleOpenCreate = () => {
@@ -314,55 +305,22 @@ const WorkItemTypeSettings = () => {
       ],
       field_groups: []
     });
-    setSelectedType(null);
+    setSelectedTemplate(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (type) => {
+  const handleOpenEdit = (template) => {
     setModalType('edit');
-    setSelectedType(type);
+    setSelectedTemplate(template);
     setFormData({
-      name: type.name,
-      label: type.label,
-      icon: type.icon || 'Package',
-      color: type.color || '#0091ae',
-      field_definitions: [...(type.field_definitions || [])],
-      field_groups: [...(type.field_groups || [])]
+      name: template.name,
+      label: template.label,
+      icon: template.icon || 'Package',
+      color: template.color || '#0091ae',
+      field_definitions: [...(template.field_definitions || [])],
+      field_groups: [...(template.field_groups || [])]
     });
     setIsModalOpen(true);
-  };
-
-  const handleOpenLibrary = async () => {
-    setIsLibraryOpen(true);
-    setLoadingTemplates(true);
-    try {
-      const res = await fetchWithAuth('http://localhost:8000/workitems/templates');
-      if (!res.ok) throw new Error('Erro ao buscar biblioteca');
-      const data = await res.json();
-      setTemplates(data);
-    } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setLoadingTemplates(false);
-    }
-  };
-
-  const handleImportTemplate = async (templateId) => {
-    setIsImporting(templateId);
-    try {
-      const res = await fetchWithAuth(`http://localhost:8000/workitems/import-template/${templateId}`, {
-        method: 'POST'
-      });
-      if (!res.ok) throw new Error('Erro ao importar modelo');
-      
-      addToast('Modelo importado com sucesso!');
-      setIsLibraryOpen(false);
-      fetchTypes();
-    } catch (err) {
-      addToast(err.message, 'error');
-    } finally {
-      setIsImporting(null);
-    }
   };
 
   const handleAddField = (groupId = null) => {
@@ -434,8 +392,8 @@ const WorkItemTypeSettings = () => {
     setIsSaving(true);
     try {
       const url = modalType === 'create' 
-        ? 'http://localhost:8000/workitems/types'
-        : `http://localhost:8000/workitems/types/${selectedType.id}`;
+        ? 'http://localhost:8000/admin/templates'
+        : `http://localhost:8000/admin/templates/${selectedTemplate.id}`;
       
       const res = await fetchWithAuth(url, {
         method: modalType === 'create' ? 'POST' : 'PUT',
@@ -444,23 +402,12 @@ const WorkItemTypeSettings = () => {
 
       if (!res.ok) {
         const error = await res.json();
-        let errorMessage = 'Erro ao salvar tipo de objeto';
-        
-        if (typeof error.detail === 'string') {
-            errorMessage = error.detail;
-        } else if (Array.isArray(error.detail)) {
-            // FastAPI Pydantic Validation Errors
-            errorMessage = error.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(' | ');
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        throw new Error(errorMessage);
+        throw new Error(error.detail || 'Erro ao salvar modelo global');
       }
 
       setIsModalOpen(false);
-      fetchTypes();
-      addToast(`Tipo de objeto ${modalType === 'create' ? 'criado' : 'atualizado'} com sucesso!`);
+      fetchTemplates();
+      addToast(`Modelo global ${modalType === 'create' ? 'criado' : 'atualizado'} com sucesso!`);
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
@@ -471,16 +418,16 @@ const WorkItemTypeSettings = () => {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${selectedType.id}`, {
+      const res = await fetchWithAuth(`http://localhost:8000/admin/templates/${selectedTemplate.id}`, {
         method: 'DELETE'
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.detail || 'Erro ao excluir tipo');
+        throw new Error(error.detail || 'Erro ao excluir modelo');
       }
       setIsDeleteModalOpen(false);
-      fetchTypes();
-      addToast('Tipo de objeto excluído com sucesso');
+      fetchTemplates();
+      addToast('Modelo global excluído com sucesso');
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
@@ -497,7 +444,6 @@ const WorkItemTypeSettings = () => {
     const { active, over } = event;
     if (!over) return;
 
-    // 1. Reordenação de Grupos
     if (active.id.toString().startsWith('group-') && over.id.toString().startsWith('group-')) {
         const oldIndex = parseInt(active.id.toString().split('-')[1]);
         const newIndex = parseInt(over.id.toString().split('-')[1]);
@@ -509,7 +455,6 @@ const WorkItemTypeSettings = () => {
         return;
     }
 
-    // 2. Reordenação/Movimentação de campos
     if (active.id.toString().startsWith('field-')) {
         const activeIdx = parseInt(active.id.toString().split('-')[1]);
         
@@ -528,21 +473,15 @@ const WorkItemTypeSettings = () => {
         }
 
         let newDefs = [...formData.field_definitions];
-        
-        // Se mudou de grupo
         if (newDefs[activeIdx].group_id !== targetGroupId) {
             newDefs[activeIdx] = { ...newDefs[activeIdx], group_id: targetGroupId };
         }
-        
-        // Se houver reordenação (sobre outro campo)
         if (isOverAnotherField) {
             const overIdx = parseInt(overId.split('-')[1]);
             if (activeIdx !== overIdx) {
                 newDefs = arrayMove(newDefs, activeIdx, overIdx);
             }
         }
-        
-        // Atualizar propriedade 'order' para todos os campos
         const finalDefs = newDefs.map((f, i) => ({ ...f, order: i }));
         setFormData({ ...formData, field_definitions: finalDefs });
     }
@@ -551,7 +490,7 @@ const WorkItemTypeSettings = () => {
   if (loading) return (
     <div className="loading-container">
       <RefreshCw size={40} className="spinner" />
-      <p>Carregando tipos de objetos...</p>
+      <p>Carregando biblioteca global...</p>
     </div>
   );
 
@@ -559,44 +498,39 @@ const WorkItemTypeSettings = () => {
     <div className="type-settings-container">
       <div className="settings-header-box">
         <div className="header-info">
-          <h2>Tipos de Objetos</h2>
-          <p>Defina as entidades e propriedades que trafegarão nas suas pipelines genéricas.</p>
+          <h2><ShieldCheck size={24} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--hs-blue)' }} /> Biblioteca Global</h2>
+          <p>Gerencie os modelos de tipos de objetos disponíveis para todos os workspaces do sistema.</p>
         </div>
         <div className="header-actions-group">
-          <button className="hs-button-secondary" onClick={handleOpenLibrary}>
-            <BookOpen size={16} /> Biblioteca de Modelos
-          </button>
           <button className="hs-button-primary" onClick={handleOpenCreate}>
-            <Plus size={16} /> Criar Novo Tipo
+            <Plus size={16} /> Novo Modelo Global
           </button>
         </div>
       </div>
 
       <div className="types-grid">
-        {types.length === 0 ? (
+        {templates.length === 0 ? (
            <div className="empty-types">
               <Settings2 size={48} className="empty-icon" />
-              <p>Nenhum tipo customizado criado ainda.</p>
-              <button className="hs-button-link" onClick={handleOpenCreate}>Comece criando o primeiro tipo de objeto</button>
+              <p>Nenhum modelo global criado ainda.</p>
+              <button className="hs-button-link" onClick={handleOpenCreate}>Criar o primeiro modelo da biblioteca</button>
            </div>
         ) : (
-          types.map(type => (
-            <div key={type.id} className="type-card">
+          templates.map(tmpl => (
+            <div key={tmpl.id} className="type-card">
               <div className="type-card-body">
-                 <div className="type-icon-circle" style={{ backgroundColor: type.color + '20', color: type.color }}>
+                 <div className="type-icon-circle" style={{ backgroundColor: tmpl.color + '20', color: tmpl.color }}>
                     <Code size={20} />
                  </div>
                  <div className="type-info">
-                    <h3>{type.label}</h3>
-                    <span className="type-slug">{type.name}</span>
-                    <span className="fields-count">{type.field_definitions?.length || 0} campos definidos</span>
+                    <h3>{tmpl.label}</h3>
+                    <span className="type-slug">{tmpl.name}</span>
+                    <span className="fields-count">{tmpl.field_definitions?.length || 0} campos definidos</span>
                  </div>
               </div>
               <div className="type-card-actions">
-                 <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
-                 {!type.is_system && (
-                   <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
-                 )}
+                 <button className="icon-button" onClick={() => handleOpenEdit(tmpl)} title="Editar"><Edit size={16} /></button>
+                 <button className="icon-button delete" onClick={() => { setSelectedTemplate(tmpl); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
               </div>
             </div>
           ))
@@ -606,13 +540,13 @@ const WorkItemTypeSettings = () => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={modalType === 'create' ? 'Configurar Novo Tipo de Objeto' : `Editar ${formData.label}`}
+        title={modalType === 'create' ? 'Configurar Novo Modelo Global' : `Editar Modelo: ${formData.label}`}
         size="large"
       >
         <form onSubmit={handleSave} className="type-form">
           <div className="form-sections">
             <div className="form-section main-config">
-              <h4 className="section-title">Informações Básicas</h4>
+              <h4 className="section-title">Informações do Modelo</h4>
               <div className="form-grid">
                 <div className="hs-form-group">
                   <label className="hs-label">Rótulo Exibido (Display Name)</label>
@@ -645,7 +579,7 @@ const WorkItemTypeSettings = () => {
               </div>
               <div className="form-section layout-builder">
                <div className="section-header">
-                 <h4 className="section-title">Estrutura do Objeto (Grupos e Campos)</h4>
+                 <h4 className="section-title">Estrutura do Modelo (Grupos e Campos)</h4>
                  <button type="button" className="hs-button-link" onClick={handleAddGroup}>+ Criar Novo Grupo</button>
                </div>
                
@@ -653,12 +587,11 @@ const WorkItemTypeSettings = () => {
                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                    <SortableContext items={formData.field_groups.map((_, i) => `group-${i}`)} strategy={verticalListSortingStrategy}>
                      
-                     {/* Render Groups */}
                      {formData.field_groups.map((group, gIdx) => {
                        const groupId = group.id || `temp-${gIdx}`;
                        const groupFields = formData.field_definitions
                          .map((f, i) => ({ ...f, originalIndex: i }))
-                         .filter(f => f.group_id === groupId || f.group_id === group.name); // Fallback p/ o nome se id não existir ainda
+                         .filter(f => f.group_id === groupId || f.group_id === group.name);
                        
                        return (
                          <SortableGroupPanel 
@@ -676,7 +609,6 @@ const WorkItemTypeSettings = () => {
                        );
                      })}
 
-                     {/* Unassigned Fields Group */}
                      {(() => {
                         const unassignedFields = formData.field_definitions
                           .map((f, i) => ({ ...f, originalIndex: i }))
@@ -696,7 +628,6 @@ const WorkItemTypeSettings = () => {
                           />
                         );
                      })()}
-
                    </SortableContext>
                  </DndContext>
                </div>
@@ -707,71 +638,21 @@ const WorkItemTypeSettings = () => {
           <div className="form-actions sticky-footer">
             <button type="button" className="hs-button-secondary" onClick={() => setIsModalOpen(false)}>Cancelar</button>
             <button type="submit" className="hs-button-primary" disabled={isSaving}>
-                {isSaving ? 'Salvando...' : modalType === 'create' ? 'Criar Tipo' : 'Salvar Alterações'}
+                {isSaving ? 'Salvando...' : modalType === 'create' ? 'Criar Modelo' : 'Salvar Modelo'}
             </button>
           </div>
         </form>
       </Modal>
 
-      <Modal 
-        isOpen={isLibraryOpen} 
-        onClose={() => setIsLibraryOpen(false)} 
-        title="Biblioteca de Modelos Globais"
-        size="large"
-      >
-        <div className="template-library">
-          <p className="library-intro">Escolha um modelo pronto para importar para seu workspace. Você poderá personalizá-lo livremente após a importação.</p>
-          
-          {loadingTemplates ? (
-            <div className="library-loading">
-              <RefreshCw size={24} className="spinner" />
-              <span>Carregando biblioteca...</span>
-            </div>
-          ) : templates.length === 0 ? (
-            <div className="library-empty">
-              <AlertCircle size={32} />
-              <p>Nenhum modelo disponível no momento.</p>
-            </div>
-          ) : (
-            <div className="templates-grid">
-              {templates.map(tmpl => (
-                <div key={tmpl.id} className="template-card-lite">
-                   <div className="tmpl-icon" style={{ backgroundColor: tmpl.color + '20', color: tmpl.color }}>
-                      <Code size={18} />
-                   </div>
-                   <div className="tmpl-info">
-                      <h4>{tmpl.label}</h4>
-                      <p>{tmpl.field_definitions?.length || 0} campos inclusos</p>
-                   </div>
-                   {tmpl.is_installed ? (
-                     <div className="installed-badge">
-                       <CheckSquare size={14} /> Instalado
-                     </div>
-                   ) : (
-                     <button 
-                       className="hs-button-secondary hs-button-sm" 
-                       onClick={() => handleImportTemplate(tmpl.id)}
-                       disabled={isImporting === tmpl.id}
-                     >
-                       {isImporting === tmpl.id ? 'Importando...' : <><Download size={14} /> Importar</>}
-                     </button>
-                   )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Tipo de Objeto">
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Modelo Global">
         <div className="delete-confirm">
            <AlertCircle size={48} className="danger-icon" />
-           <p>Tem certeza que deseja excluir o tipo <strong>{selectedType?.label}</strong>?</p>
-           <p className="subtext">Isso poderá causar erros em itens e pipelines que já utilizam este tipo.</p>
+           <p>Tem certeza que deseja excluir o modelo <strong>{selectedTemplate?.label}</strong> da biblioteca?</p>
+           <p className="subtext">Isso não afetará tipos já importados por workspaces, mas novos workspaces não poderão mais usá-lo.</p>
            <div className="actions">
               <button className="hs-button-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
               <button className="hs-button-danger" onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+                  {isDeleting ? 'Excluindo da Biblioteca...' : 'Confirmar Exclusão'}
               </button>
            </div>
         </div>
@@ -780,4 +661,4 @@ const WorkItemTypeSettings = () => {
   );
 };
 
-export default WorkItemTypeSettings;
+export default AdminTemplates;

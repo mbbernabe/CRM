@@ -10,7 +10,7 @@
 ---
 
 ## 🏢 Gestão de Áreas de Trabalho (Workspaces) & Times
-- [ ] **Templates de Workspace (Super Admin)**: O Super Admin poderá criar e configurar pipelines padrões, Tipos de Objetos padrões e campos personalizados. Estes estarão disponíveis (copiados) automaticamente para cada nova área de trabalho criada.
+- [ ] **Biblioteca de Modelos (Super Admin)**: O Super Admin poderá criar e configurar tipos de objetos e campos personalizados em uma biblioteca global. Administradores de Workspace podem escolher e importar (clonar) esses modelos para suas áreas, permitindo personalização local sem afetar o modelo global.
 - [ ] **Configuração de SMTP por Workspace**: Deve existir uma configuração de SMTP isolada para cada Área de Trabalho. Somente o Administrador do Workspace terá permissão para gerenciar essas credenciais.
 - [x] **Workspaces**: A Área de Trabalho é o tenant principal. Todo dado pertence a um Workspace.
 - [x] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro).

@@ -1,7 +1,10 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from src.domain.entities.work_item import WorkItem, WorkItemType, CustomFieldDefinition, WorkItemFieldGroup, IWorkItemRepository
-from src.infrastructure.database.models import WorkItemModel, WorkItemTypeModel, WorkItemFieldDefinitionModel, WorkItemFieldGroupModel
+from src.infrastructure.database.models import (
+    WorkItemModel, WorkItemTypeModel, WorkItemFieldDefinitionModel, 
+    WorkItemFieldGroupModel, PipelineModel, PipelineStageModel
+)
 import json
 import logging
 
@@ -132,13 +135,127 @@ class WorkItemRepository(IWorkItemRepository):
 
     def list_types(self, workspace_id: int) -> List[WorkItemType]:
         models = self.db.query(WorkItemTypeModel).filter(
-            (WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None)
+            WorkItemTypeModel.workspace_id == workspace_id
         ).all()
         types = []
         for m in models:
             item_type = self._type_model_to_entity(m)
             types.append(item_type)
         return types
+
+    def list_system_templates(self, workspace_id: int) -> List[WorkItemType]:
+        models = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.workspace_id == None
+        ).all()
+        
+        # Obter nomes dos tipos já instalados no workspace alvo
+        installed_names = [t.name for t in self.db.query(WorkItemTypeModel.name).filter(
+            WorkItemTypeModel.workspace_id == workspace_id
+        ).all()]
+        
+        entities = []
+        for m in models:
+            entity = self._type_model_to_entity(m)
+            entity.is_installed = m.name in installed_names
+            entities.append(entity)
+            
+        return entities
+
+    def clone_type(self, template_id: int, target_workspace_id: int) -> WorkItemType:
+        logger = logging.getLogger(__name__)
+        try:
+            # 1. Obter template
+            template_model = self.db.query(WorkItemTypeModel).filter(
+                WorkItemTypeModel.id == template_id,
+                WorkItemTypeModel.workspace_id == None
+            ).first()
+            
+            if not template_model:
+                raise ValueError(f"Template {template_id} não encontrado")
+            
+            # Verificar se já está instalado (pelo nome)
+            existing = self.db.query(WorkItemTypeModel).filter(
+                WorkItemTypeModel.workspace_id == target_workspace_id,
+                WorkItemTypeModel.name == template_model.name
+            ).first()
+            if existing:
+                raise ValueError(f"O tipo '{template_model.label}' já está instalado neste workspace.")
+
+            # 2. Criar novo tipo clonado
+            new_type = WorkItemTypeModel(
+                name=template_model.name,
+                label=template_model.label,
+                icon=template_model.icon,
+                color=template_model.color,
+                workspace_id=target_workspace_id,
+                is_system=False
+            )
+            self.db.add(new_type)
+            self.db.flush()
+            
+            # 3. Clonar grupos
+            group_map = {} 
+            for g in template_model.field_groups:
+                new_group = WorkItemFieldGroupModel(
+                    type_id=new_type.id,
+                    name=g.name,
+                    order=g.order,
+                    workspace_id=target_workspace_id
+                )
+                self.db.add(new_group)
+                self.db.flush()
+                group_map[g.id] = new_group.id
+            
+            # 4. Clonar campos
+            for fd in template_model.field_definitions:
+                new_fd = WorkItemFieldDefinitionModel(
+                    type_id=new_type.id,
+                    group_id=group_map.get(fd.group_id),
+                    name=fd.name,
+                    label=fd.label,
+                    field_type=fd.field_type,
+                    options_json=fd.options_json,
+                    is_required=fd.is_required,
+                    order=fd.order
+                )
+                self.db.add(new_fd)
+
+            # 5. [NOVO] Clonar Pipelines associadas
+            # Buscamos pipelines globais que servem para este entity_type
+            global_pipelines = self.db.query(PipelineModel).filter(
+                PipelineModel.workspace_id == None,
+                PipelineModel.entity_type == template_model.name
+            ).all()
+
+            for gp in global_pipelines:
+                new_pipeline = PipelineModel(
+                    name=gp.name,
+                    entity_type=new_type.name,
+                    workspace_id=target_workspace_id,
+                    item_label_singular=gp.item_label_singular,
+                    item_label_plural=gp.item_label_plural
+                )
+                self.db.add(new_pipeline)
+                self.db.flush()
+
+                # Clonar estágios da pipeline
+                for gs in gp.stages:
+                    new_stage = PipelineStageModel(
+                        pipeline_id=new_pipeline.id,
+                        name=gs.name,
+                        order=gs.order,
+                        color=gs.color,
+                        is_final=gs.is_final,
+                        metadata_json=gs.metadata_json
+                    )
+                    self.db.add(new_stage)
+                
+            self.db.commit()
+            return self._type_model_to_entity(new_type)
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Erro ao clonar tipo {template_id}: {str(e)}")
+            raise e
 
     def _type_model_to_entity(self, m: WorkItemTypeModel) -> WorkItemType:
         item_type = WorkItemType(

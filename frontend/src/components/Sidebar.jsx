@@ -65,8 +65,19 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
       menuItems.push(configGroup);
     }
     
-    if (user?.role === 'superadmin' && !menuItems.find(m => m.id === 'admin')) {
-      menuItems.push({ icon: <Shield size={20} />, label: 'Administração', id: 'admin' });
+    if (user?.role === 'superadmin') {
+      const adminGroup = {
+        icon: <Shield size={20} />,
+        label: 'Administração',
+        id: 'admin-group',
+        children: [
+          { label: 'Usuários', id: 'admin' },
+          { label: 'Biblioteca Global', id: 'admin-templates' },
+        ]
+      };
+      if (!menuItems.find(m => m.id === 'admin-group')) {
+        menuItems.push(adminGroup);
+      }
     }
   } else {
     if (!menuItems.find(m => m.id === 'settings-group')) {

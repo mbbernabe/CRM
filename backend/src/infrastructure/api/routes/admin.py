@@ -25,6 +25,13 @@ from src.domain.exceptions.base_exceptions import DomainException
 
 logger = get_logger(__name__)
 
+from src.infrastructure.repositories.work_item_repository import WorkItemRepository
+from src.application.use_cases.work_item.manage_item_types import ManageItemTypesUseCase
+from src.application.dtos.work_item_dto import (
+    WorkItemTypeReadDTO, WorkItemTypeCreateDTO, WorkItemTypeUpdateDTO
+)
+from src.domain.entities.work_item import WorkItemType
+
 @router.get("/users", response_model=List[UserReadDTO])
 def list_users(db: Session = Depends(get_db), superadmin_role: str = Depends(require_superadmin)):
     user_repo = SqlAlchemyUserRepository(db)
@@ -38,3 +45,83 @@ def list_users(db: Session = Depends(get_db), superadmin_role: str = Depends(req
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Não foi possível carregar a lista de usuários. Por favor, tente novamente mais tarde."
         )
+
+# --- Template Management (Global Library) ---
+
+@router.get("/templates", response_model=List[WorkItemTypeReadDTO])
+def list_global_templates(
+    db: Session = Depends(get_db),
+    admin: str = Depends(require_superadmin)
+):
+    """Lista todos os modelos globais para gestão do superadmin."""
+    repo = WorkItemRepository(db)
+    # Passamos 0 ou similar apenas para satisfazer o contrato se necessário, 
+    # mas list_system_templates no repo já filtra por workspace_id is NULL.
+    # No caso de gestão, queremos todos os NULLs.
+    return repo.list_system_templates(workspace_id=0)
+
+@router.post("/templates", response_model=WorkItemTypeReadDTO)
+def create_global_template(
+    data: WorkItemTypeCreateDTO,
+    db: Session = Depends(get_db),
+    admin: str = Depends(require_superadmin)
+):
+    """Cria um novo modelo global (workspace_id = NULL)."""
+    repo = WorkItemRepository(db)
+    use_case = ManageItemTypesUseCase(repo)
+    
+    # Criamos a entidade com workspace_id nulo explicitamente
+    new_type = WorkItemType(
+        name=data.name,
+        label=data.label,
+        icon=data.icon,
+        color=data.color,
+        workspace_id=None,
+        is_system=True
+    )
+    
+    try:
+        created = repo.create_type(new_type)
+        return created
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/templates/{template_id}", response_model=WorkItemTypeReadDTO)
+def update_global_template(
+    template_id: int,
+    data: WorkItemTypeUpdateDTO,
+    db: Session = Depends(get_db),
+    admin: str = Depends(require_superadmin)
+):
+    """Atualiza um modelo global."""
+    repo = WorkItemRepository(db)
+    # workspace_id=None indica que estamos editando um template global
+    updated = repo.update_type(
+        type_id=template_id,
+        workspace_id=None,
+        label=data.label,
+        icon=data.icon,
+        color=data.color,
+        field_definitions=data.field_definitions,
+        field_groups=data.field_groups
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Template não encontrado")
+    return updated
+
+@router.delete("/templates/{template_id}")
+def delete_global_template(
+    template_id: int,
+    db: Session = Depends(get_db),
+    admin: str = Depends(require_superadmin)
+):
+    """Remove um modelo global."""
+    repo = WorkItemRepository(db)
+    try:
+        # Passamos None para deletar especificamente o global
+        success = repo.delete_type(template_id, None)
+        if not success:
+            raise HTTPException(status_code=404, detail="Template não encontrado")
+        return {"message": "Template removido com sucesso"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

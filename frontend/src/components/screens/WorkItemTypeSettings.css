@@ -430,3 +430,86 @@
     justify-content: center;
     gap: 16px;
 }
+
+/* Template Library */
+.template-library {
+    padding: 10px;
+}
+
+.library-intro {
+    color: #5d7185;
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+}
+
+.library-loading, .library-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 16px;
+    color: #5d7185;
+}
+
+.template-card-lite {
+    display: flex;
+    align-items: center;
+    background: #fdfdfd;
+    border: 1px solid #eaf0f6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+    gap: 16px;
+}
+
+.template-card-lite:hover {
+    border-color: #cbd6e2;
+    background: #f9fbfd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.tmpl-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tmpl-info {
+    flex: 1;
+}
+
+.tmpl-info h4 {
+    margin: 0;
+    color: #2d3e50;
+    font-size: 1rem;
+}
+
+.tmpl-info p {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: #5d7185;
+}
+
+.header-actions-group {
+    display: flex;
+    gap: 12px;
+}
+
+.installed-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #eef9fa;
+    color: #008da6;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+

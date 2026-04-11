@@ -21,6 +21,7 @@ import WorkItemTypeSettings from './components/screens/WorkItemTypeSettings';
 import AcceptInvite from './components/auth/AcceptInvite';
 import { ToastProvider } from './components/common/Toast';
 import WorkspaceMembers from './components/screens/WorkspaceMembers';
+import AdminTemplates from './components/screens/AdminTemplates';
 
 
 const PIPELINES = [
@@ -159,6 +160,7 @@ function AppInner() {
       case 'system-settings': return 'Configurações Globais';
       case 'pipeline-board': return 'Quadro de Pipelines';
       case 'admin': return 'Administração';
+      case 'admin-templates': return 'Biblioteca Global';
       case 'object-types': return 'Tipos de Objetos';
       case 'workspace-members': return 'Membros & Convites';
       default: return 'CRM';
@@ -193,6 +195,7 @@ function AppInner() {
       case 'workspace-settings': return <WorkspaceSettings />;
       case 'pipeline-board': return <PipelineBoardScreen />;
       case 'admin': return <AdminUsers />;
+      case 'admin-templates': return <AdminTemplates />;
       case 'object-types': return <WorkItemTypeSettings />;
       case 'workspace-members': return <WorkspaceMembers />;
       default: return <Dashboard />;

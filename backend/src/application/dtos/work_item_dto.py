@@ -28,6 +28,7 @@ class WorkItemTypeReadDTO(BaseModel):
     icon: Optional[str] = None
     color: Optional[str] = None
     is_system: bool = False
+    is_installed: bool = False
     field_definitions: List[CustomFieldDefinitionDTO] = Field(default_factory=list)
     field_groups: List[WorkItemFieldGroupDTO] = Field(default_factory=list)
 
