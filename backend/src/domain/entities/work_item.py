@@ -33,9 +33,11 @@ class CustomFieldDefinition:
     field_type: FieldType = FieldType.TEXT
     options: Optional[List[str]] = None # For select types
     required: bool = False
+    is_default: bool = True
     order: int = 0
     group_id: Optional[Union[int, str]] = None
     workspace_id: Optional[int] = None
+    source_field_id: Optional[int] = None
 
 @dataclass
 class WorkItemType:
@@ -47,6 +49,7 @@ class WorkItemType:
     workspace_id: Optional[int] = None
     is_system: bool = False
     is_installed: bool = False
+    source_type_id: Optional[int] = None
     # Field definitions specifically for this type
     field_definitions: List[CustomFieldDefinition] = field(default_factory=list)
     field_groups: List[WorkItemFieldGroup] = field(default_factory=list)
@@ -103,4 +106,20 @@ class IWorkItemRepository:
         raise NotImplementedError
 
     def create_field_definition(self, type_id: int, field_def: CustomFieldDefinition) -> CustomFieldDefinition:
+        raise NotImplementedError
+
+    def list_suggested_fields(self, local_type_id: int, workspace_id: int) -> List[CustomFieldDefinition]:
+        """Lista campos do modelo global que ainda não foram importados para o tipo local."""
+        raise NotImplementedError
+
+    def import_global_field(self, global_field_id: int, local_type_id: int, workspace_id: int) -> CustomFieldDefinition:
+        """Clona um campo específico da biblioteca global para o tipo local."""
+        raise NotImplementedError
+
+    def check_for_updates(self, type_id: int, workspace_id: int) -> List[Dict[str, Any]]:
+        """Compara o tipo local com sua origem global e retorna as diferenças."""
+        raise NotImplementedError
+
+    def sync_from_global(self, type_id: int, source_field_ids: List[int], workspace_id: int) -> bool:
+        """Aplica atualizações do modelo global ao tipo local de forma manual."""
         raise NotImplementedError

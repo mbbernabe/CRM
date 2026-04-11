@@ -17,7 +17,9 @@ class CustomFieldDefinitionDTO(BaseModel):
     field_type: str = "text"
     options: Optional[List[str]] = None
     required: bool = False
+    is_default: bool = True
     order: int = 0
+    source_field_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,6 +31,7 @@ class WorkItemTypeReadDTO(BaseModel):
     color: Optional[str] = None
     is_system: bool = False
     is_installed: bool = False
+    source_type_id: Optional[int] = None
     field_definitions: List[CustomFieldDefinitionDTO] = Field(default_factory=list)
     field_groups: List[WorkItemFieldGroupDTO] = Field(default_factory=list)
 

@@ -13,7 +13,7 @@ from src.application.use_cases.work_item.manage_item_types import ManageItemType
 from src.application.use_cases.work_item.update_work_item import UpdateWorkItemUseCase
 from src.application.use_cases.work_item.delete_work_item import DeleteWorkItemUseCase
 from src.application.use_cases.work_item.manage_work_item_history import ManageWorkItemHistoryUseCase
-from src.application.dtos.work_item_dto import WorkItemTypeReadDTO, WorkItemTypeCreateDTO, WorkItemTypeUpdateDTO, WorkItemHistoryReadDTO, WorkItemNoteCreateDTO
+from src.application.dtos.work_item_dto import WorkItemTypeReadDTO, WorkItemTypeCreateDTO, WorkItemTypeUpdateDTO, WorkItemHistoryReadDTO, WorkItemNoteCreateDTO, CustomFieldDefinitionDTO
 from typing import Dict, Any, Optional, List
 
 router = APIRouter(prefix="/workitems", tags=["WorkItems"])
@@ -258,3 +258,56 @@ def import_template(
         return use_case.import_template(template_id, workspace_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/types/{type_id}/suggested-fields", response_model=List[CustomFieldDefinitionDTO])
+def list_suggested_fields(
+    type_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """Lista campos da biblioteca global que podem ser adicionados a este tipo de objeto."""
+    use_case = ManageItemTypesUseCase(WorkItemRepository(db))
+    return use_case.list_suggested_fields(type_id, workspace_id)
+
+@router.post("/types/{type_id}/import-field/{global_field_id}", response_model=CustomFieldDefinitionDTO)
+def import_global_field(
+    type_id: int,
+    global_field_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """Importa um campo específico do modelo global para o tipo local."""
+    use_case = ManageItemTypesUseCase(WorkItemRepository(db))
+    try:
+        return use_case.import_global_field(global_field_id, type_id, workspace_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/types/{type_id}/updates")
+def check_for_updates(
+    type_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """Verifica se há atualizações disponíveis no modelo global original."""
+    use_case = ManageItemTypesUseCase(WorkItemRepository(db))
+    return use_case.check_for_updates(type_id, workspace_id)
+
+@router.post("/types/{type_id}/sync")
+def sync_from_global(
+    type_id: int,
+    payload: Dict[str, Any] = Body(...),
+    workspace_id: int = Depends(get_workspace_id),
+    db: Session = Depends(get_db)
+):
+    """Aplica manualmente as atualizações selecionadas do modelo global."""
+    use_case = ManageItemTypesUseCase(WorkItemRepository(db))
+    source_field_ids = payload.get("source_field_ids", [])
+    if not source_field_ids:
+        raise HTTPException(status_code=400, detail="Nenhum campo selecionado para sincronização")
+    
+    success = use_case.sync_from_global(type_id, source_field_ids, workspace_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Falha ao sincronizar com o modelo global")
+        
+    return {"message": "Sincronização concluída com sucesso"}

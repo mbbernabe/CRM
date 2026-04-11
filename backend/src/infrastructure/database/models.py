@@ -207,6 +207,7 @@ class WorkItemTypeModel(BaseModel):
     color = Column(String, nullable=True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
     is_system = Column(Boolean, default=False)
+    source_type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=True)
 
     field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="work_item_type", order_by="WorkItemFieldDefinitionModel.order", cascade="all, delete-orphan")
     field_groups = relationship("WorkItemFieldGroupModel", back_populates="work_item_type", order_by="WorkItemFieldGroupModel.order", cascade="all, delete-orphan")
@@ -223,7 +224,9 @@ class WorkItemFieldDefinitionModel(BaseModel):
     field_type = Column(String, default="text")
     options_json = Column(Text, nullable=True) # JSON string for options
     is_required = Column(Boolean, default=False)
+    is_default = Column(Boolean, default=True) # Se True, é importado automaticamente no clone_type
     order = Column(Integer, default=0)
+    source_field_id = Column(Integer, ForeignKey("work_item_field_definitions.id"), nullable=True)
 
     work_item_type = relationship("WorkItemTypeModel", back_populates="field_definitions")
     group = relationship("WorkItemFieldGroupModel", back_populates="field_definitions")

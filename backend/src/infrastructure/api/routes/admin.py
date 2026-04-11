@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
 from sqlalchemy.orm import Session
 from typing import List
 from src.infrastructure.database.db import get_db
@@ -125,3 +125,17 @@ def delete_global_template(
         return {"message": "Template removido com sucesso"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/templates/{template_id}/import-massive")
+def import_massive_fields(
+    template_id: int,
+    payload: List[dict] = Body(...),
+    db: Session = Depends(get_db),
+    admin: str = Depends(require_superadmin)
+):
+    """Permite ao SuperAdmin importar dezenas de campos de uma vez para um modelo global."""
+    repo = WorkItemRepository(db)
+    use_case = ManageItemTypesUseCase(repo)
+    # workspace_id=None para templates globais
+    count = use_case.import_massive_fields(template_id, payload, None)
+    return {"message": f"{count} campos importados com sucesso", "count": count}

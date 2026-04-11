@@ -55,8 +55,10 @@ class ManageItemTypesUseCase:
                     field_type=fd.field_type,
                     options=fd.options,
                     required=fd.required,
+                    is_default=fd.is_default,
                     order=fd.order,
-                    workspace_id=workspace_id
+                    workspace_id=workspace_id,
+                    source_field_id=fd.source_field_id
                 ) for fd in dto.field_definitions
             ]
         
@@ -90,4 +92,19 @@ class ManageItemTypesUseCase:
 
     def import_template(self, template_id: int, workspace_id: int) -> WorkItemType:
         return self.repository.clone_type(template_id, workspace_id)
+
+    def list_suggested_fields(self, local_type_id: int, workspace_id: int) -> List[CustomFieldDefinition]:
+        return self.repository.list_suggested_fields(local_type_id, workspace_id)
+
+    def import_global_field(self, global_field_id: int, local_type_id: int, workspace_id: int) -> CustomFieldDefinition:
+        return self.repository.import_global_field(global_field_id, local_type_id, workspace_id)
+
+    def check_for_updates(self, type_id: int, workspace_id: int):
+        return self.repository.check_for_updates(type_id, workspace_id)
+
+    def sync_from_global(self, type_id: int, source_field_ids: List[int], workspace_id: int) -> bool:
+        return self.repository.sync_from_global(type_id, source_field_ids, workspace_id)
+
+    def import_massive_fields(self, type_id: int, fields_data: List[dict], workspace_id: Optional[int] = None) -> int:
+        return self.repository.import_massive_fields(type_id, fields_data, workspace_id)
 

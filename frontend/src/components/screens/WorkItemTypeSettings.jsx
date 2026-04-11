@@ -273,6 +273,15 @@ const WorkItemTypeSettings = () => {
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [isImporting, setIsImporting] = useState(null); // ID of template being imported
+  const [isImportingField, setIsImportingField] = useState(null);
+  const [typeUpdates, setTypeUpdates] = useState({}); // { typeId: { diffs: [], template: {} } }
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncingType, setSyncingType] = useState(null);
+  const [selectedSyncFields, setSelectedSyncFields] = useState([]); // List of source_field_ids
+  const [isApplyingSync, setIsApplyingSync] = useState(false);
+  const [isSuggestedLibraryOpen, setIsSuggestedLibraryOpen] = useState(false);
+  const [suggestedFields, setSuggestedFields] = useState([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -284,6 +293,26 @@ const WorkItemTypeSettings = () => {
     field_groups: []
   });
 
+  const checkUpdatesForTypes = async (typesList) => {
+    const updates = {};
+    for (const type of typesList) {
+        if (type.source_type_id) {
+            try {
+                const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${type.id}/updates`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.updates_available) {
+                        updates[type.id] = data;
+                    }
+                }
+            } catch (err) {
+                console.error(`Erro ao verificar atualizações para ${type.label}:`, err);
+            }
+        }
+    }
+    setTypeUpdates(updates);
+  };
+
   const fetchTypes = async () => {
     setLoading(true);
     try {
@@ -291,6 +320,7 @@ const WorkItemTypeSettings = () => {
       if (!res.ok) throw new Error('Erro ao buscar tipos de objetos');
       const data = await res.json();
       setTypes(data);
+      checkUpdatesForTypes(data);
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
@@ -362,6 +392,60 @@ const WorkItemTypeSettings = () => {
       addToast(err.message, 'error');
     } finally {
       setIsImporting(null);
+    }
+  };
+
+  const handleOpenSuggestedLibrary = async () => {
+    if (!selectedType) return;
+    setIsSuggestedLibraryOpen(true);
+    setLoadingSuggested(true);
+    try {
+        const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${selectedType.id}/suggested-fields`);
+        if (!res.ok) throw new Error('Erro ao buscar campos sugeridos');
+        const data = await res.json();
+        setSuggestedFields(data);
+    } catch (err) {
+        addToast(err.message, 'error');
+    } finally {
+        setLoadingSuggested(false);
+    }
+  };
+
+  const handleImportSuggestedField = async (fieldId) => {
+    setIsImportingField(fieldId);
+    try {
+        const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${selectedType.id}/import-field/${fieldId}`, {
+            method: 'POST'
+        });
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || 'Erro ao importar campo');
+        }
+        
+        const newField = await res.json();
+        
+        // Atualizar o formulário local para que o campo apareça imediatamente
+        setFormData(prev => ({
+            ...prev,
+            field_definitions: [...prev.field_definitions, newField]
+        }));
+
+        // Remover da lista de sugestões
+        setSuggestedFields(prev => prev.filter(f => f.id !== fieldId));
+        
+        addToast(`Campo '${newField.label}' importado com sucesso!`);
+        
+        // Se a lista de sugestões ficar vazia, fecha o modal
+        if (suggestedFields.length <= 1) {
+            setIsSuggestedLibraryOpen(false);
+        }
+
+        // Refresh types list in background to sync
+        fetchTypes();
+    } catch (err) {
+        addToast(err.message, 'error');
+    } finally {
+        setIsImportingField(null);
     }
   };
 
@@ -468,23 +552,27 @@ const WorkItemTypeSettings = () => {
     }
   };
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
+  const handleApplySync = async () => {
+    if (selectedSyncFields.length === 0) return;
+    setIsApplyingSync(true);
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${selectedType.id}`, {
-        method: 'DELETE'
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.detail || 'Erro ao excluir tipo');
-      }
-      setIsDeleteModalOpen(false);
-      fetchTypes();
-      addToast('Tipo de objeto excluído com sucesso');
+        const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${syncingType.id}/sync`, {
+            method: 'POST',
+            body: JSON.stringify({ source_field_ids: selectedSyncFields })
+        });
+
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || 'Erro ao sincronizar');
+        }
+
+        addToast('Sincronização aplicada com sucesso!');
+        setIsSyncModalOpen(false);
+        fetchTypes(); // Recarregar tudo
     } catch (err) {
-      addToast(err.message, 'error');
+        addToast(err.message, 'error');
     } finally {
-      setIsDeleting(false);
+        setIsApplyingSync(false);
     }
   };
 
@@ -555,8 +643,18 @@ const WorkItemTypeSettings = () => {
     </div>
   );
 
+  const totalUpdates = Object.keys(typeUpdates).length;
+
   return (
     <div className="type-settings-container">
+      {totalUpdates > 0 && (
+          <div className="sync-banner">
+              <div className="banner-content">
+                  <RefreshCw size={18} className="banner-icon" />
+                  <span>Há <strong>{totalUpdates}</strong> tipos de objetos com atualizações disponíveis na Biblioteca Global.</span>
+              </div>
+          </div>
+      )}
       <div className="settings-header-box">
         <div className="header-info">
           <h2>Tipos de Objetos</h2>
@@ -593,6 +691,21 @@ const WorkItemTypeSettings = () => {
                  </div>
               </div>
               <div className="type-card-actions">
+                  {typeUpdates[type.id] && (
+                      <button 
+                         className="icon-button notification animate-pulse" 
+                         onClick={(e) => {
+                             e.stopPropagation();
+                             setSyncingType(type);
+                             setSelectedSyncFields(typeUpdates[type.id].diffs.map(d => d.source_field_id));
+                             setIsSyncModalOpen(true);
+                         }}
+                         title="Atualizações disponíveis"
+                         style={{ backgroundColor: '#fff7ed', border: '1px solid #fdba74', marginRight: '8px' }}
+                      >
+                         <RefreshCw size={16} color="#f97316" />
+                      </button>
+                  )}
                  <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
                  {!type.is_system && (
                    <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
@@ -646,7 +759,12 @@ const WorkItemTypeSettings = () => {
               <div className="form-section layout-builder">
                <div className="section-header">
                  <h4 className="section-title">Estrutura do Objeto (Grupos e Campos)</h4>
-                 <button type="button" className="hs-button-link" onClick={handleAddGroup}>+ Criar Novo Grupo</button>
+                 <div className="section-actions">
+                   <button type="button" className="hs-button-link" onClick={handleOpenSuggestedLibrary} style={{ marginRight: '15px' }}>
+                     <BookOpen size={14} /> Adicionar da Biblioteca
+                   </button>
+                   <button type="button" className="hs-button-link" onClick={handleAddGroup}>+ Criar Novo Grupo</button>
+                 </div>
                </div>
                
                <div className="groups-container">
@@ -763,6 +881,53 @@ const WorkItemTypeSettings = () => {
         </div>
       </Modal>
 
+      <Modal
+        isOpen={isSuggestedLibraryOpen}
+        onClose={() => setIsSuggestedLibraryOpen(false)}
+        title="Campos Sugeridos pela Biblioteca"
+        size="medium"
+      >
+        <div className="suggested-fields-library">
+            <p className="library-intro">Estes campos foram definidos no modelo global e estão disponíveis para importação imediata.</p>
+            
+            {loadingSuggested ? (
+                <div className="library-loading">
+                    <RefreshCw size={24} className="spinner" />
+                    <span>Buscando sugestões...</span>
+                </div>
+            ) : suggestedFields.length === 0 ? (
+                <div className="library-empty">
+                    <CheckSquare size={32} />
+                    <p>Todos os campos globais já estão instalados para este objeto.</p>
+                </div>
+            ) : (
+                <div className="suggested-list">
+                    {suggestedFields.map(field => (
+                        <div key={field.id} className="suggested-field-item">
+                            <div className="field-info">
+                                <div className="field-type-icon">
+                                    {field.field_type === 'number' ? <Hash size={16} /> : <AlignLeft size={16} />}
+                                </div>
+                                <div className="field-text">
+                                    <span className="field-label">{field.label}</span>
+                                    <span className="field-group-name">{field.group_id || 'Geral'}</span>
+                                </div>
+                            </div>
+                            <button 
+                                type="button"
+                                className="hs-button-secondary hs-button-sm"
+                                onClick={() => handleImportSuggestedField(field.id)}
+                                disabled={isImportingField === field.id}
+                            >
+                                {isImportingField === field.id ? 'Importando...' : 'Adicionar'}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+      </Modal>
+
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Tipo de Objeto">
         <div className="delete-confirm">
            <AlertCircle size={48} className="danger-icon" />
@@ -774,6 +939,67 @@ const WorkItemTypeSettings = () => {
                   {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
               </button>
            </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        title={`Sincronizar Atualizações: ${syncingType?.label}`}
+        size="medium"
+      >
+        <div className="sync-modal-content">
+            <p className="intro" style={{ marginBottom: '15px', color: 'var(--hs-text-secondary)' }}>
+                Os seguintes campos foram alterados no modelo global <strong>{typeUpdates[syncingType?.id]?.template_name}</strong>. 
+                Selecione quais deseja atualizar localmente:
+            </p>
+            
+            <div className="diff-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
+                {typeUpdates[syncingType?.id]?.diffs.map((diff, idx) => (
+                    <div key={idx} className="diff-item" style={{ border: '1px solid var(--hs-border)', borderRadius: '8px', padding: '12px' }}>
+                        <label className="hs-checkbox" style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={selectedSyncFields.includes(diff.source_field_id)}
+                                onChange={e => {
+                                    if (e.target.checked) setSelectedSyncFields([...selectedSyncFields, diff.source_field_id]);
+                                    else setSelectedSyncFields(selectedSyncFields.filter(id => id !== diff.source_field_id));
+                                }}
+                                style={{ marginTop: '3px', marginRight: '10px' }}
+                            />
+                            <div className="diff-details" style={{ flex: 1 }}>
+                                <span className="diff-label" style={{ fontWeight: '600', display: 'block', marginBottom: '8px' }}>{diff.field_label}</span>
+                                <div className="diff-changes" style={{ fontSize: '12px', color: 'var(--hs-text-light)' }}>
+                                    {Object.entries(diff.changes).map(([key, change]) => (
+                                        <div key={key} className="change-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                            <span className="attr" style={{ color: 'var(--hs-text-secondary)', minWidth: '80px' }}>{key}:</span>
+                                            <span className="old" style={{ textDecoration: 'line-through', color: 'var(--hs-red)' }}>{String(change.local)}</span>
+                                            <ChevronRight size={10} />
+                                            <span className="new" style={{ color: 'var(--hs-green)', fontWeight: '500' }}>{String(change.global)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                ))}
+            </div>
+
+            <div className="sync-warning" style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fff9e6', border: '1px solid #ffeeba', borderRadius: '8px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <AlertCircle size={20} color="#856404" />
+                <span style={{ fontSize: '13px', color: '#856404' }}>A sincronização atualizará as configurações do campo selecionado. Dados existentes não serão perdidos, mas o comportamento do formulário pode mudar.</span>
+            </div>
+
+            <div className="actions" style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button className="hs-button-secondary" onClick={() => setIsSyncModalOpen(false)}>Cancelar</button>
+                <button 
+                    className="hs-button-primary" 
+                    onClick={handleApplySync}
+                    disabled={isApplyingSync || selectedSyncFields.length === 0}
+                >
+                    {isApplyingSync ? 'Sincronizando...' : 'Aplicar Atualizações Selecionadas'}
+                </button>
+            </div>
         </div>
       </Modal>
     </div>

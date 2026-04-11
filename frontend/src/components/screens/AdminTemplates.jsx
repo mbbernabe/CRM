@@ -99,17 +99,23 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
             </div>
         )}
         
-        <div className="field-footer">
-            <label className="hs-checkbox field-required-check">
-                <input 
-                type="checkbox" 
-                checked={field.required}
-                onChange={e => onChange('required', e.target.checked)}
-                />
-                <span>Obrigatório</span>
-            </label>
-            <span className="field-slug-preview">ID: {field.name}</span>
-        </div>
+                <label className="hs-checkbox field-required-check">
+                    <input 
+                    type="checkbox" 
+                    checked={field.required}
+                    onChange={e => onChange('required', e.target.checked)}
+                    />
+                    <span>Obrigatório</span>
+                </label>
+                <label className="hs-checkbox field-required-check">
+                    <input 
+                    type="checkbox" 
+                    checked={field.is_default !== false}
+                    onChange={e => onChange('is_default', e.target.checked)}
+                    />
+                    <span>Importação Automática</span>
+                </label>
+                <span className="field-slug-preview">ID: {field.name}</span>
       </div>
 
       <button type="button" className="field-remove" onClick={onRemove}>
@@ -264,6 +270,9 @@ const AdminTemplates = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isMassImportOpen, setIsMassImportOpen] = useState(false);
+  const [massText, setMassText] = useState('');
+  const [isImportingMassive, setIsImportingMassive] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -435,6 +444,54 @@ const AdminTemplates = () => {
     }
   };
 
+  const handleMassImport = async () => {
+    if (!massText.trim()) return;
+    setIsImportingMassive(true);
+    try {
+        const lines = massText.split('\n').filter(l => l.trim());
+        const fields = lines.map(line => {
+            const [label, type, req, def] = line.split(',').map(s => s.trim());
+            return {
+                label,
+                field_type: type || 'text',
+                is_required: req?.toUpperCase() === 'S' || req === '1',
+                is_default: def?.toUpperCase() === 'S' || def === '1'
+            };
+        });
+
+        const res = await fetchWithAuth(`http://localhost:8000/admin/templates/${selectedTemplate.id}/import-massive`, {
+            method: 'POST',
+            body: JSON.stringify(fields)
+        });
+
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || 'Erro na importação massiva');
+        }
+
+        const result = await res.json();
+        addToast(result.message);
+        setIsMassImportOpen(false);
+        setMassText('');
+        // Recarregar os dados do template atual
+        const refreshRes = await fetchWithAuth(`http://localhost:8000/admin/templates`);
+        const allTemplates = await refreshRes.json();
+        const updated = allTemplates.find(t => t.id === selectedTemplate.id);
+        if (updated) {
+            setTemplates(allTemplates);
+            setFormData({
+                ...formData,
+                field_definitions: updated.field_definitions,
+                field_groups: updated.field_groups
+            });
+        }
+    } catch (err) {
+        addToast(err.message, 'error');
+    } finally {
+        setIsImportingMassive(false);
+    }
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -578,10 +635,14 @@ const AdminTemplates = () => {
                 </div>
               </div>
               <div className="form-section layout-builder">
-               <div className="section-header">
-                 <h4 className="section-title">Estrutura do Modelo (Grupos e Campos)</h4>
-                 <button type="button" className="hs-button-link" onClick={handleAddGroup}>+ Criar Novo Grupo</button>
-               </div>
+                <div className="section-header">
+                  <h4 className="section-title">Estrutura do Modelo (Grupos e Campos)</h4>
+                  <div className="section-actions">
+                    <button type="button" className="hs-button-link" onClick={() => setIsMassImportOpen(true)}>Importação Massiva</button>
+                    <span className="divider">|</span>
+                    <button type="button" className="hs-button-link" onClick={handleAddGroup}>+ Criar Novo Grupo</button>
+                  </div>
+                </div>
                
                <div className="groups-container">
                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -655,6 +716,26 @@ const AdminTemplates = () => {
                   {isDeleting ? 'Excluindo da Biblioteca...' : 'Confirmar Exclusão'}
               </button>
            </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isMassImportOpen} onClose={() => setIsMassImportOpen(false)} title="Importação Massiva de Campos">
+        <div className="mass-import-container">
+            <p className="subtext">Cole abaixo os campos, um por linha, no formato: <br/> <strong>Rótulo, Tipo, Obrigatório(S/N), Padrão(S/N)</strong></p>
+            <textarea 
+                className="hs-input" 
+                rows="10" 
+                style={{ width: '100%', marginTop: '10px', padding: '10px', fontSize: '14px', fontFamily: 'monospace' }}
+                placeholder="Ex: Telefone Celular, phone, S, N&#10;Data de Nascimento, date, N, S"
+                value={massText}
+                onChange={e => setMassText(e.target.value)}
+            />
+            <div className="actions" style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button className="hs-button-secondary" onClick={() => setIsMassImportOpen(false)}>Cancelar</button>
+                <button className="hs-button-primary" onClick={handleMassImport} disabled={isImportingMassive || !massText.trim()}>
+                    {isImportingMassive ? 'Importando...' : 'Processar e Importar'}
+                </button>
+            </div>
         </div>
       </Modal>
     </div>

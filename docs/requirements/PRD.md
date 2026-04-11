@@ -40,6 +40,7 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF019 | **API Pública (Leads Inbound)**: Criação de API configurável e segura para receber leads gerados por fontes e aplicações de terceiros (ex: formulário de website) injetando-os direto no CRM. | **P1 (Alta)** | **Pendente** |
 | RF020 | **Gestão de Planos (SaaS)**: O Super Administrador poderá criar e gerenciar planos de assinatura, definindo limites de recursos, preços e permissões atrelados a cada plano da Área de Trabalho. | **P1 (Alta)** | **Pendente** |
 | RF021 | **Vinculação entre WorkItems**: Um WorkItem pode ser vinculado a um ou mais outros WorkItems. Na visualização, os vínculos são exibidos agrupados por tipo de WorkItem (ex: Contatos, Negócios, Tickets). A relação é bidirecional e isolada por `workspace_id`. | **P1 (Alta)** | **Pendente** |
+| RF022 | **Pool de Campos Globais (Campos Sugeridos)**: Permite que o SuperAdmin defina campos opcionais em modelos globais. Esses campos não são clonados automaticamente no import inicial, mas ficam disponíveis para que o Administrador do Workspace os adicione sob demanda. | **P1 (Alta)** | **Em Andamento** |
 
 ---
 

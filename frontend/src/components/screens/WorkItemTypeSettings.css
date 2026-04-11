@@ -513,3 +513,151 @@
 }
 
 
+
+/* Suggested Fields Library */
+.suggested-fields-library {
+    padding: 10px;
+}
+
+.suggested-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.suggested-field-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid #eaf0f6;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.suggested-field-item:hover {
+    border-color: #cbd6e2;
+    background: #f9fbfd;
+}
+
+.suggested-field-item .field-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.suggested-field-item .field-type-icon {
+    width: 32px;
+    height: 32px;
+    background: #f5f8fa;
+    color: #516f90;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.suggested-field-item .field-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.suggested-field-item .field-label {
+    font-weight: 600;
+    color: #33475b;
+    font-size: 0.95rem;
+}
+
+.suggested-field-item .field-group-name {
+    font-size: 0.75rem;
+    color: #7c98b6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #eaf0f6;
+}
+
+.section-header .section-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+}
+
+/* Sincronização Manual */
+.sync-banner {
+    background: #fff8e1;
+    border-left: 4px solid #ffc107;
+    margin-bottom: 24px;
+    padding: 12px 24px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #856404;
+    font-size: 14px;
+}
+
+.banner-icon {
+    color: #ffc107;
+}
+
+.icon-button.notification {
+    position: relative;
+    border: 1px solid #fdba74 !important;
+    background-color: #fff7ed !important;
+}
+
+.icon-button.notification:hover {
+    background-color: #ffedd5 !important;
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: .7;
+    }
+}
+
+.sync-modal-content .diff-item {
+    transition: background-color 0.2s;
+}
+
+.sync-modal-content .diff-item:hover {
+    background-color: #f8fafc;
+}
+
+.change-row .old {
+    background-color: #fee2e2;
+    padding: 0 4px;
+    border-radius: 2px;
+}
+
+.change-row .new {
+    background-color: #dcfce7;
+    padding: 0 4px;
+    border-radius: 2px;
+}

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from src.domain.entities.work_item import WorkItem, WorkItemType, CustomFieldDefinition, WorkItemFieldGroup, IWorkItemRepository
 from src.infrastructure.database.models import (
@@ -188,7 +188,8 @@ class WorkItemRepository(IWorkItemRepository):
                 icon=template_model.icon,
                 color=template_model.color,
                 workspace_id=target_workspace_id,
-                is_system=False
+                is_system=False,
+                source_type_id=template_id
             )
             self.db.add(new_type)
             self.db.flush()
@@ -206,8 +207,11 @@ class WorkItemRepository(IWorkItemRepository):
                 self.db.flush()
                 group_map[g.id] = new_group.id
             
-            # 4. Clonar campos
+            # 4. Clonar campos (Apenas os automáticos/padrão)
             for fd in template_model.field_definitions:
+                if not fd.is_default:
+                    continue
+                
                 new_fd = WorkItemFieldDefinitionModel(
                     type_id=new_type.id,
                     group_id=group_map.get(fd.group_id),
@@ -216,7 +220,9 @@ class WorkItemRepository(IWorkItemRepository):
                     field_type=fd.field_type,
                     options_json=fd.options_json,
                     is_required=fd.is_required,
-                    order=fd.order
+                    is_default=fd.is_default,
+                    order=fd.order,
+                    source_field_id=fd.id
                 )
                 self.db.add(new_fd)
 
@@ -265,7 +271,8 @@ class WorkItemRepository(IWorkItemRepository):
             icon=m.icon,
             color=m.color,
             workspace_id=m.workspace_id,
-            is_system=m.is_system
+            is_system=m.is_system,
+            source_type_id=m.source_type_id
         )
         # Load field groups
         item_type.field_groups = [
@@ -297,9 +304,11 @@ class WorkItemRepository(IWorkItemRepository):
                 field_type=fd.field_type,
                 options=options,
                 required=fd.is_required,
+                is_default=fd.is_default,
                 order=fd.order,
                 group_id=fd.group_id,
-                workspace_id=m.workspace_id
+                workspace_id=m.workspace_id,
+                source_field_id=fd.source_field_id
             ))
         return item_type
 
@@ -312,6 +321,7 @@ class WorkItemRepository(IWorkItemRepository):
             field_type=field_def.field_type,
             options_json=json.dumps(field_def.options) if field_def.options else None,
             is_required=field_def.required,
+            is_default=field_def.is_default,
             order=field_def.order
         )
         self.db.add(model)
@@ -423,6 +433,7 @@ class WorkItemRepository(IWorkItemRepository):
                             fd_model.field_type = fd_entity.field_type
                             fd_model.options_json = json.dumps(fd_entity.options) if fd_entity.options else None
                             fd_model.is_required = fd_entity.required
+                            fd_model.is_default = fd_entity.is_default
                             fd_model.order = fd_entity.order
                             fd_model.group_id = fd_entity.group_id
                     else:
@@ -435,6 +446,7 @@ class WorkItemRepository(IWorkItemRepository):
                             field_type=fd_entity.field_type,
                             options_json=json.dumps(fd_entity.options) if fd_entity.options else None,
                             is_required=fd_entity.required,
+                            is_default=fd_entity.is_default,
                             order=fd_entity.order
                         )
                         self.db.add(new_fd_model)
@@ -471,3 +483,194 @@ class WorkItemRepository(IWorkItemRepository):
             return None
             
         return self._type_model_to_entity(m)
+
+    def list_suggested_fields(self, local_type_id: int, workspace_id: int) -> List[CustomFieldDefinition]:
+        # 1. Obter tipo local
+        local_type = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.id == local_type_id,
+            WorkItemTypeModel.workspace_id == workspace_id
+        ).first()
+        if not local_type:
+            return []
+
+        # 2. Obter template global correspondente (pelo name)
+        template = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.workspace_id == None,
+            WorkItemTypeModel.name == local_type.name
+        ).first()
+        if not template:
+            return []
+
+        # 3. Comparar campos
+        local_source_field_ids = {f.source_field_id for f in local_type.field_definitions if f.source_field_id}
+        local_field_names = {f.name for f in local_type.field_definitions}
+        suggested_fields = []
+        for gf in template.field_definitions:
+            if gf.id not in local_source_field_ids and gf.name not in local_field_names:
+                suggested_fields.append(self._field_model_to_entity(gf))
+        
+        return suggested_fields
+
+    def import_global_field(self, global_field_id: int, local_type_id: int, workspace_id: int) -> CustomFieldDefinition:
+        logger = logging.getLogger(__name__)
+        # 1. Obter campo global
+        gf = self.db.query(WorkItemFieldDefinitionModel).filter(
+            WorkItemFieldDefinitionModel.id == global_field_id,
+            WorkItemFieldDefinitionModel.workspace_id == None
+        ).first()
+        if not gf:
+            raise ValueError("Campo global não encontrado")
+
+        # 2. Obter tipo local
+        local_type = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.id == local_type_id,
+            WorkItemTypeModel.workspace_id == workspace_id
+        ).first()
+        if not local_type:
+            raise ValueError("Tipo local não encontrado")
+        
+        # 3. Verificar se já existe
+        existing = self.db.query(WorkItemFieldDefinitionModel).filter(
+            WorkItemFieldDefinitionModel.type_id == local_type_id,
+            (WorkItemFieldDefinitionModel.name == gf.name) | (WorkItemFieldDefinitionModel.source_field_id == gf.id)
+        ).first()
+        if existing:
+            raise ValueError(f"O campo '{gf.label}' já existe neste tipo.")
+
+        # 4. Resolver Grupo
+        target_group_id = None
+        if gf.group:
+            # Tentar encontrar grupo local com mesmo nome
+            local_group = self.db.query(WorkItemFieldGroupModel).filter(
+                WorkItemFieldGroupModel.type_id == local_type_id,
+                WorkItemFieldGroupModel.name == gf.group.name
+            ).first()
+            
+            if not local_group:
+                # Criar o grupo localmente se não existir
+                local_group = WorkItemFieldGroupModel(
+                    type_id=local_type_id,
+                    name=gf.group.name,
+                    order=gf.group.order,
+                    workspace_id=workspace_id
+                )
+                self.db.add(local_group)
+                self.db.flush()
+            
+            target_group_id = local_group.id
+
+        # 5. Clonar o campo
+        new_field = WorkItemFieldDefinitionModel(
+            type_id=local_type_id,
+            group_id=target_group_id,
+            name=gf.name,
+            label=gf.label,
+            field_type=gf.field_type,
+            options_json=gf.options_json,
+            is_required=gf.is_required,
+            is_default=gf.is_default,
+            order=gf.order,
+            source_field_id=gf.id
+        )
+        self.db.commit()
+        return self._field_model_to_entity(new_field)
+
+    def check_for_updates(self, type_id: int, workspace_id: int) -> List[Dict[str, Any]]:
+        local_type = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.id == type_id,
+            WorkItemTypeModel.workspace_id == workspace_id
+        ).first()
+        if not local_type or not local_type.source_type_id:
+            return []
+        source_type = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.id == local_type.source_type_id
+        ).first()
+        if not source_type:
+            return []
+        diffs = []
+        local_fields_map = {fd.source_field_id: fd for fd in local_type.field_definitions if fd.source_field_id}
+        for s_fd in source_type.field_definitions:
+            if s_fd.id in local_fields_map:
+                l_fd = local_fields_map[s_fd.id]
+                changes = {}
+                if s_fd.label != l_fd.label:
+                    changes["label"] = {"old": l_fd.label, "new": s_fd.label}
+                if s_fd.field_type != l_fd.field_type:
+                    changes["field_type"] = {"old": l_fd.field_type, "new": s_fd.field_type}
+                if s_fd.is_required != l_fd.is_required:
+                    changes["is_required"] = {"old": l_fd.is_required, "new": s_fd.is_required}
+                if s_fd.options_json != l_fd.options_json:
+                    changes["options"] = {"old": l_fd.options_json, "new": s_fd.options_json}
+                if changes:
+                    diffs.append({"source_field_id": s_fd.id, "local_field_id": l_fd.id, "field_name": l_fd.name, "changes": changes})
+        return diffs
+
+    def sync_from_global(self, type_id: int, source_field_ids: List[int], workspace_id: int) -> bool:
+        local_type = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.id == type_id,
+            WorkItemTypeModel.workspace_id == workspace_id
+        ).first()
+        if not local_type or not local_type.source_type_id:
+            return False
+        source_type = self.db.query(WorkItemTypeModel).filter(
+            WorkItemTypeModel.id == local_type.source_type_id,
+            WorkItemTypeModel.workspace_id == None
+        ).first()
+        if not source_type:
+            return False
+        source_fields = {fd.id: fd for fd in source_type.field_definitions if fd.id in source_field_ids}
+        local_fields = {fd.source_field_id: fd for fd in local_type.field_definitions if fd.source_field_id in source_fields}
+        for s_id, s_fd in source_fields.items():
+            if s_id in local_fields:
+                l_fd = local_fields[s_id]
+                l_fd.label = s_fd.label
+                l_fd.field_type = s_fd.field_type
+                l_fd.is_required = s_fd.is_required
+                l_fd.options_json = s_fd.options_json
+                l_fd.order = s_fd.order
+        self.db.commit()
+        return True
+
+    def import_massive_fields(self, type_id: int, fields_data: List[Dict[str, Any]], workspace_id: Optional[int] = None) -> int:
+        count = 0
+        from src.infrastructure.utils.text import slugify
+        for f in fields_data:
+            name = f.get("name") or slugify(f.get("label", ""))
+            existing = self.db.query(WorkItemFieldDefinitionModel).filter(
+                WorkItemFieldDefinitionModel.type_id == type_id,
+                WorkItemFieldDefinitionModel.name == name
+            ).first()
+            if existing: continue
+            new_fd = WorkItemFieldDefinitionModel(
+                type_id=type_id,
+                name=name,
+                label=f.get("label"),
+                field_type=f.get("field_type", "text"),
+                is_required=f.get("is_required", False),
+                is_default=f.get("is_default", False),
+                options_json=json.dumps(f.get("options")) if f.get("options") else None,
+                workspace_id=workspace_id
+            )
+            self.db.add(new_fd)
+            count += 1
+        self.db.commit()
+        return count
+
+    def _field_model_to_entity(self, fd: WorkItemFieldDefinitionModel) -> CustomFieldDefinition:
+        options = []
+        if fd.options_json:
+            try: options = json.loads(fd.options_json)
+            except: pass
+        return CustomFieldDefinition(
+            id=fd.id,
+            name=fd.name,
+            label=fd.label,
+            field_type=fd.field_type,
+            options=options,
+            required=fd.is_required,
+            is_default=fd.is_default,
+            order=fd.order,
+            group_id=fd.group_id,
+            workspace_id=fd.workspace_id,
+            source_field_id=fd.source_field_id
+        )
