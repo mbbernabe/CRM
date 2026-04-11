@@ -594,16 +594,20 @@ class WorkItemRepository(IWorkItemRepository):
                 l_fd = local_fields_map[s_fd.id]
                 changes = {}
                 if s_fd.label != l_fd.label:
-                    changes["label"] = {"old": l_fd.label, "new": s_fd.label}
+                    changes["label"] = {"local": l_fd.label, "global": s_fd.label}
                 if s_fd.field_type != l_fd.field_type:
-                    changes["field_type"] = {"old": l_fd.field_type, "new": s_fd.field_type}
+                    changes["field_type"] = {"local": l_fd.field_type, "global": s_fd.field_type}
                 if s_fd.is_required != l_fd.is_required:
-                    changes["is_required"] = {"old": l_fd.is_required, "new": s_fd.is_required}
+                    changes["is_required"] = {"local": l_fd.is_required, "global": s_fd.is_required}
                 if s_fd.options_json != l_fd.options_json:
-                    changes["options"] = {"old": l_fd.options_json, "new": s_fd.options_json}
+                    changes["options"] = {"local": l_fd.options_json, "global": s_fd.options_json}
                 if changes:
-                    diffs.append({"source_field_id": s_fd.id, "local_field_id": l_fd.id, "field_name": l_fd.name, "changes": changes})
-        return diffs
+                    diffs.append({"source_field_id": s_fd.id, "local_field_id": l_fd.id, "field_label": l_fd.label, "changes": changes})
+        return {
+            "updates_available": len(diffs) > 0,
+            "diffs": diffs,
+            "template_name": source_type.label if source_type else "Modelo Global"
+        }
 
     def sync_from_global(self, type_id: int, source_field_ids: List[int], workspace_id: int) -> bool:
         local_type = self.db.query(WorkItemTypeModel).filter(

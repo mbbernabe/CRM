@@ -317,8 +317,17 @@ const WorkItemTypeSettings = () => {
     setLoading(true);
     try {
       const res = await fetchWithAuth('http://localhost:8000/workitems/types');
-      if (!res.ok) throw new Error('Erro ao buscar tipos de objetos');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Erro ao buscar tipos de objetos');
+      }
       const data = await res.json();
+      
+      if (!Array.isArray(data)) {
+        setTypes([]);
+        return;
+      }
+      
       setTypes(data);
       checkUpdatesForTypes(data);
     } catch (err) {
@@ -552,6 +561,27 @@ const WorkItemTypeSettings = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedType) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${selectedType.id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || 'Erro ao excluir tipo de objeto');
+      }
+      setIsDeleteModalOpen(false);
+      fetchTypes();
+      addToast('Tipo de objeto excluído com sucesso!');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleApplySync = async () => {
     if (selectedSyncFields.length === 0) return;
     setIsApplyingSync(true);
@@ -643,7 +673,17 @@ const WorkItemTypeSettings = () => {
     </div>
   );
 
-  const totalUpdates = Object.keys(typeUpdates).length;
+  const totalUpdates = typeUpdates ? Object.keys(typeUpdates).length : 0;
+
+  const safeColor = (color) => {
+    if (!color || typeof color !== 'string') return '#0091ae';
+    return color.startsWith('#') ? color : `#${color}`;
+  };
+
+  const safeAlphaColor = (color, alpha = '20') => {
+    const base = safeColor(color);
+    return `${base}${alpha}`;
+  };
 
   return (
     <div className="type-settings-container">
@@ -678,41 +718,48 @@ const WorkItemTypeSettings = () => {
               <button className="hs-button-link" onClick={handleOpenCreate}>Comece criando o primeiro tipo de objeto</button>
            </div>
         ) : (
-          types.map(type => (
-            <div key={type.id} className="type-card">
-              <div className="type-card-body">
-                 <div className="type-icon-circle" style={{ backgroundColor: type.color + '20', color: type.color }}>
-                    <Code size={20} />
-                 </div>
-                 <div className="type-info">
-                    <h3>{type.label}</h3>
-                    <span className="type-slug">{type.name}</span>
-                    <span className="fields-count">{type.field_definitions?.length || 0} campos definidos</span>
-                 </div>
+           types.map((type) => {
+            if (!type) return null;
+            return (
+              <div key={type.id || Math.random()} className="type-card">
+                <div className="type-card-body">
+                   <div className="type-icon-circle" style={{ backgroundColor: safeAlphaColor(type.color), color: safeColor(type.color) }}>
+                      <Code size={20} />
+                   </div>
+                   <div className="type-info">
+                      <h3>{type.label}</h3>
+                      <span className="type-slug">{type.name}</span>
+                      <span className="fields-count">{type.field_definitions?.length || 0} campos definidos</span>
+                   </div>
+                </div>
+                <div className="type-card-actions">
+                    {type.id && typeUpdates && typeUpdates[type.id] && (
+                        <button 
+                           className="icon-button notification animate-pulse" 
+                           onClick={(e) => {
+                               e.stopPropagation();
+                               setSyncingType(type);
+                               if (typeUpdates[type.id]?.diffs) {
+                                  setSelectedSyncFields(typeUpdates[type.id].diffs.map(d => d.source_field_id));
+                               } else {
+                                  setSelectedSyncFields([]);
+                               }
+                               setIsSyncModalOpen(true);
+                           }}
+                           title="Atualizações disponíveis"
+                           style={{ backgroundColor: '#fff7ed', border: '1px solid #fdba74', marginRight: '8px' }}
+                        >
+                           <RefreshCw size={16} color="#f97316" />
+                        </button>
+                    )}
+                   <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
+                   {!type.is_system && (
+                     <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
+                   )}
+                </div>
               </div>
-              <div className="type-card-actions">
-                  {typeUpdates[type.id] && (
-                      <button 
-                         className="icon-button notification animate-pulse" 
-                         onClick={(e) => {
-                             e.stopPropagation();
-                             setSyncingType(type);
-                             setSelectedSyncFields(typeUpdates[type.id].diffs.map(d => d.source_field_id));
-                             setIsSyncModalOpen(true);
-                         }}
-                         title="Atualizações disponíveis"
-                         style={{ backgroundColor: '#fff7ed', border: '1px solid #fdba74', marginRight: '8px' }}
-                      >
-                         <RefreshCw size={16} color="#f97316" />
-                      </button>
-                  )}
-                 <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
-                 {!type.is_system && (
-                   <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
-                 )}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
