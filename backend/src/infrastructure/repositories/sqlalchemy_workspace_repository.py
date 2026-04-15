@@ -20,6 +20,7 @@ class SqlAlchemyWorkspaceRepository(IWorkspaceRepository):
             primary_color=model.primary_color,
             accent_color=model.accent_color,
             invitation_expiry_days=model.invitation_expiry_days or 7,
+            invitation_message=model.invitation_message,
             created_at=model.created_at
         )
 
@@ -33,13 +34,15 @@ class SqlAlchemyWorkspaceRepository(IWorkspaceRepository):
                 model.primary_color = workspace.primary_color
                 model.accent_color = workspace.accent_color
                 model.invitation_expiry_days = workspace.invitation_expiry_days
+                model.invitation_message = workspace.invitation_message
         else:
             model = WorkspaceModel(
                 name=workspace.name,
                 description=workspace.description,
                 logo_url=workspace.logo_url,
                 primary_color=workspace.primary_color,
-                accent_color=workspace.accent_color
+                accent_color=workspace.accent_color,
+                invitation_message=workspace.invitation_message
             )
             self.db.add(model)
         
@@ -59,5 +62,6 @@ class SqlAlchemyWorkspaceRepository(IWorkspaceRepository):
             primary_color=m.primary_color,
             accent_color=m.accent_color,
             invitation_expiry_days=m.invitation_expiry_days or 7,
+            invitation_message=m.invitation_message,
             created_at=m.created_at
         ) for m in models]

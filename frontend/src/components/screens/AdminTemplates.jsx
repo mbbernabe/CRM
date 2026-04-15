@@ -98,24 +98,27 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
                 />
             </div>
         )}
-        
-                <label className="hs-checkbox field-required-check">
-                    <input 
-                    type="checkbox" 
-                    checked={field.required}
-                    onChange={e => onChange('required', e.target.checked)}
-                    />
-                    <span>Obrigatório</span>
-                </label>
-                <label className="hs-checkbox field-required-check">
-                    <input 
-                    type="checkbox" 
-                    checked={field.is_default !== false}
-                    onChange={e => onChange('is_default', e.target.checked)}
-                    />
-                    <span>Importação Automática</span>
-                </label>
-                <span className="field-slug-preview">ID: {field.name}</span>
+        <div className="field-footer">
+          <div className="field-checks">
+            <label className="hs-checkbox field-required-check">
+                <input 
+                type="checkbox" 
+                checked={field.required}
+                onChange={e => onChange('required', e.target.checked)}
+                />
+                <span>Obrigatório</span>
+            </label>
+            <label className="hs-checkbox field-required-check">
+                <input 
+                type="checkbox" 
+                checked={field.is_default !== false}
+                onChange={e => onChange('is_default', e.target.checked)}
+                />
+                <span>Importação Automática</span>
+            </label>
+          </div>
+          <span className="field-slug-preview">ID: {field.name}</span>
+        </div>
       </div>
 
       <button type="button" className="field-remove" onClick={onRemove}>

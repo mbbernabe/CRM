@@ -91,19 +91,26 @@ class EmailService:
             log_exception(logger, e, f"send_reset_password_email ({self.security})")
             return False
 
-    def send_invitation_email(self, to_email: str, invite_link: str, workspace_name: str, inviter_name: str) -> bool:
+    def send_invitation_email(self, to_email: str, invite_link: str, workspace_name: str, inviter_name: str, custom_message: Optional[str] = None) -> bool:
         if not self.host or not self.user or not self.password:
             logger.warning("Configurações de SMTP incompletas para envio de convite.")
             return False
 
         subject = f"Você foi convidado para {workspace_name} — CRM"
+        
+        # Se houver uma mensagem customizada, usamos ela. Caso contrrio, usamos o padrão.
+        if custom_message:
+            display_message = custom_message.replace("\n", "<br/>")
+        else:
+            display_message = f"<strong>{inviter_name}</strong> convidou você para fazer parte da área de trabalho <strong>{workspace_name}</strong> no sistema CRM."
+
         body = f"""
         <html>
             <body style="font-family: sans-serif; color: #2d3e50; line-height: 1.6;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaf0f6; border-radius: 8px;">
                     <h2 style="color: #0091ae; margin-top: 0;">Você foi convidado! 🎉</h2>
                     <p>Olá,</p>
-                    <p><strong>{inviter_name}</strong> convidou você para fazer parte da área de trabalho <strong>{workspace_name}</strong> no sistema CRM.</p>
+                    <p>{display_message}</p>
                     <p>Clique no botão abaixo para aceitar o convite e definir sua senha (este link é válido por alguns dias):</p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="{invite_link}" style="background-color: #ff7a59; color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 16px;">

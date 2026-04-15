@@ -10,6 +10,7 @@ class WorkspaceReadDTO(BaseModel):
     primary_color: str = "#0091ae"
     accent_color: str = "#ff7a59"
     invitation_expiry_days: int = 7
+    invitation_message: Optional[str] = None
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
@@ -21,6 +22,7 @@ class WorkspaceUpdateDTO(BaseModel):
     primary_color: Optional[str] = None
     accent_color: Optional[str] = None
     invitation_expiry_days: Optional[int] = None
+    invitation_message: Optional[str] = None
 
 
 class InvitationReadDTO(BaseModel):

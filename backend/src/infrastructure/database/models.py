@@ -16,6 +16,7 @@ class WorkspaceModel(BaseModel):
     accent_color = Column(String, default="#ff7a59")  # HubSpot Orange
     created_at = Column(DateTime, default=datetime.utcnow)
     invitation_expiry_days = Column(Integer, default=7)
+    invitation_message = Column(Text, nullable=True)
 
     teams = relationship("TeamModel", back_populates="workspace")
     users = relationship("UserModel", back_populates="workspace")

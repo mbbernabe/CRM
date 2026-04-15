@@ -10,7 +10,10 @@ import {
     AlertCircle,
     Building2,
     RotateCcw,
-    Shield
+    Shield,
+    Eye,
+    Mail,
+    X
 } from 'lucide-react';
 import './WorkspaceSettings.css';
 
@@ -26,8 +29,11 @@ const WorkspaceSettings = () => {
         logo_url: '',
         primary_color: '#0091ae',
         accent_color: '#ff7a59',
-        invitation_expiry_days: 7
+        invitation_expiry_days: 7,
+        invitation_message: ''
     });
+    
+    const [showPreview, setShowPreview] = useState(false);
 
     useEffect(() => {
         if (workspace) {
@@ -37,7 +43,8 @@ const WorkspaceSettings = () => {
                 logo_url: workspace.logo_url || '',
                 primary_color: workspace.primary_color || '#0091ae',
                 accent_color: workspace.accent_color || '#ff7a59',
-                invitation_expiry_days: workspace.invitation_expiry_days || 7
+                invitation_expiry_days: workspace.invitation_expiry_days || 7,
+                invitation_message: workspace.invitation_message || ''
             });
         }
     }, [workspace]);
@@ -231,6 +238,31 @@ const WorkspaceSettings = () => {
                                 Por padrão os convites expiram em 7 dias. Você pode configurar entre 1 e 90 dias.
                             </p>
                         </div>
+
+                        <div className="hs-form-group" style={{ marginTop: '20px' }}>
+                            <label className="hs-label">Mensagem de Convite Personalizada</label>
+                            <textarea 
+                                className="hs-input"
+                                rows="5"
+                                value={formData.invitation_message}
+                                onChange={(e) => setFormData({...formData, invitation_message: e.target.value})}
+                                placeholder="Ex: Seja bem-vindo à nossa equipe no CRM! Estamos ansiosos para trabalhar com você."
+                                style={{ resize: 'vertical' }}
+                            />
+                            <p className="input-hint">
+                                Esta mensagem substituirá o texto padrão no corpo do e-mail de convite. Deixe em branco para usar o padrão.
+                            </p>
+                            
+                            <button 
+                                type="button" 
+                                className="hs-button-secondary preview-btn" 
+                                style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                onClick={() => setShowPreview(true)}
+                            >
+                                <Eye size={16} />
+                                Visualizar E-mail de Convite
+                            </button>
+                        </div>
                     </section>
 
                     <div className="form-actions">
@@ -255,6 +287,66 @@ const WorkspaceSettings = () => {
                     </div>
                 </form>
             </div>
+
+            {showPreview && (
+                <div className="email-preview-overlay animate-in" onClick={() => setShowPreview(false)}>
+                    <div className="email-preview-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="header-title">
+                                <Mail size={20} className="header-icon" />
+                                <h3>Visualização do E-mail de Convite</h3>
+                            </div>
+                            <button className="close-btn" onClick={() => setShowPreview(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="email-container">
+                            <div className="email-content">
+                                <div className="email-header">
+                                    <h2 style={{ color: '#0091ae', margin: 0 }}>Você foi convidado! 🎉</h2>
+                                </div>
+                                
+                                <div className="email-body">
+                                    <p>Olá,</p>
+                                    <div className="email-message-text">
+                                        {formData.invitation_message ? (
+                                            formData.invitation_message.split('\n').map((line, i) => (
+                                                <React.Fragment key={i}>
+                                                    {line}<br/>
+                                                </React.Fragment>
+                                            ))
+                                        ) : (
+                                            <><strong>{useAuth().user?.name || 'Administrador'}</strong> convidou você para fazer parte da área de trabalho <strong>{workspace.name}</strong> no sistema CRM.</>
+                                        )}
+                                    </div>
+                                    
+                                    <p style={{ marginTop: '20px' }}>Clique no botão abaixo para aceitar o convite e definir sua senha (este link é válido por {formData.invitation_expiry_days} dias):</p>
+                                    
+                                    <div className="email-action">
+                                        <button className="email-button" style={{ backgroundColor: '#ff7a59' }}>
+                                            Aceitar Convite
+                                        </button>
+                                    </div>
+                                    
+                                    <p className="email-link-text">Se o botão acima não funcionar, copie e cole o link a seguir no seu navegador:</p>
+                                    <p className="email-link-url">http://localhost:5173/accept-invite?token=0000-0000...</p>
+                                    
+                                    <hr className="email-divider" />
+                                    <p className="email-footer-text">Se você não esperava este convite, pode ignorar este e-mail com segurança.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="modal-footer">
+                            <p className="preview-note">As cores e o logotipo visualizados acima podem variar de acordo com as configurações da área de trabalho.</p>
+                            <button className="hs-button-primary" onClick={() => setShowPreview(false)}>
+                                Fechar Visualização
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

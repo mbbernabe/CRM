@@ -11,4 +11,5 @@ class Workspace:
     primary_color: str = "#0091ae"
     accent_color: str = "#ff7a59"
     invitation_expiry_days: int = 7
+    invitation_message: Optional[str] = None
     created_at: datetime = datetime.utcnow()

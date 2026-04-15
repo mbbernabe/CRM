@@ -75,6 +75,7 @@ class SendInvitationUseCase:
             invite_link=invite_link,
             workspace_name=workspace.name,
             inviter_name=inviter_name,
+            custom_message=workspace.invitation_message
         )
 
         return saved
