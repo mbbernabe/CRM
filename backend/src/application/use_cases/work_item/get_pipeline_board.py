@@ -41,12 +41,15 @@ class GetPipelineBoardUseCase:
                 "items": items_in_stage
             })
 
+        active_type = type_map.get(pipeline.type_id)
+        
         return {
             "id": pipeline.id,
             "pipeline_id": pipeline.id,
             "pipeline_name": pipeline.name,
-            "item_label_singular": pipeline.item_label_singular or "Item",
-            "item_label_plural": pipeline.item_label_plural or "Itens",
+            "type_id": pipeline.type_id,
+            "item_label_singular": active_type.label if active_type else "Item",
+            "item_label_plural": active_type.label if active_type else "Itens",
             "stages": stages_data
         }
 

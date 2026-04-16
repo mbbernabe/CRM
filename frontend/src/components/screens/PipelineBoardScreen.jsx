@@ -6,7 +6,7 @@ import AssignWorkItemModal from '../kanban/AssignWorkItemModal';
 import ContextMenu from '../common/ContextMenu';
 import Modal from '../common/Modal';
 import { Plus, RefreshCw, AlertCircle, Layout, Edit, UserPlus, Trash2 } from 'lucide-react';
-import { ToastProvider } from '../common/Toast';
+import { useToast } from '../common/Toast';
 import './PipelineBoardScreen.css';
 
 const PipelineBoardScreenInner = ({ addToast }) => {
@@ -256,10 +256,9 @@ const PipelineBoardScreenInner = ({ addToast }) => {
   );
 };
 
-const PipelineBoardScreen = () => (
-  <ToastProvider>
-    {(addToast) => <PipelineBoardScreenInner addToast={addToast} />}
-  </ToastProvider>
-);
+const PipelineBoardScreen = () => {
+  const { addToast } = useToast();
+  return <PipelineBoardScreenInner addToast={addToast} />;
+};
 
 export default PipelineBoardScreen;

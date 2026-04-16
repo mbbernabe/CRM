@@ -84,15 +84,18 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
            setSelectedType(types.find(t => t.id === initialData.type_id) || null);
         }
       } else {
+        const defaultTypeId = pipeline?.type_id || (types.length ? types[0].id : '');
         setFormData({
           title: '',
           description: '',
-          type_id: types.length ? types[0].id : '',
+          type_id: defaultTypeId,
           stage_id: pipeline?.stages?.[0]?.id || '',
           owner_id: '',
           custom_fields: {}
         });
-        if (types.length) setSelectedType(types[0]);
+        if (defaultTypeId && types.length) {
+            setSelectedType(types.find(t => t.id === defaultTypeId) || types[0]);
+        }
       }
     }
   }, [isOpen, pipeline, initialData, types]);
@@ -315,6 +318,7 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
                     value={formData.type_id}
                     onChange={e => handleTypeChange(e.target.value)}
                     required
+                    disabled={!!pipeline?.type_id && !initialData} // Bloqueia se vier de uma pipeline específica
                 >
                     {types.map(t => (
                         <option key={t.id} value={t.id}>{t.label}</option>

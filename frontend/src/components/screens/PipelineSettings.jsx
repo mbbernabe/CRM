@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Modal from '../common/Modal';
-import { ToastProvider } from '../common/Toast';
+import { useToast } from '../common/Toast';
 import './PipelineSettings.css';
 
 // --- Sortable Stage Item ---
@@ -60,7 +60,8 @@ const SortableStage = ({ stage, onEdit, onDelete }) => {
 // --- Main Inner Component ---
 const PipelineSettingsInner = ({ addToast }) => {
   const { fetchWithAuth } = useAuth();
-  const [activeTab, setActiveTab] = useState('contact'); // contact, company, deal, workItem
+  const [workItemTypes, setWorkItemTypes] = useState([]);
+  const [activeTab, setActiveTab] = useState(null); // Will be set to the first type ID
   const [pipelines, setPipelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,9 +70,7 @@ const PipelineSettingsInner = ({ addToast }) => {
   
   const [formData, setFormData] = useState({
     name: '',
-    entity_type: 'contact',
-    item_label_singular: 'Item',
-    item_label_plural: 'Itens',
+    type_id: null,
     stages: []
   });
 
@@ -83,38 +82,51 @@ const PipelineSettingsInner = ({ addToast }) => {
     is_final: false
   });
 
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const fetchPipelines = async () => {
+  const fetchInitialData = async () => {
     setLoading(true);
     try {
+      // Fetch Work Item Types first
+      const typesRes = await fetchWithAuth('http://localhost:8000/workitems/types');
+      const typesData = await typesRes.json();
+      setWorkItemTypes(typesData);
+      
+      if (typesData.length > 0 && !activeTab) {
+        setActiveTab(typesData[0].id);
+      }
+
+      // Fetch Pipelines
       const res = await fetchWithAuth('http://localhost:8000/pipelines/');
       const data = await res.json();
       setPipelines(data);
     } catch (err) {
-      console.error("Erro ao carregar pipelines:", err);
-      addToast("Erro ao carregar pipelines", "error");
+      console.error("Erro ao carregar dados:", err);
+      addToast("Erro ao carregar dados de configuração", "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPipelines();
+    fetchInitialData();
   }, []);
 
-  const filteredPipelines = Array.isArray(pipelines) ? pipelines.filter(p => p.entity_type === activeTab) : [];
+  const filteredPipelines = Array.isArray(pipelines) ? pipelines.filter(p => p.type_id === activeTab) : [];
+  const activeType = workItemTypes.find(t => t.id === activeTab);
 
   const handleOpenCreate = () => {
     setModalType('create');
     setFormData({
       name: '',
-      entity_type: activeTab,
-      item_label_singular: activeTab === 'workItem' ? 'Processo' : (activeTab === 'contact' ? 'Contato' : (activeTab === 'company' ? 'Empresa' : 'Negócio')),
-      item_label_plural: activeTab === 'workItem' ? 'Processos' : (activeTab === 'contact' ? 'Contatos' : (activeTab === 'company' ? 'Empresas' : 'Negócios')),
+      type_id: activeTab,
       stages: [
         { name: 'Novo', order: 0, color: '#3182CE', is_final: false },
         { name: 'Em Andamento', order: 1, color: '#F6AD55', is_final: false },
@@ -129,9 +141,7 @@ const PipelineSettingsInner = ({ addToast }) => {
     setSelectedPipeline(p);
     setFormData({
       name: p.name,
-      entity_type: p.entity_type,
-      item_label_singular: p.item_label_singular || 'Item',
-      item_label_plural: p.item_label_plural || 'Itens',
+      type_id: p.type_id,
       stages: [...(p.stages || [])].sort((a, b) => a.order - b.order)
     });
     setIsModalOpen(true);
@@ -142,9 +152,7 @@ const PipelineSettingsInner = ({ addToast }) => {
     try {
       const payload = {
         name: formData.name,
-        entity_type: formData.entity_type,
-        item_label_singular: formData.item_label_singular,
-        item_label_plural: formData.item_label_plural,
+        type_id: formData.type_id,
         stages: (formData.stages || []).map((s, i) => ({ ...s, order: i }))
       };
 
@@ -163,7 +171,7 @@ const PipelineSettingsInner = ({ addToast }) => {
       }
 
       setIsModalOpen(false);
-      fetchPipelines();
+      fetchInitialData();
       addToast(`Pipeline ${modalType === 'create' ? 'criada' : 'atualizada'} com sucesso!`, 'success');
     } catch (err) {
       addToast(err.message, 'error');
@@ -175,11 +183,49 @@ const PipelineSettingsInner = ({ addToast }) => {
     try {
       const res = await fetchWithAuth(`http://localhost:8000/pipelines/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error("Erro ao excluir pipeline");
-      fetchPipelines();
+      fetchInitialData();
       addToast("Pipeline excluída com sucesso!");
     } catch (err) {
       addToast(err.message, 'error');
     }
+  };
+
+  const handleOpenImport = async () => {
+      if (!activeType?.source_type_id) {
+          addToast("Este objeto não possui um modelo global associado para importação de pipelines.", "info");
+          return;
+      }
+      try {
+          const res = await fetchWithAuth(`http://localhost:8000/pipelines/templates?source_type_id=${activeType.source_type_id}`);
+          if (!res.ok) throw new Error("Erro ao buscar templates");
+          const data = await res.json();
+          setAvailableTemplates(data);
+          setIsImportModalOpen(true);
+      } catch (err) {
+          addToast(err.message, "error");
+      }
+  };
+
+  const handleImport = async (templateId) => {
+      setIsImporting(true);
+      try {
+          const res = await fetchWithAuth(`http://localhost:8000/pipelines/import`, {
+              method: 'POST',
+              body: JSON.stringify({
+                  template_id: templateId,
+                  target_type_id: activeTab
+              })
+          });
+          if (!res.ok) throw new Error("Erro ao importar pipeline");
+          
+          addToast("Pipeline importada com sucesso!");
+          setIsImportModalOpen(false);
+          fetchInitialData();
+      } catch (err) {
+          addToast(err.message, "error");
+      } finally {
+          setIsImporting(false);
+      }
   };
 
   const handleDragEnd = (event) => {
@@ -231,23 +277,35 @@ const PipelineSettingsInner = ({ addToast }) => {
           <h2>Configuração de Pipelines</h2>
           <p className="description">Defina os fluxos de trabalho para seus objetos no sistema.</p>
         </div>
-        <button className="hs-button-primary" onClick={handleOpenCreate}>
-          <Plus size={16} /> Nova Pipeline
-        </button>
+        <div className="header-actions">
+           {activeType?.source_type_id && (
+             <button className="hs-button-secondary" onClick={handleOpenImport} style={{ marginRight: '8px' }}>
+               <RefreshCw size={16} /> Importar da Biblioteca
+             </button>
+           )}
+           <button className="hs-button-primary" onClick={handleOpenCreate}>
+             <Plus size={16} /> Nova Pipeline
+           </button>
+        </div>
       </div>
 
       <div className="tabs-container">
-        <button className={`tab-btn ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => setActiveTab('contact')}>Contatos</button>
-        <button className={`tab-btn ${activeTab === 'company' ? 'active' : ''}`} onClick={() => setActiveTab('company')}>Empresas</button>
-        <button className={`tab-btn ${activeTab === 'deal' ? 'active' : ''}`} onClick={() => setActiveTab('deal')}>Negócios</button>
-        <button className={`tab-btn ${activeTab === 'workItem' ? 'active' : ''}`} onClick={() => setActiveTab('workItem')}>Processos</button>
+        {workItemTypes.map(type => (
+          <button 
+            key={type.id}
+            className={`tab-btn ${activeTab === type.id ? 'active' : ''}`} 
+            onClick={() => setActiveTab(type.id)}
+          >
+            {type.label}
+          </button>
+        ))}
       </div>
 
       <div className="pipelines-list">
         {filteredPipelines.length === 0 ? (
           <div className="empty-state">
             <Layout size={48} />
-            <p>Nenhuma pipeline configurada para {activeTab === 'deal' ? 'Negócios' : (activeTab === 'contact' ? 'Contatos' : (activeTab === 'company' ? 'Empresas' : (activeTab === 'workItem' ? 'Processos' : 'Itens')))}.</p>
+            <p>Nenhuma pipeline configurada para {activeType?.label || 'este tipo'}.</p>
             <button className="hs-button-secondary" onClick={handleOpenCreate}>Criar primeira pipeline</button>
           </div>
         ) : (
@@ -302,37 +360,14 @@ const PipelineSettingsInner = ({ addToast }) => {
               <label>Tipo de Objeto</label>
               <select 
                 className="hs-input"
-                value={formData.entity_type}
-                onChange={e => setFormData({ ...formData, entity_type: e.target.value })}
+                value={formData.type_id || ''}
+                onChange={e => setFormData({ ...formData, type_id: parseInt(e.target.value) })}
               >
-                <option value="contact">Contato</option>
-                <option value="company">Empresa</option>
-                <option value="deal">Negócio</option>
-                <option value="workItem">Processo (Genérico)</option>
+                <option value="" disabled>Selecione um tipo...</option>
+                {workItemTypes.map(type => (
+                  <option key={type.id} value={type.id}>{type.label}</option>
+                ))}
               </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Nome Singular do Item</label>
-              <input 
-                type="text" 
-                className="hs-input" 
-                value={formData.item_label_singular}
-                onChange={e => setFormData({ ...formData, item_label_singular: e.target.value })}
-                placeholder="Ex: Oportunidade"
-              />
-            </div>
-            <div className="form-group">
-              <label>Nome Plural do Item</label>
-              <input 
-                type="text" 
-                className="hs-input" 
-                value={formData.item_label_plural}
-                onChange={e => setFormData({ ...formData, item_label_plural: e.target.value })}
-                placeholder="Ex: Oportunidades"
-              />
             </div>
           </div>
           
@@ -411,14 +446,45 @@ const PipelineSettingsInner = ({ addToast }) => {
           </div>
         </div>
       </Modal>
+
+      <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title={`Pipelines Disponíveis para ${activeType?.label}`}>
+          <div className="import-templates-list">
+              {availableTemplates.length === 0 ? (
+                  <p className="empty-msg">Nenhum template encontrado para este tipo de objeto na biblioteca global.</p>
+              ) : (
+                  availableTemplates.map(tmpl => (
+                      <div key={tmpl.id} className="template-import-card">
+                          <div className="tmpl-info">
+                              <h4>{tmpl.name}</h4>
+                              <p>{tmpl.stages.length} estágios predefinidos</p>
+                              <div className="tmpl-stages-preview">
+                                  {tmpl.stages.map((s, i) => (
+                                      <span key={i} className="stage-chip" style={{ borderLeft: `3px solid ${s.color}` }}>{s.name}</span>
+                                  ))}
+                              </div>
+                          </div>
+                          <button 
+                            className="hs-button-primary hs-button-sm" 
+                            disabled={isImporting}
+                            onClick={() => handleImport(tmpl.id)}
+                          >
+                              {isImporting ? 'Importando...' : 'Importar Agora'}
+                          </button>
+                      </div>
+                  ))
+              )}
+          </div>
+          <div className="form-actions" style={{ marginTop: '20px' }}>
+              <button className="hs-button-secondary" onClick={() => setIsImportModalOpen(false)}>Fechar</button>
+          </div>
+      </Modal>
     </div>
   );
 };
 
-const PipelineSettings = () => (
-  <ToastProvider>
-    {(addToast) => <PipelineSettingsInner addToast={addToast} />}
-  </ToastProvider>
-);
+const PipelineSettings = () => {
+  const { addToast } = useToast();
+  return <PipelineSettingsInner addToast={addToast} />;
+};
 
 export default PipelineSettings;

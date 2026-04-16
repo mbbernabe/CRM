@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Modal from '../common/Modal';
-import { ToastProvider } from '../common/Toast';
+import { useToast } from '../common/Toast';
 import GenericBoard from '../common/GenericBoard';
 import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight, LayoutGrid, List as ListIcon } from 'lucide-react';
 import './Companies.css';
 
 const Companies = () => {
-  return (
-    <ToastProvider>
-      {(addToast) => <CompaniesInner addToast={addToast} />}
-    </ToastProvider>
-  );
+  const { addToast } = useToast();
+  return <CompaniesInner addToast={addToast} />;
 };
 
 const CompaniesInner = ({ addToast }) => {

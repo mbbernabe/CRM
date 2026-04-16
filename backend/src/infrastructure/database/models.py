@@ -51,125 +51,19 @@ class UserModel(BaseModel):
     team = relationship("TeamModel", back_populates="users")
     workspace = relationship("WorkspaceModel", back_populates="users")
 
-class PropertyGroupModel(BaseModel):
-    __tablename__ = "property_groups"
-    __table_args__ = (UniqueConstraint('workspace_id', 'name', name='_workspace_group_uc'),)
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    order = Column(Integer, default=0)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
-
-class PropertyDefinitionModel(BaseModel):
-    __tablename__ = "property_definitions"
-    __table_args__ = (UniqueConstraint('workspace_id', 'entity_type', 'name', name='_workspace_prop_uc'),)
-
-    id = Column(Integer, primary_key=True, index=True)
-    entity_type = Column(String, index=True, nullable=False, default='contact')
-    name = Column(String, nullable=False)  # slug: "personal_email"
-    label = Column(String, nullable=False)                          # display: "E-mail Pessoal"
-    type = Column(String, default="text")                           # text, number, date, email, select, multiselect, textarea, boolean, currency
-    options = Column(Text, nullable=True)                           # Opção 1;Opção 2;Opção 3
-    is_system = Column(Boolean, default=False)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
-    
-    links = relationship("EntityPropertyLinkModel", back_populates="property_def", cascade="all, delete-orphan")
-
-class EntityPropertyLinkModel(BaseModel):
-    __tablename__ = "entity_property_links"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    entity_type = Column(String, index=True, nullable=False) # contact or company
-    property_id = Column(Integer, ForeignKey("property_definitions.id"), nullable=False)
-    group_id = Column(Integer, ForeignKey("property_groups.id"), nullable=True)
-    order = Column(Integer, default=0)
-    is_required = Column(Boolean, default=False)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
-    
-    property_def = relationship("PropertyDefinitionModel", back_populates="links")
-    group = relationship("PropertyGroupModel")
-
-class CompanyContactLinkModel(BaseModel):
-    __tablename__ = "company_contact_links"
-    company_id = Column(Integer, ForeignKey("companies.id"), primary_key=True)
-    contact_id = Column(Integer, ForeignKey("contacts.id"), primary_key=True)
-
-class CompanyModel(BaseModel):
-    __tablename__ = "companies"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    domain = Column(String, unique=True, index=True, nullable=True)
-    status = Column(String, default="active")
-    stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True) # Pipeline Stage
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Relacionamento com propriedades customizadas e contatos vinculados
-    property_values = relationship("CompanyPropertyValueModel", back_populates="company", cascade="all, delete-orphan")
-    contacts = relationship("ContactModel", secondary="company_contact_links", back_populates="companies")
-    stage = relationship("PipelineStageModel")
-
-class CompanyPropertyValueModel(BaseModel):
-    __tablename__ = "company_property_values"
-
-    id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
-    property_id = Column(Integer, ForeignKey("property_definitions.id"), nullable=False)
-    value = Column(Text, nullable=True)
-
-    company = relationship("CompanyModel", back_populates="property_values")
-    property_def = relationship("PropertyDefinitionModel")
-
-class ContactModel(BaseModel):
-    __tablename__ = "contacts"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True)
-    phone = Column(String, nullable=True)
-    status = Column(String, default="active")
-    stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True) # Pipeline Stage
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Relacionamento com as propriedades customizadas e empresas vinculadas
-    property_values = relationship("ContactPropertyValueModel", back_populates="contact", cascade="all, delete-orphan")
-    companies = relationship("CompanyModel", secondary="company_contact_links", back_populates="contacts")
-    stage = relationship("PipelineStageModel")
-
-class ContactPropertyValueModel(BaseModel):
-    __tablename__ = "contact_property_values"
-
-    id = Column(Integer, primary_key=True, index=True)
-    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False)
-    property_id = Column(Integer, ForeignKey("property_definitions.id"), nullable=False)
-    value = Column(Text, nullable=True)
-
-    contact = relationship("ContactModel", back_populates="property_values")
-    property_def = relationship("PropertyDefinitionModel")
 
 class PipelineModel(BaseModel):
     __tablename__ = "pipelines"
-    __table_args__ = (UniqueConstraint('workspace_id', 'entity_type', 'name', name='_workspace_pipeline_uc'),)
+    __table_args__ = (UniqueConstraint('workspace_id', 'type_id', 'name', name='_workspace_pipeline_uc'),)
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    entity_type = Column(String, nullable=False, default="contact") # contact, company, deal
+    type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False, default=1) # Reference to WorkItemTypeModel.id
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     stages = relationship("PipelineStageModel", back_populates="pipeline", order_by="PipelineStageModel.order", cascade="all, delete-orphan")
-    
-    # Friendly Labels for UI
-    item_label_singular = Column(String, nullable=True) # Ex: "Oportunidade"
-    item_label_plural = Column(String, nullable=True)   # Ex: "Oportunidades"
 
 class PipelineStageModel(BaseModel):
     __tablename__ = "pipeline_stages"

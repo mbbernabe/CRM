@@ -277,7 +277,6 @@ const AdminTemplates = () => {
   const [massText, setMassText] = useState('');
   const [isImportingMassive, setIsImportingMassive] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     label: '',
@@ -285,6 +284,19 @@ const AdminTemplates = () => {
     color: '#0091ae',
     field_definitions: [],
     field_groups: []
+  });
+
+  const [activeModalTab, setActiveModalTab] = useState('fields'); // 'fields' | 'pipelines'
+  const [templatePipelines, setTemplatePipelines] = useState([]);
+  const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
+  const [currentPipelineIndex, setCurrentPipelineIndex] = useState(null);
+  const [pipelineFormData, setPipelineFormData] = useState({
+      name: '',
+      stages: [
+          { name: 'Novo', order: 0, color: '#3182CE', is_final: false },
+          { name: 'Em Andamento', order: 1, color: '#F6AD55', is_final: false },
+          { name: 'Concluído', order: 2, color: '#38A169', is_final: true }
+      ]
   });
 
   const fetchTemplates = async () => {
@@ -307,6 +319,7 @@ const AdminTemplates = () => {
 
   const handleOpenCreate = () => {
     setModalType('create');
+    setActiveModalTab('fields');
     setFormData({
       name: '',
       label: '',
@@ -333,6 +346,19 @@ const AdminTemplates = () => {
       field_groups: [...(template.field_groups || [])]
     });
     setIsModalOpen(true);
+    fetchTemplatePipelines(template.id);
+  };
+
+  const fetchTemplatePipelines = async (typeId) => {
+      try {
+          const res = await fetchWithAuth(`http://localhost:8000/pipelines/templates?source_type_id=${typeId}`);
+          if (res.ok) {
+              const data = await res.json();
+              setTemplatePipelines(data);
+          }
+      } catch (err) {
+          console.error("Erro ao buscar pipelines do template:", err);
+      }
   };
 
   const handleAddField = (groupId = null) => {
@@ -603,6 +629,24 @@ const AdminTemplates = () => {
         title={modalType === 'create' ? 'Configurar Novo Modelo Global' : `Editar Modelo: ${formData.label}`}
         size="large"
       >
+        <div className="modal-tabs">
+            <button 
+                className={`modal-tab ${activeModalTab === 'fields' ? 'active' : ''}`}
+                onClick={() => setActiveModalTab('fields')}
+            >
+                <ListIcon size={16} /> Estrutura & Campos
+            </button>
+            {modalType === 'edit' && (
+                <button 
+                    className={`modal-tab ${activeModalTab === 'pipelines' ? 'active' : ''}`}
+                    onClick={() => setActiveModalTab('pipelines')}
+                >
+                    <RefreshCw size={16} /> Pipelines de Template
+                </button>
+            )}
+        </div>
+
+        {activeModalTab === 'fields' ? (
         <form onSubmit={handleSave} className="type-form">
           <div className="form-sections">
             <div className="form-section main-config">
@@ -706,6 +750,147 @@ const AdminTemplates = () => {
             </button>
           </div>
         </form>
+        ) : (
+            <div className="template-pipelines-section">
+                <div className="section-header">
+                    <div className="header-info">
+                        <h4>Pipelines Predefinidas</h4>
+                        <p className="subtext">Configure fluxos que estarão disponíveis para importação quando este modelo for usado.</p>
+                    </div>
+                    <button className="hs-button-secondary hs-button-sm" onClick={() => {
+                        setCurrentPipelineIndex(null);
+                        setPipelineFormData({
+                            name: '',
+                            stages: [
+                                { name: 'Novo', order: 0, color: '#3182CE', is_final: false },
+                                { name: 'Em Andamento', order: 1, color: '#F6AD55', is_final: false },
+                                { name: 'Concluído', order: 2, color: '#38A169', is_final: true }
+                            ]
+                        });
+                        setIsPipelineModalOpen(true);
+                    }}>
+                        <Plus size={14} /> Nova Pipeline de Template
+                    </button>
+                </div>
+
+                <div className="pipelines-grid">
+                    {templatePipelines.length === 0 ? (
+                        <div className="empty-pipelines">
+                            <RefreshCw size={32} />
+                            <p>Nenhuma pipeline configurada para este modelo.</p>
+                        </div>
+                    ) : (
+                        templatePipelines.map((p, idx) => (
+                            <div key={p.id || idx} className="pipeline-template-card">
+                                <div className="card-info">
+                                    <h5>{p.name}</h5>
+                                    <span>{p.stages?.length || 0} estágios</span>
+                                </div>
+                                <div className="card-actions">
+                                    <button className="icon-button" onClick={() => {
+                                        setCurrentPipelineIndex(idx);
+                                        setPipelineFormData({
+                                            id: p.id,
+                                            name: p.name,
+                                            stages: [...p.stages]
+                                        });
+                                        setIsPipelineModalOpen(true);
+                                    }}><Edit size={14} /></button>
+                                    <button className="icon-button danger" onClick={async () => {
+                                        if (window.confirm("Remover esta pipeline do template?")) {
+                                            const res = await fetchWithAuth(`http://localhost:8000/pipelines/${p.id}`, { method: 'DELETE' });
+                                            if (res.ok) {
+                                                addToast("Pipeline de template removida");
+                                                fetchTemplatePipelines(selectedTemplate.id);
+                                            }
+                                        }
+                                    }}><Trash2 size={14} /></button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        )}
+      </Modal>
+
+      {/* Modal de Edição de Pipeline de Template */}
+      <Modal 
+        isOpen={isPipelineModalOpen} 
+        onClose={() => setIsPipelineModalOpen(false)} 
+        title={currentPipelineIndex !== null ? "Editar Pipeline de Template" : "Nova Pipeline de Template"}
+      >
+          <div className="hs-form-group">
+              <label className="hs-label">Nome da Pipeline</label>
+              <input 
+                type="text" className="hs-input" 
+                value={pipelineFormData.name} 
+                onChange={e => setPipelineFormData({...pipelineFormData, name: e.target.value})}
+                placeholder="Ex: Funil de Vendas Padrão"
+              />
+          </div>
+          <div className="stages-preview" style={{ marginTop: '16px' }}>
+              <label className="hs-label">Estágios ({pipelineFormData.stages.length})</label>
+              <div className="stages-list-compact">
+                  {pipelineFormData.stages.map((s, si) => (
+                      <div key={si} className="stage-row-compact">
+                          <div className="stage-color-dot" style={{ backgroundColor: s.color }}></div>
+                          <input 
+                            type="text" className="hs-input hs-input-sm" 
+                            value={s.name} 
+                            onChange={e => {
+                                const newStages = [...pipelineFormData.stages];
+                                newStages[si].name = e.target.value;
+                                setPipelineFormData({...pipelineFormData, stages: newStages});
+                            }}
+                          />
+                          <button className="icon-button" onClick={() => {
+                              setPipelineFormData({
+                                  ...pipelineFormData,
+                                  stages: pipelineFormData.stages.filter((_, i) => i !== si)
+                              });
+                          }}><X size={14} /></button>
+                      </div>
+                  ))}
+                  <button className="hs-button-link hs-button-sm" onClick={() => {
+                      setPipelineFormData({
+                          ...pipelineFormData,
+                          stages: [...pipelineFormData.stages, { name: 'Novo Estágio', order: pipelineFormData.stages.length, color: '#CBD5E0', is_final: false }]
+                      });
+                  }}>+ Adicionar Estágio</button>
+              </div>
+          </div>
+          <div className="form-actions" style={{ marginTop: '20px' }}>
+              <button className="hs-button-secondary" onClick={() => setIsPipelineModalOpen(false)}>Cancelar</button>
+              <button className="hs-button-primary" onClick={async () => {
+                  if (!pipelineFormData.name) return addToast("Nome é obrigatório", "error");
+                  try {
+                      const url = pipelineFormData.id 
+                        ? `http://localhost:8000/pipelines/${pipelineFormData.id}`
+                        : `http://localhost:8000/pipelines/`;
+                      
+                      const res = await fetchWithAuth(url, {
+                          method: pipelineFormData.id ? 'PUT' : 'POST',
+                          body: JSON.stringify({
+                              ...pipelineFormData,
+                              type_id: selectedTemplate.id,
+                              workspace_id: null // Explicitamente template global
+                          })
+                      });
+
+                      if (res.ok) {
+                          addToast(`Pipeline de template ${pipelineFormData.id ? 'atualizada' : 'criada'}`);
+                          setIsPipelineModalOpen(false);
+                          fetchTemplatePipelines(selectedTemplate.id);
+                      } else {
+                          const err = await res.json();
+                          addToast(err.detail || "Erro ao salvar pipeline", "error");
+                      }
+                  } catch (err) {
+                      addToast(err.message, "error");
+                  }
+              }}>Salvar Pipeline</button>
+          </div>
       </Modal>
 
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Modelo Global">

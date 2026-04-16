@@ -135,7 +135,8 @@ class WorkItemRepository(IWorkItemRepository):
 
     def list_types(self, workspace_id: int) -> List[WorkItemType]:
         models = self.db.query(WorkItemTypeModel).filter(
-            WorkItemTypeModel.workspace_id == workspace_id
+            (WorkItemTypeModel.workspace_id == workspace_id) |
+            (WorkItemTypeModel.workspace_id == None)
         ).all()
         types = []
         for m in models:
@@ -227,19 +228,17 @@ class WorkItemRepository(IWorkItemRepository):
                 self.db.add(new_fd)
 
             # 5. [NOVO] Clonar Pipelines associadas
-            # Buscamos pipelines globais que servem para este entity_type
+            # Buscamos pipelines globais que servem para este tipo
             global_pipelines = self.db.query(PipelineModel).filter(
                 PipelineModel.workspace_id == None,
-                PipelineModel.entity_type == template_model.name
+                PipelineModel.type_id == template_id
             ).all()
 
             for gp in global_pipelines:
                 new_pipeline = PipelineModel(
                     name=gp.name,
-                    entity_type=new_type.name,
-                    workspace_id=target_workspace_id,
-                    item_label_singular=gp.item_label_singular,
-                    item_label_plural=gp.item_label_plural
+                    type_id=new_type.id,
+                    workspace_id=target_workspace_id
                 )
                 self.db.add(new_pipeline)
                 self.db.flush()

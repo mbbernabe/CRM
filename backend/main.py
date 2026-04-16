@@ -1,8 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.infrastructure.api.routes.contacts import router as contacts_router
-from src.infrastructure.api.routes.properties import router as properties_router
-from src.infrastructure.api.routes.companies import router as companies_router
 from src.infrastructure.api.routes.auth import router as auth_router
 from src.infrastructure.api.routes.admin import router as admin_router
 from src.infrastructure.api.routes.admin_settings import router as admin_settings_router
@@ -40,9 +37,6 @@ async def validation_exception_handler(request, exc):
     )
 
 # Inclui as rotas
-app.include_router(contacts_router)
-app.include_router(properties_router)
-app.include_router(companies_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(admin_settings_router)

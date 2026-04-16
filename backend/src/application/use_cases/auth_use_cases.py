@@ -5,8 +5,6 @@ from src.domain.entities.team import Team
 from src.domain.repositories.user_repository import IUserRepository
 from src.domain.repositories.team_repository import ITeamRepository
 from src.domain.repositories.workspace_repository import IWorkspaceRepository
-from src.domain.repositories.property_repository import IPropertyRepository
-from src.application.use_cases.initialize_workspace_properties_use_case import InitializeWorkspacePropertiesUseCase
 from src.application.dtos.user_dto import UserCreateDTO, LoginRequestDTO
 from src.infrastructure.security.auth_utils import SecurityUtils
 from src.domain.exceptions.base_exceptions import AuthenticationException
@@ -16,13 +14,11 @@ class RegisterUserUseCase:
         self, 
         user_repo: IUserRepository, 
         team_repo: ITeamRepository, 
-        workspace_repo: IWorkspaceRepository,
-        property_repo: IPropertyRepository
+        workspace_repo: IWorkspaceRepository
     ):
         self.user_repo = user_repo
         self.team_repo = team_repo
         self.workspace_repo = workspace_repo
-        self.property_repo = property_repo
 
     def execute(self, dto: UserCreateDTO) -> User:
         # 1. Verificar se usuário já existe
@@ -54,9 +50,6 @@ class RegisterUserUseCase:
             new_team = Team(name="Geral", workspace_id=workspace_id)
             new_team = self.team_repo.save(new_team)
             team_id = new_team.id
-            
-            # 2.3 Inicializar propriedades padrão para o novo Workspace
-            InitializeWorkspacePropertiesUseCase(self.property_repo).execute(workspace_id)
         else:
             raise AuthenticationException("Para criar sua conta, precisamos que você informe o nome da sua empresa ou área de trabalho.")
 

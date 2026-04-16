@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Modal from '../common/Modal';
-import { ToastProvider } from '../common/Toast';
+import { useToast } from '../common/Toast';
 import GenericBoard from '../common/GenericBoard';
 import { 
   Building2, 
@@ -20,11 +20,8 @@ import {
 import './Contacts.css';
 
 const Contacts = () => {
-  return (
-    <ToastProvider>
-      {(addToast) => <ContactsInner addToast={addToast} />}
-    </ToastProvider>
-  );
+  const { addToast } = useToast();
+  return <ContactsInner addToast={addToast} />;
 };
 
 const ContactsInner = ({ addToast }) => {

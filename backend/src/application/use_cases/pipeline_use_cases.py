@@ -13,7 +13,14 @@ class PipelineUseCases:
     def get_pipeline(self, pipeline_id: int, workspace_id: int) -> Optional[Pipeline]:
         return self.repository.get_by_id(pipeline_id, workspace_id)
 
-    def create_pipeline(self, dto: PipelineCreateDTO, workspace_id: int, team_id: Optional[int] = None) -> Pipeline:
+    def list_templates(self, source_type_id: int) -> List[Pipeline]:
+        return self.repository.list_templates(source_type_id)
+
+    def import_from_template(self, template_id: int, workspace_id: int, target_type_id: int) -> Pipeline:
+        return self.repository.clone_from_template(template_id, workspace_id, target_type_id)
+
+    def create_pipeline(self, dto: PipelineCreateDTO, workspace_id: Optional[int], team_id: Optional[int] = None) -> Pipeline:
+        # workspace_id can be None for system templates (Super Admin)
         stages = [
             PipelineStage(
                 name=s.name, 
@@ -25,11 +32,9 @@ class PipelineUseCases:
         ]
         pipeline = Pipeline(
             name=dto.name,
-            entity_type=dto.entity_type,
+            type_id=dto.type_id,
             workspace_id=workspace_id,
             team_id=team_id,
-            item_label_singular=dto.item_label_singular or "Item",
-            item_label_plural=dto.item_label_plural or "Itens",
             stages=stages
         )
         return self.repository.save(pipeline, workspace_id)
@@ -41,10 +46,6 @@ class PipelineUseCases:
 
         if dto.name is not None:
             pipeline.name = dto.name
-        if dto.item_label_singular is not None:
-            pipeline.item_label_singular = dto.item_label_singular
-        if dto.item_label_plural is not None:
-            pipeline.item_label_plural = dto.item_label_plural
         
         if dto.stages is not None:
             pipeline.stages = [
@@ -63,5 +64,5 @@ class PipelineUseCases:
     def delete_pipeline(self, pipeline_id: int, workspace_id: int) -> bool:
         return self.repository.delete(pipeline_id, workspace_id)
 
-    def move_entity(self, entity_type: str, entity_id: int, stage_id: int, workspace_id: int) -> bool:
-        return self.repository.move_entity(entity_type, entity_id, stage_id, workspace_id)
+    def move_entity(self, type_id: int, entity_id: int, stage_id: int, workspace_id: int) -> bool:
+        return self.repository.move_entity(type_id, entity_id, stage_id, workspace_id)

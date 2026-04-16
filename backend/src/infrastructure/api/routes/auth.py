@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from src.infrastructure.database.db import get_db
 from src.infrastructure.repositories.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from src.infrastructure.repositories.sqlalchemy_team_repository import SqlAlchemyTeamRepository
-from src.infrastructure.repositories.sqlalchemy_property_repository import SqlAlchemyPropertyRepository
+from src.infrastructure.repositories.sqlalchemy_team_repository import SqlAlchemyTeamRepository
 from src.application.use_cases.auth_use_cases import RegisterUserUseCase, LoginUseCase
 from src.application.dtos.user_dto import UserCreateDTO, LoginRequestDTO, AuthResponseDTO, UserReadDTO
 from pydantic import BaseModel, EmailStr
@@ -23,9 +23,8 @@ def register(dto: UserCreateDTO, db: Session = Depends(get_db)):
     user_repo = SqlAlchemyUserRepository(db)
     team_repo = SqlAlchemyTeamRepository(db)
     workspace_repo = SqlAlchemyWorkspaceRepository(db)
-    prop_repo = SqlAlchemyPropertyRepository(db)
     try:
-        user, workspace = RegisterUserUseCase(user_repo, team_repo, workspace_repo, prop_repo).execute(dto)
+        user, workspace = RegisterUserUseCase(user_repo, team_repo, workspace_repo).execute(dto)
         return AuthResponseDTO(
             user=UserReadDTO.model_validate(user),
             workspace=workspace

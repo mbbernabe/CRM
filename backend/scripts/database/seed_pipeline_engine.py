@@ -22,7 +22,7 @@ def seed():
             return
         ws_id = result[0]
 
-        print(f"🌱 Semeando dados para Workspace ID: {ws_id}")
+        print(f"Semeando dados para Workspace ID: {ws_id}")
 
         # 2. Criar Pipeline de Vendas se não existir
         pipeline = db.query(PipelineModel).filter_by(workspace_id=ws_id, name="Funil de Vendas Base").first()
@@ -70,11 +70,11 @@ def seed():
                 db.add(f)
 
         db.commit()
-        print("✅ Seed do Motor de Pipeline concluído com sucesso!")
+        print("Seed do Motor de Pipeline concluído com sucesso!")
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Erro no seed: {e}")
+        print(f"Erro no seed: {e}")
     finally:
         db.close()
 

@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Modal from '../common/Modal';
-import { ToastProvider } from '../common/Toast';
+import { useToast } from '../common/Toast';
 
 // --- Sortable Components ---
 
@@ -235,11 +235,7 @@ const slugify = (text) => {
 // --- Main Component ---
 
 const PropertySettings = () => {
-  return (
-    <ToastProvider>
-      <PropertySettingsInner />
-    </ToastProvider>
-  );
+  return <PropertySettingsInner />;
 };
 
 const PropertySettingsInner = () => {

@@ -24,9 +24,16 @@ class IPipelineRepository(ABC):
         pass
 
     @abstractmethod
-    def move_entity(self, entity_type: str, entity_id: int, stage_id: int, workspace_id: int) -> bool:
+    def move_entity(self, type_id: int, entity_id: int, stage_id: int, workspace_id: int) -> bool:
         pass
 
     @abstractmethod
     def get_stage_by_id(self, stage_id: int, workspace_id: int) -> Optional[PipelineStage]:
+        pass
+    @abstractmethod
+    def list_templates(self, source_type_id: int) -> List[Pipeline]:
+        pass
+
+    @abstractmethod
+    def clone_from_template(self, template_id: int, workspace_id: int, target_type_id: int) -> Pipeline:
         pass
