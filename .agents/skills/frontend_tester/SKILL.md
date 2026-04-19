@@ -58,3 +58,27 @@ Ao atuar nesta skill, você deve fornecer:
 - **Wait Strategically**: Use os seletores inteligentes do Playwright (`expect(page.get_by_text("Sucesso")).to_be_visible()`) em vez de waits fixos.
 - **Isolamento**: Limpe o estado ou use múltiplos contextos do browser se necessário.
 - **Base URL**: Utilize variáveis de ambiente para a `BASE_URL` do frontend.
+
+## ⚡ Validação de Performance no Frontend (OBRIGATÓRIO)
+
+> **Contexto:** A UI deve parecer instantânea mesmo com backend remoto (~100-300ms por request). Testes E2E devem validar as técnicas de performance adotadas.
+
+### 1. Verificação de URLs Centralizadas
+- **Regra:** Ao revisar componentes, validar que **nenhum** `http://localhost:8000` está hardcoded no código.
+- **Padrão correto:** Usar `API_BASE_URL` de `frontend/src/config.js` para `fetch()` direto, ou caminhos relativos para `fetchWithAuth()`.
+- **Teste:** Buscar no código-fonte por strings `localhost:8000` (deve retornar zero ocorrências em chamadas fetch diretas).
+
+### 2. Validação de Optimistic Updates
+- **Regra:** Ações de drag-and-drop (Kanban) e edições inline devem refletir **imediatamente** na UI, sem esperar resposta do servidor.
+- **Como testar:**
+  - Mover um card no Kanban e verificar que ele aparece na nova coluna **antes** do request HTTP completar.
+  - Simular falha de rede e verificar que o card reverte para a posição original.
+
+### 3. Verificação de Cache e Fetches Desnecessários
+- **Regra:** Abrir e fechar modais (como WorkItemModal) **não deve** gerar fetches adicionais de `types` e `users` se os dados já foram carregados.
+- **Como testar:** Monitorar a aba Network do browser ao abrir modal pela 2ª vez — deve ter zero requests a `/workitems/types` e `/workspaces/{id}/users`.
+
+### 4. Verificação de Chamadas Paralelas
+- **Regra:** Múltiplas chamadas HTTP a endpoints similares devem ser disparadas em paralelo (`Promise.all`), não sequencialmente.
+- **Como testar:** Na aba Network, verificar que requests de verificação de atualizações (`/types/{id}/updates`) iniciam simultaneamente.
+

@@ -50,3 +50,39 @@ Ao atuar como Especialista em Testes, a skill deve fornecer:
 1. **Red**: Escreva um teste que falha para uma nova funcionalidade.
 2. **Green**: Escreva o código mínimo necessário para fazer o teste passar.
 3. **Refactor**: Melhore o código mantendo o teste passando.
+
+## ⚡ Testes de Performance em Repositórios (OBRIGATÓRIO)
+
+> **Contexto:** Com PostgreSQL remoto, N+1 queries e lazy loading causam degradação grave. Testes unitários devem prevenir regressões de performance.
+
+### 1. Verificação de Eager Loading nos Mocks
+- **Regra:** Ao testar Use Cases que chamam métodos de repositório com relacionamentos, verificar que os mocks simulam o cenário de eager loading (dados já carregados).
+- **Padrão:**
+  ```python
+  def test_list_types_returns_with_field_definitions():
+      """Verifica que list_types retorna tipos com field_definitions já carregadas."""
+      mock_repo = Mock()
+      mock_repo.list_types.return_value = [
+          WorkItemType(id=1, name="deal", field_definitions=[...], field_groups=[...])
+      ]
+      # O Use Case NÃO deve precisar fazer chamadas extras para carregar relacionamentos
+  ```
+
+### 2. Teste de Estrutura de Models (Índices)
+- **Regra:** Para novos modelos, criar testes que verificam a presença de `index=True` em `workspace_id`:
+  ```python
+  def test_model_has_workspace_index():
+      """Verifica que workspace_id tem índice para performance."""
+      col = NovoModel.__table__.columns['workspace_id']
+      assert col.index is True, "workspace_id DEVE ter index=True"
+  ```
+
+### 3. Teste de Constante API_BASE_URL (Frontend)
+- **Regra (Vitest/Jest):** Verificar que componentes usam `API_BASE_URL` e não URLs hardcoded:
+  ```javascript
+  test('não deve conter URLs hardcoded', () => {
+      const source = fs.readFileSync('src/components/NovoComponente.jsx', 'utf-8');
+      expect(source).not.toContain('http://localhost:8000');
+  });
+  ```
+

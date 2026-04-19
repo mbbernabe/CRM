@@ -44,3 +44,54 @@ Ao atuar como Especialista em Testes de Integração, a skill deve fornecer:
 ## 💡 Melhores Práticas
 - **Mocks Externos**: Se o sistema consome APIs externas, use `httpx-mock` ou similar para isolar o teste de rede.
 - **Seeds Determinísticos**: Crie fixtures que preparem o cenário (ex: `auth_headers`, `created_company`).
+
+## ⚡ Validação de Performance (OBRIGATÓRIO)
+
+> **Contexto:** Com PostgreSQL remoto (Supabase), N+1 queries e ausência de índices causam degradação grave. Testes de integração DEVEM validar performance.
+
+### 1. Detecção de N+1 Queries
+- **Regra:** Ao testar endpoints que retornam listas com relacionamentos (ex: `GET /workitems/types`), validar que o número de queries **não cresce linearmente** com o número de registros.
+- **Como testar:** Usar SQLAlchemy event listeners para contar queries:
+  ```python
+  from sqlalchemy import event
+  
+  query_count = 0
+  @event.listens_for(engine, "before_cursor_execute")
+  def count_queries(*args, **kwargs):
+      nonlocal query_count
+      query_count += 1
+  
+  # Executar endpoint
+  response = client.get("/workitems/types")
+  
+  # Validar: com 5 tipos, deve ser no máximo ~3 queries (não 11+)
+  assert query_count <= 5, f"Possível N+1 detectado: {query_count} queries"
+  ```
+
+### 2. Validação de Eager Loading
+- **Regra:** Todo novo repositório que acessa relacionamentos DEVE ser testado para garantir que usa `selectinload` ou `joinedload`.
+- **Padrão de teste:**
+  ```python
+  def test_list_types_no_n_plus_one(client, db_session):
+      """Verifica que list_types usa eager loading."""
+      # Criar 5 tipos com campos e grupos
+      for i in range(5):
+          create_type_with_fields(db_session, f"type_{i}", num_fields=3)
+      
+      # A query count deve ser constante (não proporcional a N)
+      response = client.get("/workitems/types", headers=auth_headers)
+      assert response.status_code == 200
+      assert len(response.json()) == 5
+  ```
+
+### 3. Validação de Índices
+- **Regra:** Ao criar novas tabelas com `workspace_id`, o teste DEVE verificar que o índice existe:
+  ```python
+  def test_workspace_id_has_index(db_session):
+      from sqlalchemy import inspect
+      inspector = inspect(db_session.bind)
+      indexes = inspector.get_indexes('nova_tabela')
+      workspace_idx = [i for i in indexes if 'workspace_id' in i['column_names']]
+      assert len(workspace_idx) > 0, "Falta índice em workspace_id"
+  ```
+

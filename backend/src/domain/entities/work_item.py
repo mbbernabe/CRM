@@ -19,7 +19,7 @@ class FieldType(str, Enum):
 
 @dataclass
 class WorkItemFieldGroup:
-    id: Optional[int] = None
+    id: Optional[Union[int, str]] = None
     name: str = ""
     order: int = 0
     workspace_id: Optional[int] = None

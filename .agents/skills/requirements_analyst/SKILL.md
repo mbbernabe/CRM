@@ -40,9 +40,44 @@ Se houver mudança no escopo técnico durante a implementação:
 - Idioma: Português do Brasil (PT-BR).
 - Foco em Valor: Sempre pergunte "Qual o valor de negócio disso?".
 
+## ⚡ Requisitos Não-Funcionais de Performance (OBRIGATÓRIO)
+
+> **Contexto:** O CRM opera com banco remoto (Supabase/PostgreSQL), o que torna performance um requisito não-funcional crítico. Todo novo requisito deve considerar o impacto na velocidade.
+
+### Checklist para Todo Novo Requisito
+Ao definir um novo requisito ou funcionalidade, o analista DEVE documentar:
+
+1. **Tempo de resposta esperado:**
+   - Ações de leitura (listas, visualização): ≤ 500ms
+   - Ações de escrita (criar, editar): ≤ 1s
+   - Ações interativas (drag-and-drop, toggle): **Instantâneo** (optimistic update)
+
+2. **Estratégia de dados:**
+   - Os dados necessários são estáveis (tipos, users)? → Cache no frontend
+   - A tela precisa de dados de múltiplas fontes? → Definir se serão paralelas ou batch
+   - A listagem envolve relacionamentos? → Exigir eager loading no backend
+
+3. **Índices necessários:**
+   - Quais filtros a tela vai aplicar? (ex: por workspace, por tipo, por pipeline)
+   - Documentar índices compostos necessários para queries frequentes
+
+4. **Percepção de velocidade:**
+   - A tela deve usar skeleton loading ou spinner?
+   - Quais ações devem ter optimistic update?
+
+### Exemplo de NFR no PRD
+```markdown
+### NFR-P001: Carregamento do Quadro Pipeline
+- **Tempo máximo:** 500ms para carregar o board completo
+- **Estratégia:** Eager loading de stages e items. Índice composto (workspace_id, pipeline_id)
+- **UX:** Skeleton loading durante carregamento. Optimistic update ao mover cards
+```
+
 ## 🚀 Comandos de Saída (Output)
 Ao atuar nesta skill, você deve fornecer:
 1. **Novas User Stories** com critérios de aceite.
 2. **Atualização de tabelas** de requisitos no PRD.
 3. **Sugestões de novas ideias** no backlog.
 4. **Análise de conflitos** entre requisitos (se houver).
+5. **NFRs de performance** para funcionalidades que envolvem listagens, relacionamentos ou interações real-time.
+

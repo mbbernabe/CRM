@@ -4,7 +4,7 @@ import {
   Plus, Edit, Trash2, Save, X, Settings2, Code, 
   Palette, Type, List as ListIcon, CheckSquare, 
   AlignLeft, Hash, Calendar, DollarSign, GripVertical, AlertCircle, RefreshCw, ChevronDown, ChevronRight,
-  BookOpen, Download
+  BookOpen, Download, Table, Search, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import {
   DndContext,
@@ -26,7 +26,24 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import Modal from '../common/Modal';
 import { useToast } from '../common/Toast';
+import FieldImportModal from '../common/FieldImportModal';
 import './WorkItemTypeSettings.css';
+
+const slugify = (text) => {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '_')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+};
+
 
 // --- Sortable Components ---
 
@@ -123,6 +140,7 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
 };
 
 const SortableGroupPanel = ({ id, group, fields, onAddField, onRemoveGroup, onGroupChange, onRemoveField, onFieldChange, allGroups }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
   const {
     attributes,
     listeners,
@@ -139,14 +157,24 @@ const SortableGroupPanel = ({ id, group, fields, onAddField, onRemoveGroup, onGr
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`group-panel ${isDragging ? 'dragging' : ''}`}>
+    <div ref={setNodeRef} style={style} className={`group-panel ${isDragging ? 'dragging' : ''} ${!isExpanded ? 'collapsed' : ''}`}>
       <div className="group-panel-header">
         <div className="group-header-left">
           <div className="group-drag-handle" {...attributes} {...listeners}>
             <GripVertical size={16} />
           </div>
+          <button 
+            type="button" 
+            className="group-collapse-toggle" 
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? "Recolher Grupo" : "Expandir Grupo"}
+          >
+            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
           {id === 'unassigned' ? (
-            <h4 className="group-panel-title">Campos Gerais (Sem Grupo)</h4>
+            <h4 className="group-panel-title" onClick={() => setIsExpanded(!isExpanded)} style={{ cursor: 'pointer' }}>
+                Campos Gerais (Sem Grupo)
+            </h4>
           ) : (
             <input 
               type="text" 
@@ -159,9 +187,11 @@ const SortableGroupPanel = ({ id, group, fields, onAddField, onRemoveGroup, onGr
           <span className="fields-badge">{fields.length} campos</span>
         </div>
         <div className="group-header-actions">
-           <button type="button" className="hs-button-link hs-button-sm" onClick={onAddField}>
-             <Plus size={14} /> Adicionar Campo
-           </button>
+           {isExpanded && (
+             <button type="button" className="hs-button-link hs-button-sm" onClick={onAddField}>
+               <Plus size={14} /> Adicionar Campo
+             </button>
+           )}
            {id !== 'unassigned' && (
              <button type="button" className="icon-button danger" onClick={onRemoveGroup} title="Remover Grupo">
                <Trash2 size={14} />
@@ -170,41 +200,34 @@ const SortableGroupPanel = ({ id, group, fields, onAddField, onRemoveGroup, onGr
         </div>
       </div>
       
-      <div className="group-panel-content">
-        <SortableContext items={fields.map(f => `field-${f.originalIndex}`)} strategy={verticalListSortingStrategy}>
-          {fields.map((field, idx) => (
-            <SortableField 
-              key={`field-${field.originalIndex}`}
-              id={`field-${field.originalIndex}`}
-              field={field}
-              groups={allGroups}
-              onRemove={() => onRemoveField(field.originalIndex)}
-              onChange={(key, val) => onFieldChange(field.originalIndex, key, val)}
-            />
-          ))}
-          {fields.length === 0 && (
-            <div className="empty-group-placeholder">
-              Puxe campos para cá ou clique em "Adicionar Campo"
-            </div>
-          )}
-        </SortableContext>
-      </div>
+      {isExpanded && (
+        <div className="group-panel-content animate-in">
+          <SortableContext items={fields.map(f => `field-${f.originalIndex}`)} strategy={verticalListSortingStrategy}>
+            {fields.map((field, idx) => (
+              <SortableField 
+                key={`field-${field.originalIndex}`}
+                id={`field-${field.originalIndex}`}
+                field={field}
+                groups={allGroups}
+                onRemove={() => onRemoveField(field.originalIndex)}
+                onChange={(key, val) => onFieldChange(field.originalIndex, key, val)}
+              />
+            ))}
+            {fields.length === 0 && (
+              <div className="empty-group-placeholder">
+                Puxe campos para cá ou clique em "Adicionar Campo"
+              </div>
+            )}
+          </SortableContext>
+        </div>
+      )}
     </div>
   );
 };
 
+
 // --- Utils ---
-const slugify = (text) => {
-  return text
-    .toString()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '_');
-};
+// slugify já está definido no topo do arquivo
 
 // --- Options Manager ---
 const OptionsManager = ({ value, onChange }) => {
@@ -282,6 +305,21 @@ const WorkItemTypeSettings = () => {
   const [isSuggestedLibraryOpen, setIsSuggestedLibraryOpen] = useState(false);
   const [suggestedFields, setSuggestedFields] = useState([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [isFieldImportModalOpen, setIsFieldImportModalOpen] = useState(false);
+  const [activeModalTab, setActiveModalTab] = useState('visual'); // 'visual' | 'table'
+  const [tableSort, setTableSort] = useState({ key: 'order', direction: 'asc' });
+  const [tableSearch, setTableSearch] = useState('');
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  const [columnWidths, setColumnWidths] = useState({
+    checkbox: 40,
+    label: 250,
+    name: 180,
+    field_type: 120,
+    group: 150,
+    required: 100,
+    actions: 80
+  });
+  const [isResizing, setIsResizing] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -481,7 +519,107 @@ const WorkItemTypeSettings = () => {
       ...formData,
       field_definitions: formData.field_definitions.filter((_, i) => i !== index)
     });
+    // Limpar seleção ao remover
+    setSelectedIndices(prev => prev.filter(idx => idx !== index).map(idx => idx > index ? idx - 1 : idx));
   };
+
+  const handleBulkDelete = () => {
+    if (selectedIndices.length === 0) return;
+    if (!window.confirm(`Tem certeza que deseja excluir ${selectedIndices.length} campos?`)) return;
+
+    setFormData({
+        ...formData,
+        field_definitions: formData.field_definitions.filter((_, i) => !selectedIndices.includes(i))
+    });
+    setSelectedIndices([]);
+    addToast(`${selectedIndices.length} campos excluídos com sucesso.`, 'success');
+  };
+
+  const handleSortTable = (key) => {
+    setTableSort(prev => ({
+        key,
+        direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) {
+        setSelectedIndices(filteredAndSortedFields.map(f => f.originalIndex));
+    } else {
+        setSelectedIndices([]);
+    }
+  };
+
+  const toggleSelectField = (originalIndex) => {
+    setSelectedIndices(prev => 
+        prev.includes(originalIndex) 
+            ? prev.filter(i => i !== originalIndex) 
+            : [...prev, originalIndex]
+    );
+  };
+
+  const filteredAndSortedFields = useMemo(() => {
+    let result = formData.field_definitions.map((f, i) => ({ ...f, originalIndex: i }));
+
+    // Filtro
+    if (tableSearch) {
+        const search = tableSearch.toLowerCase();
+        result = result.filter(f => 
+            f.label.toLowerCase().includes(search) || 
+            f.name.toLowerCase().includes(search)
+        );
+    }
+
+    // Ordenação
+    const { key, direction } = tableSort;
+    result.sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+
+        // Tratamento especial para grupos
+        if (key === 'group') {
+            valA = formData.field_groups.find(g => g.id === a.group_id)?.name || 'Geral';
+            valB = formData.field_groups.find(g => g.id === b.group_id)?.name || 'Geral';
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return result;
+  }, [formData.field_definitions, formData.field_groups, tableSort, tableSearch]);
+
+  // Redimensionamento de Colunas
+  const startResize = (e, column) => {
+    e.preventDefault();
+    setIsResizing({
+        column,
+        startX: e.pageX,
+        startWidth: columnWidths[column]
+    });
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const doResize = (e) => {
+        const diff = e.pageX - isResizing.startX;
+        setColumnWidths(prev => ({
+            ...prev,
+            [isResizing.column]: Math.max(50, isResizing.startWidth + diff)
+        }));
+    };
+
+    const stopResize = () => setIsResizing(null);
+
+    window.addEventListener('mousemove', doResize);
+    window.addEventListener('mouseup', stopResize);
+    return () => {
+        window.removeEventListener('mousemove', doResize);
+        window.removeEventListener('mouseup', stopResize);
+    };
+  }, [isResizing]);
 
   const handleFieldChange = (index, field, value) => {
     const newFields = [...formData.field_definitions];
@@ -524,6 +662,16 @@ const WorkItemTypeSettings = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    
+    // Validar nomes únicos no frontend
+    const fieldNames = formData.field_definitions.map(f => f.name.toLowerCase());
+    const uniqueNames = new Set(fieldNames);
+    if (uniqueNames.size !== fieldNames.length) {
+        const duplicates = fieldNames.filter((name, index) => fieldNames.indexOf(name) !== index);
+        addToast(`Existem campos com nomes duplicados: ${[...new Set(duplicates)].join(', ')}. Use nomes únicos (IDs Internos).`, 'error');
+        return;
+    }
+
     setIsSaving(true);
     try {
       const url = modalType === 'create' 
@@ -604,6 +752,42 @@ const WorkItemTypeSettings = () => {
     } finally {
         setIsApplyingSync(false);
     }
+  };
+
+  const handleFieldsImported = (importedFields) => {
+    // 1. Identificar novos grupos necessários
+    const existingGroupNames = formData.field_groups.map(g => g.name);
+    const newGroups = [...formData.field_groups];
+    
+    const importedGroups = [...new Set(importedFields.map(f => f.group_name).filter(g => g))];
+    
+    importedGroups.forEach(gName => {
+        if (!existingGroupNames.includes(gName)) {
+            newGroups.push({ id: `temp-${Date.now()}-${Math.random()}`, name: gName, order: newGroups.length });
+        }
+    });
+
+    // 2. Mapear campos para os IDs dos grupos (novos ou existentes)
+    const finalFields = importedFields.map((f, i) => {
+        const group = newGroups.find(g => g.name === f.group_name);
+        return {
+            label: f.label,
+            name: f.name || slugify(f.label),
+            field_type: f.field_type || 'text', // Mapear 'field_type' vindo do modal
+            group_id: group ? group.id : null,
+            order: formData.field_definitions.length + i,
+            required: false,
+            options: []
+        };
+    });
+
+    setFormData(prev => ({
+        ...prev,
+        field_groups: newGroups,
+        field_definitions: [...prev.field_definitions, ...finalFields]
+    }));
+    
+    addToast(`${importedFields.length} campos adicionados ao rascunho.`);
   };
 
   const sensors = useSensors(
@@ -770,6 +954,23 @@ const WorkItemTypeSettings = () => {
         size="large"
       >
         <form onSubmit={handleSave} className="type-form">
+          <div className="modal-tabs">
+            <button 
+                type="button"
+                className={`modal-tab ${activeModalTab === 'visual' ? 'active' : ''}`}
+                onClick={() => setActiveModalTab('visual')}
+            >
+                <Palette size={16} /> Editor Visual
+            </button>
+            <button 
+                type="button"
+                className={`modal-tab ${activeModalTab === 'table' ? 'active' : ''}`}
+                onClick={() => setActiveModalTab('table')}
+            >
+                <Table size={16} /> Lista de Campos
+            </button>
+          </div>
+
           <div className="form-sections">
             <div className="form-section main-config">
               <h4 className="section-title">Informações Básicas</h4>
@@ -803,10 +1004,14 @@ const WorkItemTypeSettings = () => {
                     </div>
                 </div>
               </div>
-              <div className="form-section layout-builder">
+              {activeModalTab === 'visual' && (
+                <div className="form-section layout-builder">
                <div className="section-header">
                  <h4 className="section-title">Estrutura do Objeto (Grupos e Campos)</h4>
                  <div className="section-actions">
+                   <button type="button" className="hs-button-link" onClick={() => setIsFieldImportModalOpen(true)} style={{ marginRight: '15px' }}>
+                     <Download size={14} /> Importar CSV
+                   </button>
                    <button type="button" className="hs-button-link" onClick={handleOpenSuggestedLibrary} style={{ marginRight: '15px' }}>
                      <BookOpen size={14} /> Adicionar da Biblioteca
                    </button>
@@ -865,7 +1070,135 @@ const WorkItemTypeSettings = () => {
                    </SortableContext>
                  </DndContext>
                </div>
-            </div>
+                </div>
+              )}
+
+              {activeModalTab === 'table' && (
+                <div className="form-section field-table-view animate-in">
+                    <div className="table-toolbar">
+                        <div className="table-toolbar-left">
+                            <div className="table-search-wrapper">
+                                <Search size={16} className="table-search-icon" />
+                                <input 
+                                    type="text" 
+                                    className="table-search-input" 
+                                    placeholder="Buscar campos por nome ou ID..."
+                                    value={tableSearch}
+                                    onChange={e => setTableSearch(e.target.value)}
+                                />
+                            </div>
+                            
+                            {selectedIndices.length > 0 && (
+                                <div className="table-bulk-actions">
+                                    <span className="bulk-actions-label">{selectedIndices.length} selecionados</span>
+                                    <button 
+                                        type="button" 
+                                        className="hs-button-danger hs-button-sm"
+                                        onClick={handleBulkDelete}
+                                    >
+                                        <Trash2 size={14} /> Excluir em Lote
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="section-actions">
+                            <button type="button" className="hs-button-link" onClick={() => setIsFieldImportModalOpen(true)}>
+                                <Download size={14} /> Importar CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="table-vessel hs-scroll-x">
+                        <table className="hs-table-lite" style={{ tableLayout: 'fixed', width: 'auto', minWidth: '100%' }}>
+                            <thead>
+                                <tr>
+                                    <th className="col-checkbox" style={{ width: columnWidths.checkbox }}>
+                                        <input 
+                                            type="checkbox" 
+                                            onChange={toggleSelectAll}
+                                            checked={filteredAndSortedFields.length > 0 && filteredAndSortedFields.every(f => selectedIndices.includes(f.originalIndex))}
+                                        />
+                                    </th>
+                                    {[
+                                        { key: 'label', label: 'Rótulo (Label)' },
+                                        { key: 'name', label: 'Nome Interno' },
+                                        { key: 'field_type', label: 'Tipo' },
+                                        { key: 'group', label: 'Grupo' },
+                                        { key: 'required', label: 'Obrigatório' },
+                                        { key: 'actions', label: 'Ações', sortable: false }
+                                    ].map((col) => (
+                                        <th 
+                                            key={col.key}
+                                            className={`${col.sortable !== false ? 'sortable' : ''} ${tableSort.key === col.key ? 'active-sort' : ''}`}
+                                            style={{ width: columnWidths[col.key] }}
+                                            onClick={() => col.sortable !== false && handleSortTable(col.key)}
+                                        >
+                                            <div className="header-content">
+                                                {col.label}
+                                                {col.sortable !== false && (
+                                                    <span className="sort-icon">
+                                                        {tableSort.key === col.key ? (
+                                                            tableSort.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                                        ) : <ArrowUpDown size={14} />}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div 
+                                                className={`resizer ${isResizing?.column === col.key ? 'resizing' : ''}`} 
+                                                onMouseDown={(e) => startResize(e, col.key)}
+                                                onClick={e => e.stopPropagation()}
+                                            />
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredAndSortedFields.map((field) => (
+                                    <tr key={field.originalIndex} className={selectedIndices.includes(field.originalIndex) ? 'row-selected' : ''}>
+                                        <td className="col-checkbox">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedIndices.includes(field.originalIndex)}
+                                                onChange={() => toggleSelectField(field.originalIndex)}
+                                            />
+                                        </td>
+                                        <td>
+                                            <input 
+                                                type="text" className="hs-input-compact" 
+                                                value={field.label} 
+                                                onChange={e => handleFieldChange(field.originalIndex, 'label', e.target.value)}
+                                            />
+                                        </td>
+                                        <td><code>{field.name}</code></td>
+                                        <td>{field.field_type}</td>
+                                        <td>{formData.field_groups.find(g => g.id === field.group_id)?.name || 'Geral'}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={field.required} 
+                                                onChange={e => handleFieldChange(field.originalIndex, 'required', e.target.checked)}
+                                            />
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <button type="button" className="icon-button danger" onClick={() => handleRemoveField(field.originalIndex)}>
+                                                <X size={14} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredAndSortedFields.length === 0 && (
+                                    <tr>
+                                        <td colSpan="7" className="empty-filter-results">
+                                            <Search size={32} opacity={0.2} />
+                                            <p>Nenhum campo encontrado para "{tableSearch}"</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
             </div>
           </div>
 
@@ -1049,6 +1382,12 @@ const WorkItemTypeSettings = () => {
             </div>
         </div>
       </Modal>
+
+      <FieldImportModal 
+        isOpen={isFieldImportModalOpen}
+        onClose={() => setIsFieldImportModalOpen(false)}
+        onFieldsImported={handleFieldsImported}
+      />
     </div>
   );
 };

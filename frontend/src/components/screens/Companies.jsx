@@ -5,7 +5,8 @@ import { useToast } from '../common/Toast';
 import GenericBoard from '../common/GenericBoard';
 import DynamicFormField from '../common/DynamicFormField';
 import { formatters } from '../../utils/formatters';
-import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight, LayoutGrid, List as ListIcon, Upload } from 'lucide-react';
+import MassImportModal from '../common/MassImportModal';
 import './Companies.css';
 
 const Companies = () => {
@@ -43,6 +44,7 @@ const CompaniesInner = ({ addToast }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const fetchCompanies = async () => {
     try {
@@ -357,6 +359,10 @@ const CompaniesInner = ({ addToast }) => {
             </select>
           )}
         </div>
+        <button className="hs-button-secondary" onClick={() => setIsImportModalOpen(true)}>
+            <Upload size={16} />
+            Importar
+          </button>
         <button className="hs-button-primary" onClick={handleOpenCreate}>
           + Criar Empresa
         </button>
@@ -626,6 +632,14 @@ const CompaniesInner = ({ addToast }) => {
         </div>
       </Modal>
 
+      {isImportModalOpen && (
+        <MassImportModal 
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          entityType="company"
+          onComplete={fetchCompanies}
+        />
+      )}
     </div>
   );
 };

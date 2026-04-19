@@ -17,8 +17,10 @@ import {
   ChevronDown, 
   ChevronRight,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Upload
 } from 'lucide-react';
+import MassImportModal from '../common/MassImportModal';
 import './Contacts.css';
 
 const Contacts = () => {
@@ -58,6 +60,7 @@ const ContactsInner = ({ addToast }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const fetchContacts = async () => {
     try {
@@ -374,7 +377,11 @@ const ContactsInner = ({ addToast }) => {
             </select>
           )}
         </div>
-        <button className="hs-button-primary" onClick={handleOpenCreate}>
+            <button className="hs-button-secondary" onClick={() => setIsImportModalOpen(true)}>
+              <Upload size={16} />
+              Importar
+            </button>
+            <button className="hs-button primary" onClick={handleOpenCreateModal}>
           + Criar Contato
         </button>
       </div>
@@ -424,7 +431,7 @@ const ContactsInner = ({ addToast }) => {
                         className="icon-button" 
                         onClick={() => setActiveMenu(activeMenu === contact.id ? null : contact.id)}
                       >
-                        < MoreHorizontal size={16} />
+                        <MoreHorizontal size={16} />
                       </button>
                       {activeMenu === contact.id && (
                         <div className="dropdown-menu">
@@ -702,6 +709,14 @@ const ContactsInner = ({ addToast }) => {
         </div>
       </Modal>
 
+      {isImportModalOpen && (
+        <MassImportModal 
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          entityType="contact"
+          onComplete={fetchContacts}
+        />
+      )}
     </div>
   );
 };

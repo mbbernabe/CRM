@@ -66,4 +66,43 @@ Ao modelar o domínio, a skill deve fornecer:
 1. A definição da **Entidade** ou **VO**.
 2. As **Exceptions** customizadas (se necessário).
 3. O **Result Object** para casos de falha de validação.
-4. A **Interface do Repositório** correspondente.
+4. A **Interface do Repositório** correspondente (com contrato de eager loading).
+
+## ⚡ Performance no Domínio (OBRIGATÓRIO)
+
+> **Contexto:** Com PostgreSQL remoto, repositórios que acessam relacionamentos via lazy loading causam N+1 queries (~100ms por query extra). O design de domínio deve prevenir isso.
+
+### 1. Contratos de Repositório — Relacionamentos Pré-carregados
+- **Regra:** Quando uma Interface de Repositório retorna entidades com relacionamentos (ex: `WorkItemType` com `field_definitions`), o contrato DEVE especificar que os relacionamentos vêm **pré-carregados**.
+- **Documentar no docstring:**
+  ```python
+  class IWorkItemRepository(Protocol):
+      def list_types(self, workspace_id: int) -> List[WorkItemType]:
+          """
+          Retorna tipos com field_definitions e field_groups pré-carregados.
+          A implementação DEVE usar eager loading (selectinload/joinedload).
+          """
+          ...
+  ```
+
+### 2. Entidades — Suporte a Relacionamentos Hidratados
+- **Regra:** Entidades de domínio que possuem sub-coleções (ex: `WorkItemType.field_definitions`) devem declará-las com valor padrão vazio (`field(default_factory=list)`).
+- **Por quê:** Isso garante que a entidade funciona tanto com dados pré-carregados quanto sem, sem necessidade de chamadas extras.
+  ```python
+  @dataclass
+  class WorkItemType:
+      id: int
+      name: str
+      field_definitions: List[CustomFieldDefinition] = field(default_factory=list)
+      field_groups: List[WorkItemFieldGroup] = field(default_factory=list)
+  ```
+
+### 3. Atributo `workspace_id` — Regras de Índice
+- **Regra:** Ao definir entidades com `workspace_id`, adicionar anotação indicando que a implementação DEVE criar índice:
+  ```python
+  @dataclass
+  class NovaEntidade:
+      id: int
+      workspace_id: int  # DEVE ter index=True na implementação SQL
+  ```
+

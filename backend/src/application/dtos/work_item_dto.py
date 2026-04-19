@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Union
 
 class WorkItemFieldGroupDTO(BaseModel):
-    id: Optional[int] = None
+    id: Optional[Union[int, str]] = None
     name: str
     order: int = 0
     type_id: Optional[int] = None

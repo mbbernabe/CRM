@@ -52,9 +52,67 @@ Ao revisar uma tela:
     - NUNCA aplicar `overflow-y: auto` ou `height: 100%` em contêineres de novas telas, a menos que seja um componente com scroll interno funcional (ex: Colunas de Kanban ou Modais). 
     - Garanta que a barra de rolagem seja única e esteja sempre na extremidade direita da janela.
 
+## ⚡ Performance & Velocidade Percebida (OBRIGATÓRIO)
+
+> **Contexto:** Com o backend em Supabase (remoto), cada chamada de API leva ~100-300ms. A interface DEVE parecer instantânea usando as técnicas abaixo.
+
+### 1. Optimistic Updates (Atualizações Otimistas)
+- **Regra:** Para ações do usuário que modificam dados visíveis (mover card, editar campo inline, toggle), SEMPRE atualizar o estado local **antes** de enviar ao servidor.
+- **Padrão obrigatório:**
+  ```javascript
+  // 1. Salvar estado anterior (para rollback)
+  const previousState = currentState;
+  // 2. Atualizar localmente (instantâneo para o usuário)
+  setState(newState);
+  // 3. Enviar ao backend (em background)
+  try {
+      const res = await fetchWithAuth('/endpoint', { method: 'POST', body: ... });
+      if (!res.ok) throw new Error();
+  } catch {
+      // 4. Reverter se falhou
+      setState(previousState);
+      addToast("Erro ao salvar. Alteração revertida.", "error");
+  }
+  ```
+- **Referência:** `PipelineBoardScreen.jsx` — `handleMoveItem()`
+
+### 2. Skeleton Loading (em vez de Spinners)
+- **Regra:** Substituir spinners genéricos (`<RefreshCw className="spinner" />`) por **skeleton screens** que simulam a forma do conteúdo.
+- **Por quê:** Skeleton loading reduz a percepção de espera em ~40% comparado a spinners.
+- **Quando usar:** Carregamento inicial de listas, tabelas, cards e quadros Kanban.
+- **Exceção:** Ações pontuais (salvar, deletar) podem usar indicadores simples no botão.
+
+### 3. Cache de Dados Estáveis (Types, Users)
+- **Regra:** Dados que mudam raramente (tipos de objetos, lista de usuários, templates) DEVEM ser cacheados no estado do componente pai ou em um Context.
+- **Padrão:** Usar guard antes de fetch: `if (!data.length) fetchData();`
+- **PROIBIDO:** Fazer fetch de `types` e `users` a cada abertura de modal ou troca de tela.
+- **Referência:** `WorkItemModal.jsx` — `fetchTypes()` e `fetchUsers()`
+
+### 4. Chamadas HTTP Paralelas (Promise.all)
+- **Regra:** NUNCA usar `for await` para fazer múltiplas chamadas HTTP sequenciais. Usar `Promise.all` para paralelizar.
+- **Exemplo correto:**
+  ```javascript
+  const results = await Promise.all(
+      items.map(item => fetchWithAuth(`/endpoint/${item.id}`).then(r => r.json()))
+  );
+  ```
+- **Referência:** `WorkItemTypeSettings.jsx` — `checkUpdatesForTypes()`
+
+### 5. Estabilidade de useCallback/useMemo
+- **Regra:** Dependências de `useCallback` e `useMemo` devem ser estáveis (não mudar a cada render).
+- **PROIBIDO em deps:** `array.length`, objetos recriados, valores derivados.
+- **Alternativa:** Usar `useRef` para controlar "já carregou" e `setState(prev => ...)` para functional updates.
+- **Referência:** `PipelineBoardScreen.jsx` — `fetchPipelines()`
+
+### 6. Centralização de URL da API
+- **Regra:** NUNCA usar URLs hardcoded (`http://localhost:8000`). Importar `API_BASE_URL` de `frontend/src/config.js`.
+- **fetchWithAuth:** Já faz proxy automático. Novos componentes DEVEM usar paths relativos.
+
 ## 🚀 Comandos de Saída (Output)
 Ao atuar nesta skill, você deve fornecer:
 1. **Descrições visuais** detalhadas de novos componentes ou telas.
 2. **Relatórios de melhorias** (Onde mudar, Por que mudar, Como mudar).
 3. **Snippets de CSS/JSX** para implementação de refinamentos visuais.
 4. **Protótipos em texto ou Mermaid** para visualização de fluxos e layouts.
+5. **Validação de performance percebida**: confirmar uso de optimistic updates, skeleton loading e cache onde aplicável.
+

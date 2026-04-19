@@ -399,11 +399,13 @@ class WorkItemRepository(IWorkItemRepository):
             if field_groups is not None:
                 # Sync field groups
                 # Use int conversion for safety if frontend sends strings
-                try:
-                    new_group_ids = [int(g.id) for g in field_groups if g.id is not None]
-                except (ValueError, TypeError):
-                    # Fallback if some IDs are not numeric strings
-                    new_group_ids = [g.id for g in field_groups if isinstance(g.id, int)]
+                new_group_ids = []
+                for g in field_groups:
+                    if g.id is not None:
+                        try:
+                            new_group_ids.append(int(g.id))
+                        except (ValueError, TypeError):
+                            pass # Ignora IDs temporários (strings) para a lista de remoção
 
                 for g_model in list(model.field_groups): # Use list() to avoid mutation issues
                     if g_model.id not in new_group_ids:
@@ -458,7 +460,13 @@ class WorkItemRepository(IWorkItemRepository):
                     fd.group_id = final_group_id
                     resolved_field_definitions.append(fd)
 
-                new_field_ids = [int(fd.id) for fd in resolved_field_definitions if fd.id is not None]
+                new_field_ids = []
+                for fd in resolved_field_definitions:
+                    if fd.id is not None:
+                        try:
+                            new_field_ids.append(int(fd.id))
+                        except (ValueError, TypeError):
+                            pass # Ignora IDs temporários se existirem
                 
                 # Remove
                 for fd_model in list(model.field_definitions):
@@ -502,24 +510,72 @@ class WorkItemRepository(IWorkItemRepository):
             return self.get_type_by_id(type_id, workspace_id)
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Erro ao atualizar WorkItemType {type_id}: {str(e)}", exc_info=True)
+            error_msg = str(e)
+            if "duplicate key value violates unique constraint" in error_msg:
+                if "_type_field_uc" in error_msg:
+                    raise ValueError("Já existe um campo com este nome (ID Interno) neste modelo. Use nomes únicos.")
+                if "_type_group_uc" in error_msg:
+                    raise ValueError("Já existe um grupo com este nome neste modelo.")
+            
+            logger.error(f"Erro ao atualizar WorkItemType {type_id}: {error_msg}", exc_info=True)
             raise e
 
-    def delete_type(self, type_id: int, workspace_id: int) -> bool:
+    def delete_type(self, type_id: int, workspace_id: Optional[int]) -> bool:
         model = self.db.query(WorkItemTypeModel).filter(
             WorkItemTypeModel.id == type_id,
             WorkItemTypeModel.workspace_id == workspace_id
         ).first()
-        if model:
-            # Check if there are work items using this type
-            count = self.db.query(WorkItemModel).filter(WorkItemModel.type_id == type_id).count()
-            if count > 0:
-                raise ValueError("Não é possível excluir um tipo que possui itens vinculados.")
+        
+        if not model:
+            return False
+
+        # 1. Verificar se existem itens de trabalho usando este tipo (em qualquer workspace se for global)
+        count_items = self.db.query(WorkItemModel).filter(WorkItemModel.type_id == type_id).count()
+        if count_items > 0:
+            raise ValueError(f"Não é possível excluir este tipo pois existem {count_items} itens de trabalho vinculados a ele.")
+
+        # 2. Se for um modelo global (workspace_id is None), verificar se existem tipos em workspaces que derivam dele
+        if workspace_id is None:
+            clones_count = self.db.query(WorkItemTypeModel).filter(WorkItemTypeModel.source_type_id == type_id).count()
+            if clones_count > 0:
+                raise ValueError(f"Este modelo global não pode ser excluído pois foi clonado por {clones_count} workspaces. Remova as instâncias nos workspaces primeiro.")
             
+            # Verificar se campos deste tipo estão sendo usados como base em outros lugares
+            field_ids = [f.id for f in model.field_definitions]
+            if field_ids:
+                field_clones_count = self.db.query(WorkItemFieldDefinitionModel).filter(WorkItemFieldDefinitionModel.source_field_id.in_(field_ids)).count()
+                if field_clones_count > 0:
+                    raise ValueError(f"Campos deste modelo estão sendo usados como base por {field_clones_count} campos em outros workspaces.")
+
+            # Verificar pipelines em workspaces que usam este tipo
+            from src.infrastructure.database.models import PipelineModel
+            workspace_pipelines_count = self.db.query(PipelineModel).filter(
+                PipelineModel.type_id == type_id,
+                PipelineModel.workspace_id != None
+            ).count()
+            if workspace_pipelines_count > 0:
+                raise ValueError(f"Existem {workspace_pipelines_count} pipelines em workspaces que utilizam este modelo. Remova-as ou mude o tipo delas primeiro.")
+
+        try:
+            # 3. Excluir pipelines associadas (somente as globais ou do mesmo workspace)
+            from src.infrastructure.database.models import PipelineModel
+            self.db.query(PipelineModel).filter(
+                PipelineModel.type_id == type_id,
+                PipelineModel.workspace_id == workspace_id
+            ).delete()
+            
+            # 4. Excluir o modelo (o cascade cuidará dos campos e grupos)
             self.db.delete(model)
             self.db.commit()
             return True
-        return False
+        except Exception as e:
+            self.db.rollback()
+            error_msg = str(e)
+            if "foreign key constraint" in error_msg.lower() or "viola restrição de chave estrangeira" in error_msg.lower():
+                raise ValueError("Este modelo não pode ser excluído por restrições de banco de dados (provavelmente ainda existem referências em outros workspaces que não foram detectadas).")
+            raise e
+
+
 
     def get_type_by_id(self, type_id: int, workspace_id: int) -> Optional[WorkItemType]:
         m = self.db.query(WorkItemTypeModel).options(

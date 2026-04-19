@@ -1,0 +1,51 @@
+﻿label,name,type,group
+Nome Completo,full_name,text,Informações Básicas
+E-mail Principal,email_primary,email,Informações Básicas
+E-mail Secundário,email_secondary,email,Informações Básicas
+Telefone Fixo,phone_fixed,phone,Informações Básicas
+Celular,phone_mobile,phone,Informações Básicas
+WhatsApp,whatsapp,phone,Informações Básicas
+Gênero,gender,select,Informações Básicas
+Data de Nascimento,birth_date,date,Informações Básicas
+CPF,cpf,cpf,Informações Básicas
+RG,rg,text,Informações Básicas
+CEP,zip_code,cep,Endereço
+Logradouro,address_street,text,Endereço
+Número,address_number,number,Endereço
+Complemento,address_complement,text,Endereço
+Bairro,address_neighborhood,text,Endereço
+Cidade,address_city,text,Endereço
+Estado,address_state,text,Endereço
+País,address_country,text,Endereço
+Latitude,lat,number,Endereço
+Longitude,lon,number,Endereço
+Empresa Atual,company_name,text,Profissional
+Cargo,job_title,text,Profissional
+Departamento,department,text,Profissional
+Nível Hierárquico,seniority_level,select,Profissional
+E-mail Profissional,work_email,email,Profissional
+Telefone Comercial,work_phone,phone,Profissional
+Data de Admissão,hire_date,date,Profissional
+Salário Pretendido,expected_salary,currency,Profissional
+Site da Empresa,company_website,text,Profissional
+Indústria,industry,select,Profissional
+LinkedIn,linkedin_url,text,Redes Sociais
+Twitter/X,twitter_handle,text,Redes Sociais
+Instagram,instagram_handle,text,Redes Sociais
+Facebook,facebook_url,text,Redes Sociais
+TikTok,tiktok_handle,text,Redes Sociais
+YouTube,youtube_channel,text,Redes Sociais
+GitHub,github_username,text,Redes Sociais
+Skype,skype_id,text,Redes Sociais
+Telegram,telegram_username,text,Redes Sociais
+Site Pessoal,personal_website,text,Redes Sociais
+Fonte do Lead,lead_source,select,Vendas e Marketing
+Temperatura do Lead,lead_temp,select,Vendas e Marketing
+Score,lead_score,number,Vendas e Marketing
+Campanha de Origem,origin_campaign,text,Vendas e Marketing
+Data de Cadastro,signup_date,date,Vendas e Marketing
+Newsletter Subscrito,newsletter_sub,boolean,Vendas e Marketing
+Interesse Principal,primary_interest,select,Vendas e Marketing
+Budget Estimado,estimated_budget,currency,Vendas e Marketing
+Frequência de Compra,purchase_frequency,select,Vendas e Marketing
+Cupom de Desconto Ativo,active_coupon,text,Vendas e Marketing

@@ -1,0 +1,151 @@
+﻿label,name,type,group
+Nome Completo,full_name,text,Informações Básicas
+E-mail Principal,email_primary,email,Informações Básicas
+E-mail Secundário,email_secondary,email,Informações Básicas
+Telefone Fixo,phone_fixed,phone,Informações Básicas
+Celular,phone_mobile,phone,Informações Básicas
+WhatsApp,whatsapp,phone,Informações Básicas
+Gênero,gender,select,Informações Básicas
+Data de Nascimento,birth_date,date,Informações Básicas
+CPF,cpf,cpf,Informações Básicas
+RG,rg,text,Informações Básicas
+CEP,zip_code,cep,Endereço
+Logradouro,address_street,text,Endereço
+Número,address_number,number,Endereço
+Complemento,address_complement,text,Endereço
+Bairro,address_neighborhood,text,Endereço
+Cidade,address_city,text,Endereço
+Estado,address_state,text,Endereço
+País,address_country,text,Endereço
+Latitude,lat,number,Endereço
+Longitude,lon,number,Endereço
+Empresa Atual,company_name,text,Profissional
+Cargo,job_title,text,Profissional
+Departamento,department,text,Profissional
+Nível Hierárquico,seniority_level,select,Profissional
+E-mail Profissional,work_email,email,Profissional
+Telefone Comercial,work_phone,phone,Profissional
+Data de Admissão,hire_date,date,Profissional
+Salário Pretendido,expected_salary,currency,Profissional
+Site da Empresa,company_website,text,Profissional
+Indústria,industry,select,Profissional
+LinkedIn,linkedin_url,text,Redes Sociais
+Twitter/X,twitter_handle,text,Redes Sociais
+Instagram,instagram_handle,text,Redes Sociais
+Facebook,facebook_url,text,Redes Sociais
+TikTok,tiktok_handle,text,Redes Sociais
+YouTube,youtube_channel,text,Redes Sociais
+GitHub,github_username,text,Redes Sociais
+Skype,skype_id,text,Redes Sociais
+Telegram,telegram_username,text,Redes Sociais
+Site Pessoal,personal_website,text,Redes Sociais
+Fonte do Lead,lead_source,select,Vendas e Marketing
+Temperatura do Lead,lead_temp,select,Vendas e Marketing
+Score,lead_score,number,Vendas e Marketing
+Campanha de Origem,origin_campaign,text,Vendas e Marketing
+Data de Cadastro,signup_date,date,Vendas e Marketing
+Newsletter Subscrito,newsletter_sub,boolean,Vendas e Marketing
+Interesse Principal,primary_interest,select,Vendas e Marketing
+Budget Estimado,estimated_budget,currency,Vendas e Marketing
+Frequência de Compra,purchase_frequency,select,Vendas e Marketing
+Cupom de Desconto Ativo,active_coupon,text,Vendas e Marketing
+Campo Extra 1,extra_field_1,number,Personalizados
+Campo Extra 2,extra_field_2,text,Personalizados
+Campo Extra 3,extra_field_3,number,Personalizados
+Campo Extra 4,extra_field_4,text,Personalizados
+Campo Extra 5,extra_field_5,number,Personalizados
+Campo Extra 6,extra_field_6,text,Personalizados
+Campo Extra 7,extra_field_7,number,Personalizados
+Campo Extra 8,extra_field_8,text,Personalizados
+Campo Extra 9,extra_field_9,number,Personalizados
+Campo Extra 10,extra_field_10,text,Personalizados
+Campo Extra 11,extra_field_11,number,Personalizados
+Campo Extra 12,extra_field_12,text,Personalizados
+Campo Extra 13,extra_field_13,number,Personalizados
+Campo Extra 14,extra_field_14,text,Personalizados
+Campo Extra 15,extra_field_15,number,Personalizados
+Campo Extra 16,extra_field_16,text,Personalizados
+Campo Extra 17,extra_field_17,number,Personalizados
+Campo Extra 18,extra_field_18,text,Personalizados
+Campo Extra 19,extra_field_19,number,Personalizados
+Campo Extra 20,extra_field_20,text,Personalizados
+Campo Extra 21,extra_field_21,number,Personalizados
+Campo Extra 22,extra_field_22,text,Personalizados
+Campo Extra 23,extra_field_23,number,Personalizados
+Campo Extra 24,extra_field_24,text,Personalizados
+Campo Extra 25,extra_field_25,number,Personalizados
+Campo Extra 26,extra_field_26,text,Personalizados
+Campo Extra 27,extra_field_27,number,Personalizados
+Campo Extra 28,extra_field_28,text,Personalizados
+Campo Extra 29,extra_field_29,number,Personalizados
+Campo Extra 30,extra_field_30,text,Personalizados
+Campo Extra 31,extra_field_31,number,Personalizados
+Campo Extra 32,extra_field_32,text,Personalizados
+Campo Extra 33,extra_field_33,number,Personalizados
+Campo Extra 34,extra_field_34,text,Personalizados
+Campo Extra 35,extra_field_35,number,Personalizados
+Campo Extra 36,extra_field_36,text,Personalizados
+Campo Extra 37,extra_field_37,number,Personalizados
+Campo Extra 38,extra_field_38,text,Personalizados
+Campo Extra 39,extra_field_39,number,Personalizados
+Campo Extra 40,extra_field_40,text,Personalizados
+Campo Extra 41,extra_field_41,number,Personalizados
+Campo Extra 42,extra_field_42,text,Personalizados
+Campo Extra 43,extra_field_43,number,Personalizados
+Campo Extra 44,extra_field_44,text,Personalizados
+Campo Extra 45,extra_field_45,number,Personalizados
+Campo Extra 46,extra_field_46,text,Personalizados
+Campo Extra 47,extra_field_47,number,Personalizados
+Campo Extra 48,extra_field_48,text,Personalizados
+Campo Extra 49,extra_field_49,number,Personalizados
+Campo Extra 50,extra_field_50,text,Personalizados
+Campo Extra 51,extra_field_51,number,Personalizados
+Campo Extra 52,extra_field_52,text,Personalizados
+Campo Extra 53,extra_field_53,number,Personalizados
+Campo Extra 54,extra_field_54,text,Personalizados
+Campo Extra 55,extra_field_55,number,Personalizados
+Campo Extra 56,extra_field_56,text,Personalizados
+Campo Extra 57,extra_field_57,number,Personalizados
+Campo Extra 58,extra_field_58,text,Personalizados
+Campo Extra 59,extra_field_59,number,Personalizados
+Campo Extra 60,extra_field_60,text,Personalizados
+Campo Extra 61,extra_field_61,number,Personalizados
+Campo Extra 62,extra_field_62,text,Personalizados
+Campo Extra 63,extra_field_63,number,Personalizados
+Campo Extra 64,extra_field_64,text,Personalizados
+Campo Extra 65,extra_field_65,number,Personalizados
+Campo Extra 66,extra_field_66,text,Personalizados
+Campo Extra 67,extra_field_67,number,Personalizados
+Campo Extra 68,extra_field_68,text,Personalizados
+Campo Extra 69,extra_field_69,number,Personalizados
+Campo Extra 70,extra_field_70,text,Personalizados
+Campo Extra 71,extra_field_71,number,Personalizados
+Campo Extra 72,extra_field_72,text,Personalizados
+Campo Extra 73,extra_field_73,number,Personalizados
+Campo Extra 74,extra_field_74,text,Personalizados
+Campo Extra 75,extra_field_75,number,Personalizados
+Campo Extra 76,extra_field_76,text,Personalizados
+Campo Extra 77,extra_field_77,number,Personalizados
+Campo Extra 78,extra_field_78,text,Personalizados
+Campo Extra 79,extra_field_79,number,Personalizados
+Campo Extra 80,extra_field_80,text,Personalizados
+Campo Extra 81,extra_field_81,number,Personalizados
+Campo Extra 82,extra_field_82,text,Personalizados
+Campo Extra 83,extra_field_83,number,Personalizados
+Campo Extra 84,extra_field_84,text,Personalizados
+Campo Extra 85,extra_field_85,number,Personalizados
+Campo Extra 86,extra_field_86,text,Personalizados
+Campo Extra 87,extra_field_87,number,Personalizados
+Campo Extra 88,extra_field_88,text,Personalizados
+Campo Extra 89,extra_field_89,number,Personalizados
+Campo Extra 90,extra_field_90,text,Personalizados
+Campo Extra 91,extra_field_91,number,Personalizados
+Campo Extra 92,extra_field_92,text,Personalizados
+Campo Extra 93,extra_field_93,number,Personalizados
+Campo Extra 94,extra_field_94,text,Personalizados
+Campo Extra 95,extra_field_95,number,Personalizados
+Campo Extra 96,extra_field_96,text,Personalizados
+Campo Extra 97,extra_field_97,number,Personalizados
+Campo Extra 98,extra_field_98,text,Personalizados
+Campo Extra 99,extra_field_99,number,Personalizados
+Campo Extra 100,extra_field_100,text,Personalizados
