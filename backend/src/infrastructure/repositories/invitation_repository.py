@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from src.infrastructure.database.models import WorkspaceInvitationModel, WorkspaceModel, UserModel, TeamModel
 from src.domain.entities.invitation import WorkspaceInvitation
 
@@ -48,6 +48,11 @@ class InvitationRepository:
     def get_by_token(self, token: str) -> Optional[WorkspaceInvitation]:
         model = (
             self.db.query(WorkspaceInvitationModel)
+            .options(
+                joinedload(WorkspaceInvitationModel.workspace),
+                joinedload(WorkspaceInvitationModel.inviter),
+                joinedload(WorkspaceInvitationModel.team),
+            )
             .filter(WorkspaceInvitationModel.token == token)
             .first()
         )
@@ -56,6 +61,11 @@ class InvitationRepository:
     def list_by_workspace(self, workspace_id: int) -> List[WorkspaceInvitation]:
         models = (
             self.db.query(WorkspaceInvitationModel)
+            .options(
+                joinedload(WorkspaceInvitationModel.workspace),
+                joinedload(WorkspaceInvitationModel.inviter),
+                joinedload(WorkspaceInvitationModel.team),
+            )
             .filter(WorkspaceInvitationModel.workspace_id == workspace_id)
             .order_by(WorkspaceInvitationModel.created_at.desc())
             .all()

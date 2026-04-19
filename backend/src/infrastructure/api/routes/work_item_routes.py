@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from src.infrastructure.database.db import get_db
-from src.infrastructure.api.dependencies import get_workspace_id, get_user_id_optional
+from src.infrastructure.api.dependencies import get_workspace_id, get_user_id_optional, get_current_user
 from src.infrastructure.repositories.work_item_repository import WorkItemRepository
 from src.infrastructure.repositories.work_item_history_repository import WorkItemHistoryRepository
+from src.infrastructure.repositories.work_item_link_repository import SQLAlchemyWorkItemLinkRepository as WorkItemLinkRepository
 from src.infrastructure.repositories.sqlalchemy_pipeline_repository import SqlAlchemyPipelineRepository as PipelineRepository
 from src.infrastructure.repositories.sqlalchemy_user_repository import SqlAlchemyUserRepository as UserRepository
 from src.application.use_cases.work_item.create_work_item import CreateWorkItemUseCase
@@ -13,7 +14,12 @@ from src.application.use_cases.work_item.manage_item_types import ManageItemType
 from src.application.use_cases.work_item.update_work_item import UpdateWorkItemUseCase
 from src.application.use_cases.work_item.delete_work_item import DeleteWorkItemUseCase
 from src.application.use_cases.work_item.manage_work_item_history import ManageWorkItemHistoryUseCase
-from src.application.dtos.work_item_dto import WorkItemTypeReadDTO, WorkItemTypeCreateDTO, WorkItemTypeUpdateDTO, WorkItemHistoryReadDTO, WorkItemNoteCreateDTO, CustomFieldDefinitionDTO
+from src.application.use_cases.work_item.manage_work_item_links import ManageWorkItemLinksUseCase
+from src.application.dtos.work_item_dto import (
+    WorkItemTypeReadDTO, WorkItemTypeCreateDTO, WorkItemTypeUpdateDTO, 
+    WorkItemHistoryReadDTO, WorkItemNoteCreateDTO, CustomFieldDefinitionDTO,
+    WorkItemLinkReadDTO, WorkItemLinkCreateDTO
+)
 from typing import Dict, Any, Optional, List
 
 router = APIRouter(prefix="/workitems", tags=["WorkItems"])
@@ -37,14 +43,30 @@ def get_update_use_case(db: Session = Depends(get_db)):
 def get_delete_use_case(db: Session = Depends(get_db)):
     return DeleteWorkItemUseCase(WorkItemRepository(db), WorkItemHistoryRepository(db))
 
+def get_links_use_case(db: Session = Depends(get_db)):
+    return ManageWorkItemLinksUseCase(
+        WorkItemLinkRepository(db), 
+        WorkItemRepository(db), 
+        WorkItemHistoryRepository(db)
+    )
+
 @router.post("")
 def create_work_item(
     payload: Dict[str, Any] = Body(...),
     workspace_id: int = Depends(get_workspace_id),
     user_id: Optional[int] = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
     use_case: CreateWorkItemUseCase = Depends(get_create_use_case)
 ):
     try:
+        # Se o usuário não for admin, o item obrigatoriamente pertence ao seu time.
+        # Se for admin, usa o team_id do payload (se houver) ou o do próprio admin.
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        
+        # Se admin passar um team_id no payload, usa esse. Caso contrário usa o dele ou None.
+        target_team_id = payload.get("team_id", team_id) if role in ["admin", "super_admin"] else team_id
+
         return use_case.execute(
             title=payload["title"],
             pipeline_id=payload["pipeline_id"],
@@ -53,7 +75,8 @@ def create_work_item(
             workspace_id=workspace_id,
             description=payload.get("description"),
             custom_fields=payload.get("custom_fields"),
-            user_id=payload.get("owner_id") or user_id # Use explicit owner or current user
+            user_id=payload.get("owner_id") or user_id,
+            team_id=target_team_id
         )
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Campo obrigatório ausente: {str(e)}")
@@ -64,10 +87,13 @@ def create_work_item(
 def get_board(
     pipeline_id: int,
     workspace_id: int = Depends(get_workspace_id),
+    current_user: Any = Depends(get_current_user),
     use_case: GetPipelineBoardUseCase = Depends(get_board_use_case)
 ):
     try:
-        return use_case.execute(pipeline_id, workspace_id)
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        return use_case.execute(pipeline_id, workspace_id, role, team_id)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -77,15 +103,21 @@ def move_item(
     payload: Dict[str, Any] = Body(...),
     workspace_id: int = Depends(get_workspace_id),
     user_id: Optional[int] = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
     use_case: MoveWorkItemUseCase = Depends(get_move_use_case)
 ):
     try:
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        
         return use_case.execute(
             workitem_id=item_id,
             to_stage_id=payload["to_stage_id"],
             workspace_id=workspace_id,
             user_id=user_id,
-            notes=payload.get("notes")
+            notes=payload.get("notes"),
+            user_role=role,
+            user_team_id=team_id
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -96,6 +128,7 @@ def update_item(
     payload: Dict[str, Any] = Body(...),
     workspace_id: int = Depends(get_workspace_id),
     user_id: Optional[int] = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
     use_case: UpdateWorkItemUseCase = Depends(get_update_use_case)
 ):
     try:
@@ -112,6 +145,9 @@ def update_item(
         elif isinstance(raw_owner, str) and raw_owner.isdigit():
             final_owner = int(raw_owner)
 
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+
         return use_case.execute(
             work_item_id=item_id,
             workspace_id=workspace_id,
@@ -120,7 +156,9 @@ def update_item(
             type_id=payload.get("type_id"),
             custom_fields=payload.get("custom_fields"),
             owner_id=final_owner,
-            user_id=user_id
+            user_id=user_id,
+            user_role=role,
+            user_team_id=team_id
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -132,10 +170,14 @@ def delete_item(
     item_id: int,
     workspace_id: int = Depends(get_workspace_id),
     user_id: Optional[int] = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
     use_case: DeleteWorkItemUseCase = Depends(get_delete_use_case)
 ):
     try:
-        success = use_case.execute(item_id, workspace_id, user_id)
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        
+        success = use_case.execute(item_id, workspace_id, user_id, user_role=role, user_team_id=team_id)
         if not success:
             raise HTTPException(status_code=404, detail="Item não encontrado")
         return None
@@ -148,10 +190,17 @@ def delete_item(
 def list_items_by_type(
     type_id: int,
     workspace_id: int = Depends(get_workspace_id),
+    current_user: Any = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repo = WorkItemRepository(db)
-    items = repo.list_by_type(type_id, workspace_id)
+    role = current_user.role if current_user else "user"
+    team_id = current_user.team_id if current_user else None
+    
+    # Aplicar filtro de time se não for admin
+    team_filter = team_id if role not in ["admin", "super_admin"] else None
+    
+    items = repo.list_by_type(type_id, workspace_id, team_id=team_filter)
     return [
         {
             "id": item.id,
@@ -165,6 +214,29 @@ def list_items_by_type(
             "owner_id": item.owner_id
         } for item in items
     ]
+@router.get("/search", response_model=List[Dict[str, Any]])
+def search_workitems(
+    q: str,
+    workspace_id: int = Depends(get_workspace_id),
+    current_user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Busca itens pelo título no workspace, filtrado por time se necessário."""
+    repo = WorkItemRepository(db)
+    role = current_user.role if current_user else "user"
+    team_id = current_user.team_id if current_user else None
+    
+    team_filter = team_id if role not in ["admin", "super_admin"] else None
+    
+    items = repo.search(q, workspace_id, team_id=team_filter)
+    return [
+        {
+            "id": item.id,
+            "title": item.title,
+            "type_label": item.type_label
+        } for item in items
+    ]
+
 @router.get("/types", response_model=List[WorkItemTypeReadDTO])
 def list_types(
     workspace_id: int = Depends(get_workspace_id),
@@ -217,10 +289,13 @@ def delete_type(
 def get_workitem_history(
     item_id: int,
     workspace_id: int = Depends(get_workspace_id),
+    current_user: Any = Depends(get_current_user),
     use_case: ManageWorkItemHistoryUseCase = Depends(get_history_use_case)
 ):
     try:
-        return use_case.get_history(item_id, workspace_id)
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        return use_case.get_history(item_id, workspace_id, role, team_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -230,10 +305,13 @@ def add_workitem_note(
     dto: WorkItemNoteCreateDTO,
     workspace_id: int = Depends(get_workspace_id),
     user_id: int = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
     use_case: ManageWorkItemHistoryUseCase = Depends(get_history_use_case)
 ):
     try:
-        return use_case.add_note(item_id, workspace_id, user_id, dto.notes)
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        return use_case.add_note(item_id, workspace_id, user_id, dto.notes, role, team_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -311,3 +389,60 @@ def sync_from_global(
         raise HTTPException(status_code=400, detail="Falha ao sincronizar com o modelo global")
         
     return {"message": "Sincronização concluída com sucesso"}
+
+@router.get("/{item_id}/links", response_model=List[WorkItemLinkReadDTO])
+def list_item_links(
+    item_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    current_user: Any = Depends(get_current_user),
+    use_case: ManageWorkItemLinksUseCase = Depends(get_links_use_case)
+):
+    """Lista todos os itens vinculados ao item especificado."""
+    try:
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        return use_case.list_links(item_id, workspace_id, role, team_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/{item_id}/links", status_code=201)
+def add_item_link(
+    item_id: int,
+    dto: WorkItemLinkCreateDTO,
+    workspace_id: int = Depends(get_workspace_id),
+    user_id: int = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
+    use_case: ManageWorkItemLinksUseCase = Depends(get_links_use_case)
+):
+    """Cria um vínculo bidirecional entre dois itens."""
+    try:
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        success = use_case.add_link(item_id, dto.target_item_id, workspace_id, user_id, role, team_id)
+        if not success:
+            raise HTTPException(status_code=400, detail="Não foi possível criar o vínculo")
+        return {"message": "Vínculo criado com sucesso"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/{item_id}/links/{target_id}", status_code=204)
+def remove_item_link(
+    item_id: int,
+    target_id: int,
+    workspace_id: int = Depends(get_workspace_id),
+    user_id: int = Depends(get_user_id_optional),
+    current_user: Any = Depends(get_current_user),
+    use_case: ManageWorkItemLinksUseCase = Depends(get_links_use_case)
+):
+    """Remove um vínculo entre dois itens."""
+    try:
+        role = current_user.role if current_user else "user"
+        team_id = current_user.team_id if current_user else None
+        success = use_case.remove_link(item_id, target_id, workspace_id, user_id, role, team_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Vínculo não encontrado")
+        return None
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

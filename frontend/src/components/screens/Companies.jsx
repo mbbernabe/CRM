@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import Modal from '../common/Modal';
 import { useToast } from '../common/Toast';
 import GenericBoard from '../common/GenericBoard';
+import DynamicFormField from '../common/DynamicFormField';
+import { formatters } from '../../utils/formatters';
 import { Search, Filter, MoreHorizontal, Building2, RefreshCw, Trash2, Edit, AlertCircle, ChevronDown, ChevronRight, LayoutGrid, List as ListIcon } from 'lucide-react';
 import './Companies.css';
 
@@ -519,109 +521,14 @@ const CompaniesInner = ({ addToast }) => {
                 
                 {expandedGroups.includes(group) && (
                   <div className="form-grid">
-                    {groupedProperties[group].map(prop => {
-                      const currentValue = formData.properties[prop.name] || '';
-                      
-                      const renderField = () => {
-                        switch(prop.type) {
-                          case 'textarea':
-                            return (
-                              <textarea 
-                                value={currentValue}
-                                onChange={e => handlePropertyChange(prop.name, e.target.value)}
-                                placeholder={`Digite o ${prop.label.toLowerCase()}...`}
-                                rows={3}
-                                className="hs-input w-full"
-                                required={prop.is_required}
-                              />
-                            );
-                          case 'boolean':
-                            return (
-                              <div className="checkbox-wrapper">
-                                <label className="hs-checkbox flex items-center gap-2">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={currentValue === 'true' || currentValue === true}
-                                    onChange={e => handlePropertyChange(prop.name, e.target.checked ? 'true' : 'false')}
-                                  />
-                                  <span className="text-sm">Sim</span>
-                                </label>
-                              </div>
-                            );
-                          case 'currency':
-                            return (
-                              <div className="currency-input-wrapper relative">
-                                <span className="currency-prefix absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
-                                <input 
-                                  type="number" step="0.01"
-                                  className="hs-input w-full pl-10"
-                                  value={currentValue}
-                                  onChange={e => handlePropertyChange(prop.name, e.target.value)}
-                                  placeholder="0,00"
-                                  required={prop.is_required}
-                                />
-                              </div>
-                            );
-                          case 'select':
-                            const options = prop.options ? prop.options.split(';') : [];
-                            return (
-                              <select 
-                                className="hs-select w-full"
-                                value={currentValue}
-                                onChange={e => handlePropertyChange(prop.name, e.target.value)}
-                                required={prop.is_required}
-                              >
-                                <option value="">Selecione...</option>
-                                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                              </select>
-                            );
-                          case 'multiselect':
-                            const multiOptions = prop.options ? prop.options.split(';') : [];
-                            const selectedValues = currentValue ? currentValue.split(',') : [];
-                            const toggleValue = (val) => {
-                              const newValues = selectedValues.includes(val)
-                                ? selectedValues.filter(v => v !== val)
-                                : [...selectedValues, val];
-                              handlePropertyChange(prop.name, newValues.join(','));
-                            };
-                            return (
-                              <div className="multiselect-group flex flex-wrap gap-2">
-                                {multiOptions.map(opt => (
-                                  <label key={opt} className="hs-checkbox flex items-center gap-2 bg-gray-50 px-2 py-1 rounded">
-                                    <input 
-                                      type="checkbox" 
-                                      checked={selectedValues.includes(opt)}
-                                      onChange={() => toggleValue(opt)}
-                                    />
-                                    <span className="text-sm">{opt}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            );
-                          default:
-                            return (
-                              <input 
-                                type={prop.type === 'email' ? 'email' : prop.type === 'date' ? 'date' : prop.type === 'url' ? 'url' : 'text'} 
-                                className="hs-input w-full"
-                                value={currentValue}
-                                onChange={e => handlePropertyChange(prop.name, e.target.value)}
-                                placeholder={`Digite o ${prop.label.toLowerCase()}...`}
-                                required={prop.is_required}
-                              />
-                            );
-                        }
-                      };
-
-                      return (
-                        <div key={prop.name} className={`hs-form-group ${prop.type === 'textarea' || prop.type === 'multiselect' ? 'full-width' : ''}`}>
-                          <label className="hs-label">
-                            {prop.label}
-                            {prop.is_required && <span className="required-indicator">*</span>}
-                          </label>
-                          {renderField()}
-                        </div>
-                      );
-                    })}
+                    {groupedProperties[group].map(prop => (
+                      <DynamicFormField 
+                        key={prop.name}
+                        prop={prop}
+                        value={formData.properties[prop.name] || ''}
+                        onChange={handlePropertyChange}
+                      />
+                    ))}
                   </div>
                 )}
               </div>

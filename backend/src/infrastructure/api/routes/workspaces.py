@@ -12,9 +12,18 @@ router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
 @router.get("/{workspace_id}/users")
 def list_workspace_users(workspace_id: int, db: Session = Depends(get_db)):
-    from src.infrastructure.database.models import UserModel
-    users = db.query(UserModel).filter(UserModel.workspace_id == workspace_id).all()
-    return [{"id": u.id, "name": u.name, "email": u.email, "role": u.role, "team_id": u.team_id} for u in users]
+    from src.infrastructure.database.models import UserModel, TeamModel
+    users = db.query(UserModel).outerjoin(TeamModel).filter(UserModel.workspace_id == workspace_id).all()
+    return [
+        {
+            "id": u.id, 
+            "name": u.name, 
+            "email": u.email, 
+            "role": u.role, 
+            "team_id": u.team_id,
+            "team_name": u.team.name if u.team else None
+        } for u in users
+    ]
 
 @router.get("/{workspace_id}", response_model=WorkspaceReadDTO)
 def get_workspace(workspace_id: int, db: Session = Depends(get_db)):

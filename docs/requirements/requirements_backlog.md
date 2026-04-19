@@ -10,28 +10,42 @@
 ---
 
 ## 🏢 Gestão de Áreas de Trabalho (Workspaces) & Times
-- [ ] **Biblioteca de Modelos (Super Admin)**: O Super Admin poderá criar e configurar tipos de objetos e campos personalizados em uma biblioteca global. Administradores de Workspace podem escolher e importar (clonar) esses modelos para suas áreas, permitindo personalização local sem afetar o modelo global.
-- [ ] **Configuração de SMTP por Workspace**: Deve existir uma configuração de SMTP isolada para cada Área de Trabalho. Somente o Administrador do Workspace terá permissão para gerenciar essas credenciais.
-- [x] **Workspaces**: A Área de Trabalho é o tenant principal. Todo dado pertence a um Workspace.
-- [x] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro).
-- [x] **Associação de Usuário**: Usuários podem ser membros de múltiplos Workspaces e múltiplos Times.
-- [x] **Isolamento de Dados**: `Workspace` isola a base global e `Team` isola a visibilidade (Usuários veem apenas o que o Time possui).
-- [x] **Sistema de Convites**: Fluxo para convidar usuários para o Workspace e dar acesso a times específicos.
-- [ ] **Validação & Máscaras**: Tipos específicos para CPF, CNPJ, Telefone e E-mail com validação e formatação automática.
+- [x] **Workspaces**: A Área de Trabalho é o tenant principal. Todo dado pertence a um Workspace. *(Backend: `WorkspaceModel`, Frontend: `WorkspaceSettings.jsx`)*
+- [x] **Múltiplos Times por Workspace**: Um Workspace pode conter diversos times (ex: Vendas, RH, Financeiro). *(Backend: `teams.py` routes, Frontend: `WorkspaceMembers.jsx`)*
+- [x] **Associação de Usuário**: Usuários podem ser membros de múltiplos Workspaces e múltiplos Times. *(Backend: `UserModel.team_id`, `UserModel.workspace_id`)*
+- [x] **Isolamento de Dados**: `Workspace` isola a base global e `Team` isola a visibilidade. *(Backend: `workspace_id` presente em todas as entidades)*
+- [x] **Sistema de Convites**: Fluxo completo — enviar, validar token, aceitar (cria usuário), cancelar. Envio de e-mail por SMTP com link. Painel de gestão no frontend. *(Backend: `invitations.py`, `invitation_use_case.py`, Frontend: `WorkspaceMembers.jsx`, `AcceptInvite.jsx`)*
+- [x] **Configuração de Workspace**: Personalização de nome, logo, cores (primária/acento), dias de expiração e mensagem de convite. *(Backend: `WorkspaceModel`, Frontend: `WorkspaceSettings.jsx`)*
+- [x] **Biblioteca de Modelos (Super Admin)**: CRUD completo de Templates globais + importação massiva de campos. *(Backend: `admin.py` routes, Frontend: `AdminTemplates.jsx`)*
+- [x] **Pool de Campos Sugeridos**: Campos com `is_default=False` no modelo global ficam disponíveis para importação sob demanda pelo Admin do Workspace. Inclui verificação de atualizações e sincronização. *(Backend: `list_suggested_fields`, `import_global_field`, `check_for_updates`, `sync_from_global`)*
+- [ ] **Configuração de SMTP por Workspace**: Deve existir uma configuração de SMTP **isolada por Workspace**. Atualmente, SMTP é configurado globalmente em `system_settings`. Necessário migrar para modelo por workspace.
+- [ ] **Validação & Máscaras de Input (Frontend)**: Os tipos `cpf`, `cep`, `phone` já existem no backend (`FieldType` enum). Falta implementar as input masks e formatação automática nos inputs do frontend.
 - [ ] **Lógica Inter-propriedades**: Autopreenchimento (ex: CEP preenche Logradouro/Cidade/UF) e cálculos entre campos.
-- [ ] **Recuperação de Senha (RF009)**: Link "Esqueci minha senha", envio de e-mail com token temporário e tela de definição de nova senha.
-- [ ] **Responsividade Premium**: Implementar e validar adaptabilidade em todas as telas existentes e futuras (Mobile/Tablet/Desktop).
+- [ ] **Responsividade Premium**: ~~Implementar e validar adaptabilidade em todas as telas existentes e futuras (Mobile/Tablet/Desktop).~~ ✅ Implementado — Sidebar colapsável, mobile header com hamburger, overlay.
 
 ## 📋 Gestão de WorkItems & Atividades
-- [x] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído.
-- [x] **Histórico de Ações**: Todas as ações em um WorkItem devem ser registradas em atividades.
-- [x] **Observações/Notas**: O usuário poderá criar observações que também serão registradas em atividades no WorkItem.
-- [ ] **Vinculação entre WorkItems (RF021)**: Um WorkItem pode ser vinculado a um ou mais outros WorkItems.
-  - Na visualização do WorkItem, os vínculos devem ser exibidos em uma seção dedicada, **agrupados por tipo** (ex: "🧑 Contatos (2)", "💼 Negócios (1)", "🎫 Tickets (3)").
-  - O usuário pode pesquisar e adicionar vínculos através de um seletor com busca por nome/título.
-  - O usuário pode remover vínculos existentes individualmente.
-  - A relação é **bidirecional**: ao vincular A→B, B exibe A automaticamente em sua lista de vínculos.
-  - Todo vínculo é isolado por `workspace_id` e registrado no histórico de atividades do WorkItem.
+- [x] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído. *(Backend: `owner_id` em `WorkItemModel`, Frontend: `AssignWorkItemModal.jsx`, `WorkItemCard.jsx` com avatar)*
+- [x] **Histórico de Ações**: Todas as ações em um WorkItem são registradas em atividades automaticamente (criação, movimentação, edição de campos, atribuição). *(Backend: `ManageWorkItemHistoryUseCase`, Frontend: `WorkItemHistoryPanel.jsx`)*
+- [x] **Observações/Notas**: O usuário pode criar observações que são registradas no histórico. *(Backend: `POST /{item_id}/notes`, Frontend: `WorkItemHistoryPanel.jsx`)*
+- [x] **Vinculação entre WorkItems (RF021)**: Um WorkItem pode ser vinculado a um ou mais outros WorkItems. *(Backend: `WorkItemLinkModel`, `ManageWorkItemLinksUseCase`, Frontend: `WorkItemLinksPanel.jsx`)*
+  - [x] Na visualização do WorkItem, os vínculos devem ser exibidos em uma seção dedicada, **agrupados por tipo** (ex: "🧑 Contatos (2)", "💼 Negócios (1)", "🎫 Tickets (3)").
+  - [x] O usuário pode pesquisar e adicionar vínculos através de um seletor com busca por nome/título.
+  - [x] O usuário pode remover vínculos existentes individualmente.
+  - [x] A relação é **bidirecional**: ao vincular A→B, B exibe A automaticamente em sua lista de vínculos.
+  - [x] Todo vínculo é isolado por `workspace_id` e registrado no histórico de atividades do WorkItem.
+
+## 🔧 Gestão de Pipelines & Tipos de Objetos
+- [x] **CRUD de Pipelines**: Criar, editar (nome + estágios com ordem/cor/finalidade), excluir pipelines por workspace. *(Backend: `pipelines.py`, Frontend: `PipelineSettings.jsx`)*
+- [x] **Pipelines Globais (Super Admin)**: Templates de pipeline vinculados a `WorkItemType` global, importáveis pelo Workspace. *(Backend: `list_templates`, `import_from_template`)*
+- [x] **CRUD de Tipos de Objetos**: Criar, editar (label, ícone, cor), excluir tipos de objetos por workspace. Campos customizados com grupos e ordenação. *(Backend: `work_item_routes.py`, Frontend: `WorkItemTypeSettings.jsx`)*
+- [x] **Quadro Kanban Dinâmico**: Quadro de Pipeline com drag-and-drop por tipo de objeto, exibindo cards com propriedades dinâmicas. *(Frontend: `PipelineBoardScreen.jsx`, `WorkItemBoard.jsx`)*
+- [x] **Tela Genérica de Entidades**: Tela que se adapta dinamicamente ao tipo de objeto selecionado na sidebar. *(Frontend: `GenericEntityScreen.jsx`)*
+
+## 🔐 Autenticação & Segurança
+- [x] **Login**: Autenticação com e-mail e senha. *(Backend: `LoginUseCase`, Frontend: `Login.jsx`)*
+- [x] **Registro**: Criação de conta com nome, e-mail, senha e nome do Workspace. Cria automaticamente o Workspace, Time "Geral" e o primeiro usuário admin. *(Backend: `RegisterUserUseCase`, Frontend: `Register.jsx`)*
+- [x] **Recuperação de Senha**: Fluxo completo — tela "Esqueci minha senha", envio de e-mail com token JWT, tela de redefinição. *(Backend: `password_reset_use_case.py`, Frontend: `ForgotPassword.jsx`, `ResetPassword.jsx`)*
+- [x] **Configurações Globais (SMTP)**: Tela de SuperAdmin para configurar servidor SMTP, credenciais, URL base de reset. *(Backend: `admin_settings.py`, Frontend: `SystemSettings.jsx`)*
 
 ## 💲 Gestão de Planos & Assinaturas (SaaS)
 - [ ] **Criação de Planos (Super Admin)**: O Super Administrador poderá criar planos de assinatura personalizados aplicáveis às Áreas de Trabalho.
@@ -41,10 +55,18 @@
 - **Visão**: O CRM deve ser um SaaS para pessoas e times organizarem Atividades Empresariais (Marketing, Fluxo de Clientes, Produção).
 - **Conquista**: Arquitetura Multi-tenant (Workspaces) implementada com sucesso no Backend e Frontend.
 - **Próximos Passos Sugeridos**: 
-    1.  **Refinamento de UI**: Implementar seletor/troca de Workspace para o usuário logado.
-    2.  **Configurações de Workspace**: Permitir upload de Logo, personalização de cores e nome da empresa.
-    3.  **Convites (Teams/Workspace)**: Desenvolver o fluxo de captura de convidados para novos membros.
-    4.  **Projeto de Pipelines Genéricas**: Iniciar a migração das pipelines para serem totalmente agnósticas à entidade.
+    1.  ~~**Refinamento de UI**: Implementar seletor/troca de Workspace para o usuário logado.~~ ✅
+    2.  ~~**Configurações de Workspace**: Permitir upload de Logo, personalização de cores e nome da empresa.~~ ✅
+    3.  ~~**Convites (Teams/Workspace)**: Desenvolver o fluxo de captura de convidados para novos membros.~~ ✅
+    4.  ~~**Projeto de Pipelines Genéricas**: Iniciar a migração das pipelines para serem totalmente agnósticas à entidade.~~ ✅
+
+## 📅 Notas de Brainstorming [17/04/2026]
+- **Conquistas Recentes**: Pipelines genéricas, Biblioteca de Modelos com Campos Sugeridos, Fluxo de Convites completo, Quadro Kanban dinâmico com atribuição de dono, histórico de atividades e **Vinculação bidirecional entre WorkItems**.
+- **Próximos Passos Sugeridos**:
+    1.  **Input Masks no Frontend (RF007)**: Implementar formatação automática nos inputs de CPF, CNPJ, Telefone e CEP.
+    2.  **SMTP por Workspace (RF017)**: Migrar configuração de SMTP de global para por workspace.
+    3.  **Visibilidade por Time (RF010)**: Implementar filtro automático de registros por `team_id`.
+    4.  **API Pública para Leads (RF019)**: Criar endpoints configuráveis e seguros para ingestão de leads externos.
 
 ---
 
@@ -54,6 +76,8 @@
 - **Modelo de Visibilidade (Team-scoped)**: Implementar filtragem obrigatória de registros por `team_id` em todas as queries de listagem de contatos e negócios.
 - **UX Idea**: Propriedades complexas (CPF/Fone) devem ter "input masks" para evitar erros de digitação e melhorar a qualidade dos dados.
 - **Automation Idea**: A integração com APIs de CEP (como ViaCEP) economiza 30-40 segundos por cadastro de endereço.
+- **RBAC Idea**: Migrar de headers manuais (`X-User-Role`) para um sistema de roles/permissions real com JWT claims.
+- **Reporting Idea**: Dashboards e relatórios de desempenho segmentados por **Time** (ex: conversão do Time A vs Time B).
 
 ---
 

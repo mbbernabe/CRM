@@ -36,5 +36,27 @@ class UpdateWorkspaceUseCase:
             workspace.invitation_expiry_days = data.invitation_expiry_days
         if data.invitation_message is not None:
             workspace.invitation_message = data.invitation_message
+        if data.smtp_host is not None:
+            workspace.smtp_host = data.smtp_host
+        if data.smtp_port is not None:
+            workspace.smtp_port = data.smtp_port
+        if data.smtp_user is not None:
+            workspace.smtp_user = data.smtp_user
+        if data.smtp_password is not None:
+            workspace.smtp_password = data.smtp_password
+        if data.smtp_sender_email is not None:
+            workspace.smtp_sender_email = data.smtp_sender_email
+        if data.smtp_sender_name is not None:
+            workspace.smtp_sender_name = data.smtp_sender_name
+        if data.smtp_security is not None:
+            workspace.smtp_security = data.smtp_security
+        if data.lead_api_key is not None:
+            workspace.lead_api_key = data.lead_api_key
+        if data.lead_pipeline_id is not None:
+            workspace.lead_pipeline_id = data.lead_pipeline_id
+        if data.lead_stage_id is not None:
+            workspace.lead_stage_id = data.lead_stage_id
+        if data.lead_type_id is not None:
+            workspace.lead_type_id = data.lead_type_id
             
         return self.workspace_repo.save(workspace)

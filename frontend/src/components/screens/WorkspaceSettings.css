@@ -362,3 +362,87 @@
     border-color: var(--hs-blue);
     color: var(--hs-blue);
 }
+
+/* SMTP Specific Styles */
+.section-description {
+    font-size: 14px;
+    color: var(--hs-text-secondary);
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.input-with-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon-wrapper .input-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--hs-text-secondary);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.input-with-icon-wrapper .hs-input {
+    padding-left: 40px;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 640px) {
+    .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* API & Integration Styles */
+.api-key-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .api-key-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.integration-instructions {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.instruction-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    marginBottom: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.code-block {
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 13px;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    margin-top: 10px;
+}
+
+.code-block pre {
+    margin: 0;
+}

@@ -15,11 +15,14 @@ class DeleteWorkItemUseCase:
         self, 
         work_item_id: int, 
         workspace_id: int,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        user_role: str = "admin",
+        user_team_id: Optional[int] = None
     ) -> bool:
-        work_item = self.work_item_repo.get_by_id(work_item_id, workspace_id)
+        team_filter = user_team_id if user_role not in ["admin", "super_admin"] else None
+        work_item = self.work_item_repo.get_by_id(work_item_id, workspace_id, team_id=team_filter)
         if not work_item:
-            raise ValueError("Work item não encontrado ou não pertence a este workspace.")
+            raise ValueError("Work item não encontrado ou você não tem permissão para excluí-lo.")
         
         # Pode ser interessante no futuro fazer soft delete, por ora será hard delete
         success = self.work_item_repo.delete(work_item_id, workspace_id)

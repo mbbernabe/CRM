@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import WorkItemBoard from '../kanban/WorkItemBoard';
 import WorkItemModal from '../kanban/WorkItemModal';
@@ -22,22 +22,26 @@ const PipelineBoardScreenInner = ({ addToast }) => {
   const [deleteConfirmItem, setDeleteConfirmItem] = useState(null);
   const [contextMenu, setContextMenu] = useState({ x: 0, y: 0, item: null, isOpen: false });
 
+  const hasFetchedPipelines = useRef(false);
+
   const fetchPipelines = useCallback(async () => {
+    if (hasFetchedPipelines.current) return;
+    hasFetchedPipelines.current = true;
     try {
       const res = await fetchWithAuth('http://localhost:8000/pipelines/');
       const data = await res.json();
       setPipelines(data);
-      if (data.length > 0 && !selectedPipelineId) {
-        setSelectedPipelineId(data[0].id);
+      if (data.length > 0) {
+        setSelectedPipelineId(prev => prev || data[0].id);
+      } else {
+        setLoading(false);
       }
     } catch (err) {
       console.error("Erro ao buscar pipelines:", err);
       setError("Não foi possível carregar as pipelines.");
-    } finally {
-      // Se não há pipelines, paramos o loading global aqui
-      if (pipelines.length === 0) setLoading(false);
+      setLoading(false);
     }
-  }, [fetchWithAuth, selectedPipelineId, pipelines.length]);
+  }, [fetchWithAuth]);
 
   const fetchBoardData = useCallback(async (pipelineId) => {
     if (!pipelineId) return;
@@ -67,6 +71,32 @@ const PipelineBoardScreenInner = ({ addToast }) => {
   }, [selectedPipelineId, fetchBoardData]);
 
   const handleMoveItem = async (itemId, toStageId) => {
+    // Optimistic update: move o item localmente antes de enviar ao backend
+    const previousBoardData = boardData;
+    setBoardData(prev => {
+      if (!prev || !prev.stages) return prev;
+      let movedItem = null;
+      const newStages = prev.stages.map(stage => {
+        const itemIndex = stage.items.findIndex(item => item.id === itemId);
+        if (itemIndex !== -1) {
+          movedItem = { ...stage.items[itemIndex], stage_id: toStageId };
+          return { ...stage, items: stage.items.filter((_, i) => i !== itemIndex) };
+        }
+        return stage;
+      });
+      if (movedItem) {
+        return {
+          ...prev,
+          stages: newStages.map(stage =>
+            stage.id === toStageId
+              ? { ...stage, items: [...stage.items, movedItem] }
+              : stage
+          )
+        };
+      }
+      return prev;
+    });
+
     try {
       const res = await fetchWithAuth(`http://localhost:8000/workitems/${itemId}/move`, {
         method: 'POST',
@@ -79,12 +109,10 @@ const PipelineBoardScreenInner = ({ addToast }) => {
       }
       
       addToast("Item movido com sucesso!", "success");
-      // Recarregar dados para refletir mudanças e histórico
-      fetchBoardData(selectedPipelineId);
     } catch (err) {
       addToast(err.message, "error");
-      // Reverter estado local ou recarregar
-      fetchBoardData(selectedPipelineId);
+      // Revert: restaura o estado anterior se falhou
+      setBoardData(previousBoardData);
     }
   };
 

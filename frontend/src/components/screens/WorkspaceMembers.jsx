@@ -39,6 +39,8 @@ const WorkspaceMembers = () => {
   const [teamSubmitting, setTeamSubmitting] = useState(false);
   const [teamError, setTeamError] = useState('');
 
+  const [teamFilter, setTeamFilter] = useState('');
+
   const fetchData = useCallback(async () => {
     if (!workspace) return;
     setLoading(true);
@@ -139,6 +141,10 @@ const WorkspaceMembers = () => {
     return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso));
   };
 
+  const filteredMembers = teamFilter 
+    ? members.filter(m => m.team_id === Number(teamFilter))
+    : members;
+
   if (!workspace) return null;
 
   const pendingInvites = invitations.filter(i => i.is_pending);
@@ -167,19 +173,30 @@ const WorkspaceMembers = () => {
         <div className="wm-card">
           <div className="wm-card-header">
             <Users className="wm-header-icon" size={20} />
-            <div>
+            <div className="header-text">
               <h2>Membros Atuais</h2>
               <p>Usuários que fazem parte da área de trabalho.</p>
             </div>
-            <button className="refresh-btn-sm" onClick={fetchData} title="Atualizar">
-              <RefreshCw size={16} className={loading ? 'spin' : ''} />
-            </button>
+            
+            <div className="header-filters">
+              <select 
+                className="hs-input-sm" 
+                value={teamFilter} 
+                onChange={e => setTeamFilter(e.target.value)}
+              >
+                <option value="">Todos os Times</option>
+                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <button className="refresh-btn-sm" onClick={fetchData} title="Atualizar">
+                <RefreshCw size={16} className={loading ? 'spin' : ''} />
+              </button>
+            </div>
           </div>
 
           {loading ? (
             <div className="wm-loading"><RefreshCw size={20} className="spin" /> Carregando...</div>
-          ) : members.length === 0 ? (
-            <div className="wm-empty">Nenhum membro encontrado.</div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="wm-empty">Nenhum membro encontrado {teamFilter ? 'neste time' : ''}.</div>
           ) : (
             <div className="wm-table-wrapper">
               <table className="wm-table">
@@ -187,11 +204,12 @@ const WorkspaceMembers = () => {
                   <tr>
                     <th>Nome</th>
                     <th>E-mail</th>
+                    <th>Equipe</th>
                     <th>Perfil</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map(m => (
+                  {filteredMembers.map(m => (
                     <tr key={m.id}>
                       <td>
                         <div className="member-name-cell">
@@ -200,6 +218,15 @@ const WorkspaceMembers = () => {
                         </div>
                       </td>
                       <td className="email-cell">{m.email}</td>
+                      <td>
+                        {m.team_name ? (
+                          <span className="team-label">
+                            <span className="team-dot-sm"></span> {m.team_name}
+                          </span>
+                        ) : (
+                          <span className="no-team-label">Sem Time</span>
+                        )}
+                      </td>
                       <td><RoleBadge role={m.role} /></td>
                     </tr>
                   ))}
@@ -334,6 +361,7 @@ const WorkspaceMembers = () => {
               <thead>
                 <tr>
                   <th>E-mail</th>
+                  <th>Equipe</th>
                   <th>Perfil</th>
                   <th>Expira em</th>
                   <th>Ação</th>
@@ -343,6 +371,13 @@ const WorkspaceMembers = () => {
                 {pendingInvites.map(inv => (
                   <tr key={inv.id}>
                     <td>{inv.email}</td>
+                    <td>
+                      {inv.team_name ? (
+                        <span className="team-label-sm">{inv.team_name}</span>
+                      ) : (
+                        <span className="no-team-label-sm">Nenhuma</span>
+                      )}
+                    </td>
                     <td><RoleBadge role={inv.role} /></td>
                     <td className="date-cell">{formatDate(inv.expires_at)}</td>
                     <td>

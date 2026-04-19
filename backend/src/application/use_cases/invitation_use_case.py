@@ -65,11 +65,21 @@ class SendInvitationUseCase:
         inviter_name = inviter.name if inviter else "Administrador"
 
         # 5. Build link and send email
-        settings = self.settings_repo.get_all_as_dict()
-        base_url = settings.get("reset_link_base_url", "http://localhost:5173")
+        global_settings = self.settings_repo.get_all_as_dict()
+        base_url = global_settings.get("reset_link_base_url", "http://localhost:5173")
         invite_link = f"{base_url}/accept-invite?token={token}"
 
-        email_service = EmailService(settings)
+        # Combine workspace settings with global defaults
+        email_settings = global_settings.copy()
+        if workspace.smtp_host: email_settings["smtp_host"] = workspace.smtp_host
+        if workspace.smtp_port: email_settings["smtp_port"] = str(workspace.smtp_port)
+        if workspace.smtp_user: email_settings["smtp_user"] = workspace.smtp_user
+        if workspace.smtp_password: email_settings["smtp_password"] = workspace.smtp_password
+        if workspace.smtp_sender_email: email_settings["smtp_from"] = workspace.smtp_sender_email
+        if workspace.smtp_sender_name: email_settings["smtp_sender_name"] = workspace.smtp_sender_name
+        if workspace.smtp_security: email_settings["smtp_security"] = workspace.smtp_security
+
+        email_service = EmailService(email_settings)
         email_service.send_invitation_email(
             to_email=email,
             invite_link=invite_link,

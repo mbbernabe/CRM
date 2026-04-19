@@ -10,3 +10,6 @@ class IWorkspaceRepository(Protocol):
         
     def list_all(self) -> List[Workspace]:
         ...
+        
+    def get_by_api_key(self, api_key: str) -> Optional[Workspace]:
+        ...

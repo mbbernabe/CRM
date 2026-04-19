@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from src.domain.entities.work_item import WorkItem, WorkItemType, CustomFieldDefinition, WorkItemFieldGroup, IWorkItemRepository
 from src.infrastructure.database.models import (
     WorkItemModel, WorkItemTypeModel, WorkItemFieldDefinitionModel, 
@@ -22,6 +22,7 @@ class WorkItemRepository(IWorkItemRepository):
             type_id=model.type_id,
             custom_fields=model.custom_fields or {},
             workspace_id=model.workspace_id,
+            team_id=model.team_id,
             owner_id=model.owner_id,
             created_at=model.created_at,
             updated_at=model.updated_at
@@ -48,6 +49,7 @@ class WorkItemRepository(IWorkItemRepository):
             type_id=work_item.type_id,
             custom_fields=work_item.custom_fields,
             workspace_id=work_item.workspace_id,
+            team_id=work_item.team_id,
             owner_id=work_item.owner_id
         )
         self.db.add(model)
@@ -55,11 +57,15 @@ class WorkItemRepository(IWorkItemRepository):
         self.db.refresh(model)
         return self._to_entity(model)
 
-    def get_by_id(self, id: int, workspace_id: int) -> Optional[WorkItem]:
-        model = self.db.query(WorkItemModel).filter(
+    def get_by_id(self, id: int, workspace_id: int, team_id: Optional[int] = None) -> Optional[WorkItem]:
+        query = self.db.query(WorkItemModel).filter(
             WorkItemModel.id == id, 
             WorkItemModel.workspace_id == workspace_id
-        ).first()
+        )
+        if team_id is not None:
+            query = query.filter(WorkItemModel.team_id == team_id)
+            
+        model = query.first()
         return self._to_entity(model) if model else None
 
     def update(self, work_item: WorkItem) -> WorkItem:
@@ -74,37 +80,50 @@ class WorkItemRepository(IWorkItemRepository):
             model.stage_id = work_item.stage_id
             model.type_id = work_item.type_id
             model.custom_fields = work_item.custom_fields
+            model.team_id = work_item.team_id
             model.owner_id = work_item.owner_id
             self.db.commit()
             self.db.refresh(model)
             return self._to_entity(model)
         return work_item
 
-    def list_by_pipeline(self, pipeline_id: int, workspace_id: int) -> List[WorkItem]:
-        models = self.db.query(WorkItemModel).options(
+    def list_by_pipeline(self, pipeline_id: int, workspace_id: int, team_id: Optional[int] = None) -> List[WorkItem]:
+        query = self.db.query(WorkItemModel).options(
             joinedload(WorkItemModel.owner)
         ).filter(
             WorkItemModel.pipeline_id == pipeline_id,
             WorkItemModel.workspace_id == workspace_id
-        ).all()
+        )
+        if team_id is not None:
+            query = query.filter(WorkItemModel.team_id == team_id)
+            
+        models = query.all()
         return [self._to_entity(m) for m in models]
 
-    def list_by_stage(self, stage_id: int, workspace_id: int) -> List[WorkItem]:
-        models = self.db.query(WorkItemModel).options(
+    def list_by_stage(self, stage_id: int, workspace_id: int, team_id: Optional[int] = None) -> List[WorkItem]:
+        query = self.db.query(WorkItemModel).options(
             joinedload(WorkItemModel.owner)
         ).filter(
             WorkItemModel.stage_id == stage_id,
             WorkItemModel.workspace_id == workspace_id
-        ).all()
+        )
+        if team_id is not None:
+            query = query.filter(WorkItemModel.team_id == team_id)
+            
+        models = query.all()
         return [self._to_entity(m) for m in models]
 
-    def list_by_type(self, type_id: int, workspace_id: int) -> List[WorkItem]:
-        models = self.db.query(WorkItemModel).options(
+    def list_by_type(self, type_id: int, workspace_id: int, team_id: Optional[int] = None) -> List[WorkItem]:
+        query = self.db.query(WorkItemModel).options(
             joinedload(WorkItemModel.owner)
         ).filter(
             WorkItemModel.type_id == type_id,
             WorkItemModel.workspace_id == workspace_id
-        ).all()
+        )
+        if team_id is not None:
+            query = query.filter(WorkItemModel.team_id == team_id)
+            
+        models = query.all()
         return [self._to_entity(m) for m in models]
 
     def delete(self, id: int, workspace_id: int) -> bool:
@@ -117,6 +136,26 @@ class WorkItemRepository(IWorkItemRepository):
             self.db.commit()
             return True
         return False
+
+    def search(self, query: str, workspace_id: int, limit: int = 10, team_id: Optional[int] = None) -> List[WorkItem]:
+        db_query = self.db.query(WorkItemModel).options(
+            joinedload(WorkItemModel.work_item_type)
+        ).filter(
+            WorkItemModel.workspace_id == workspace_id,
+            WorkItemModel.title.ilike(f"%{query}%")
+        )
+        
+        if team_id is not None:
+            db_query = db_query.filter(WorkItemModel.team_id == team_id)
+            
+        models = db_query.limit(limit).all()
+        
+        entities = []
+        for m in models:
+            e = self._to_entity(m)
+            e.type_label = m.work_item_type.label
+            entities.append(e)
+        return entities
 
     def create_type(self, work_item_type: WorkItemType) -> WorkItemType:
         model = WorkItemTypeModel(
@@ -134,7 +173,10 @@ class WorkItemRepository(IWorkItemRepository):
         return work_item_type
 
     def list_types(self, workspace_id: int) -> List[WorkItemType]:
-        models = self.db.query(WorkItemTypeModel).filter(
+        models = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions),
+            selectinload(WorkItemTypeModel.field_groups)
+        ).filter(
             (WorkItemTypeModel.workspace_id == workspace_id) |
             (WorkItemTypeModel.workspace_id == None)
         ).all()
@@ -145,7 +187,10 @@ class WorkItemRepository(IWorkItemRepository):
         return types
 
     def list_system_templates(self, workspace_id: int) -> List[WorkItemType]:
-        models = self.db.query(WorkItemTypeModel).filter(
+        models = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions),
+            selectinload(WorkItemTypeModel.field_groups)
+        ).filter(
             WorkItemTypeModel.workspace_id == None
         ).all()
         
@@ -166,7 +211,10 @@ class WorkItemRepository(IWorkItemRepository):
         logger = logging.getLogger(__name__)
         try:
             # 1. Obter template
-            template_model = self.db.query(WorkItemTypeModel).filter(
+            template_model = self.db.query(WorkItemTypeModel).options(
+                selectinload(WorkItemTypeModel.field_definitions),
+                selectinload(WorkItemTypeModel.field_groups)
+            ).filter(
                 WorkItemTypeModel.id == template_id,
                 WorkItemTypeModel.workspace_id == None
             ).first()
@@ -474,7 +522,10 @@ class WorkItemRepository(IWorkItemRepository):
         return False
 
     def get_type_by_id(self, type_id: int, workspace_id: int) -> Optional[WorkItemType]:
-        m = self.db.query(WorkItemTypeModel).filter(
+        m = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions),
+            selectinload(WorkItemTypeModel.field_groups)
+        ).filter(
             (WorkItemTypeModel.id == type_id) & 
             ((WorkItemTypeModel.workspace_id == workspace_id) | (WorkItemTypeModel.workspace_id == None))
         ).first()
@@ -485,7 +536,9 @@ class WorkItemRepository(IWorkItemRepository):
 
     def list_suggested_fields(self, local_type_id: int, workspace_id: int) -> List[CustomFieldDefinition]:
         # 1. Obter tipo local
-        local_type = self.db.query(WorkItemTypeModel).filter(
+        local_type = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions)
+        ).filter(
             WorkItemTypeModel.id == local_type_id,
             WorkItemTypeModel.workspace_id == workspace_id
         ).first()
@@ -493,7 +546,9 @@ class WorkItemRepository(IWorkItemRepository):
             return []
 
         # 2. Obter template global correspondente (pelo name)
-        template = self.db.query(WorkItemTypeModel).filter(
+        template = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions)
+        ).filter(
             WorkItemTypeModel.workspace_id == None,
             WorkItemTypeModel.name == local_type.name
         ).first()
@@ -575,13 +630,17 @@ class WorkItemRepository(IWorkItemRepository):
         return self._field_model_to_entity(new_field)
 
     def check_for_updates(self, type_id: int, workspace_id: int) -> List[Dict[str, Any]]:
-        local_type = self.db.query(WorkItemTypeModel).filter(
+        local_type = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions)
+        ).filter(
             WorkItemTypeModel.id == type_id,
             WorkItemTypeModel.workspace_id == workspace_id
         ).first()
         if not local_type or not local_type.source_type_id:
             return []
-        source_type = self.db.query(WorkItemTypeModel).filter(
+        source_type = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions)
+        ).filter(
             WorkItemTypeModel.id == local_type.source_type_id
         ).first()
         if not source_type:
@@ -609,13 +668,17 @@ class WorkItemRepository(IWorkItemRepository):
         }
 
     def sync_from_global(self, type_id: int, source_field_ids: List[int], workspace_id: int) -> bool:
-        local_type = self.db.query(WorkItemTypeModel).filter(
+        local_type = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions)
+        ).filter(
             WorkItemTypeModel.id == type_id,
             WorkItemTypeModel.workspace_id == workspace_id
         ).first()
         if not local_type or not local_type.source_type_id:
             return False
-        source_type = self.db.query(WorkItemTypeModel).filter(
+        source_type = self.db.query(WorkItemTypeModel).options(
+            selectinload(WorkItemTypeModel.field_definitions)
+        ).filter(
             WorkItemTypeModel.id == local_type.source_type_id,
             WorkItemTypeModel.workspace_id == None
         ).first()

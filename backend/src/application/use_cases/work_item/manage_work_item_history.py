@@ -8,11 +8,12 @@ class ManageWorkItemHistoryUseCase:
         self.history_repo = history_repo
         self.work_item_repo = work_item_repo
 
-    def get_history(self, work_item_id: int, workspace_id: int) -> List[WorkItemHistoryReadDTO]:
+    def get_history(self, work_item_id: int, workspace_id: int, user_role: str = "admin", user_team_id: Optional[int] = None) -> List[WorkItemHistoryReadDTO]:
         # Validate existence and ownership
-        item = self.work_item_repo.get_by_id(work_item_id, workspace_id)
+        team_filter = user_team_id if user_role not in ["admin", "super_admin"] else None
+        item = self.work_item_repo.get_by_id(work_item_id, workspace_id, team_id=team_filter)
         if not item:
-            raise ValueError(f"WorkItem {work_item_id} not found in this workspace.")
+            raise ValueError(f"WorkItem {work_item_id} não encontrado ou sem permissão de acesso.")
 
         history_entities = self.history_repo.list_by_workitem(work_item_id, workspace_id)
         
@@ -33,10 +34,11 @@ class ManageWorkItemHistoryUseCase:
             ))
         return dtos
 
-    def add_note(self, work_item_id: int, workspace_id: int, user_id: int, notes: str) -> WorkItemHistoryReadDTO:
-        item = self.work_item_repo.get_by_id(work_item_id, workspace_id)
+    def add_note(self, work_item_id: int, workspace_id: int, user_id: int, notes: str, user_role: str = "admin", user_team_id: Optional[int] = None) -> WorkItemHistoryReadDTO:
+        team_filter = user_team_id if user_role not in ["admin", "super_admin"] else None
+        item = self.work_item_repo.get_by_id(work_item_id, workspace_id, team_id=team_filter)
         if not item:
-            raise ValueError(f"WorkItem {work_item_id} not found in this workspace.")
+            raise ValueError(f"WorkItem {work_item_id} não encontrado ou sem permissão para adicionar notas.")
 
         if not notes or not notes.strip():
             raise ValueError("Note content cannot be empty.")

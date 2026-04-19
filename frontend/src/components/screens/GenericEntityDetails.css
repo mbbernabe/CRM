@@ -197,3 +197,21 @@
     font-size: 14px;
     color: #33475b;
 }
+
+/* Fields with Icons */
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon .field-icon {
+    position: absolute;
+    left: 12px;
+    color: #7c98b6;
+    pointer-events: none;
+}
+
+.input-with-icon .hs-input {
+    padding-left: 36px;
+}

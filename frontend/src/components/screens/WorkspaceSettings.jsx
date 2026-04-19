@@ -13,7 +13,15 @@ import {
     Shield,
     Eye,
     Mail,
-    X
+    X,
+    Server,
+    Key,
+    Globe,
+    UserCheck,
+    Code,
+    Cpu,
+    Copy,
+    ExternalLink
 } from 'lucide-react';
 import './WorkspaceSettings.css';
 
@@ -30,10 +38,24 @@ const WorkspaceSettings = () => {
         primary_color: '#0091ae',
         accent_color: '#ff7a59',
         invitation_expiry_days: 7,
-        invitation_message: ''
+        invitation_message: '',
+        smtp_host: '',
+        smtp_port: 587,
+        smtp_user: '',
+        smtp_password: '',
+        smtp_sender_email: '',
+        smtp_sender_name: '',
+        smtp_security: 'STARTTLS',
+        lead_api_key: '',
+        lead_pipeline_id: '',
+        lead_stage_id: '',
+        lead_type_id: ''
     });
     
     const [showPreview, setShowPreview] = useState(false);
+    const [pipelines, setPipelines] = useState([]);
+    const [types, setTypes] = useState([]);
+    const [selectedPipelineStages, setSelectedPipelineStages] = useState([]);
 
     useEffect(() => {
         if (workspace) {
@@ -44,10 +66,49 @@ const WorkspaceSettings = () => {
                 primary_color: workspace.primary_color || '#0091ae',
                 accent_color: workspace.accent_color || '#ff7a59',
                 invitation_expiry_days: workspace.invitation_expiry_days || 7,
-                invitation_message: workspace.invitation_message || ''
+                invitation_message: workspace.invitation_message || '',
+                smtp_host: workspace.smtp_host || '',
+                smtp_port: workspace.smtp_port || 587,
+                smtp_user: workspace.smtp_user || '',
+                smtp_password: workspace.smtp_password || '',
+                smtp_sender_email: workspace.smtp_sender_email || '',
+                smtp_sender_name: workspace.smtp_sender_name || '',
+                smtp_security: workspace.smtp_security || 'STARTTLS',
+                lead_api_key: workspace.lead_api_key || '',
+                lead_pipeline_id: workspace.lead_pipeline_id || '',
+                lead_stage_id: workspace.lead_stage_id || '',
+                lead_type_id: workspace.lead_type_id || ''
             });
         }
     }, [workspace]);
+
+    useEffect(() => {
+        const loadMetadata = async () => {
+            try {
+                const [pipesRes, typesRes] = await Promise.all([
+                    fetchWithAuth('/pipelines/'),
+                    fetchWithAuth('/workitems/types')
+                ]);
+                
+                if (pipesRes.ok) setPipelines(await pipesRes.json());
+                if (typesRes.ok) setTypes(await typesRes.json());
+            } catch (err) {
+                console.error('Erro ao carregar metadados:', err);
+            }
+        };
+        loadMetadata();
+    }, []);
+
+    useEffect(() => {
+        if (formData.lead_pipeline_id) {
+            const pipe = pipelines.find(p => p.id === Number(formData.lead_pipeline_id));
+            if (pipe) {
+                setSelectedPipelineStages(pipe.stages || []);
+            }
+        } else {
+            setSelectedPipelineStages([]);
+        }
+    }, [formData.lead_pipeline_id, pipelines]);
 
     if (!workspace) {
         return (
@@ -83,6 +144,20 @@ const WorkspaceSettings = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleGenerateKey = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let key = 'crm_';
+        for (let i = 0; i < 32; i++) {
+            key += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setFormData({ ...formData, lead_api_key: key });
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        alert('Copiado para a área de transferência!');
     };
 
     const handleReset = async () => {
@@ -263,6 +338,227 @@ const WorkspaceSettings = () => {
                                 Visualizar E-mail de Convite
                             </button>
                         </div>
+                    </section>
+
+                    <section className="form-section">
+                        <div className="section-title">
+                            <Server size={18} />
+                            <h3>Configuração de E-mail (SMTP)</h3>
+                        </div>
+                        <p className="section-description">
+                            Configure o servidor de e-mail da sua empresa para que os convites e notificações sejam enviados com o seu domínio. 
+                            Deixe em branco para usar o servidor padrão do sistema.
+                        </p>
+                        
+                        <div className="hs-form-group">
+                            <label className="hs-label">Servidor SMTP (Host)</label>
+                            <div className="input-with-icon-wrapper">
+                                <Globe size={16} className="input-icon" />
+                                <input 
+                                    type="text" 
+                                    className="hs-input"
+                                    value={formData.smtp_host}
+                                    onChange={(e) => setFormData({...formData, smtp_host: e.target.value})}
+                                    placeholder="smtp.exemplo.com"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-grid-3">
+                            <div className="hs-form-group">
+                                <label className="hs-label">Porta</label>
+                                <input 
+                                    type="number" 
+                                    className="hs-input"
+                                    value={formData.smtp_port}
+                                    onChange={(e) => setFormData({...formData, smtp_port: Number(e.target.value)})}
+                                    placeholder="587"
+                                />
+                            </div>
+                            <div className="hs-form-group">
+                                <label className="hs-label">Segurança</label>
+                                <select 
+                                    className="hs-select"
+                                    value={formData.smtp_security}
+                                    onChange={(e) => setFormData({...formData, smtp_security: e.target.value})}
+                                >
+                                    <option value="STARTTLS">STARTTLS (Recomendado)</option>
+                                    <option value="SSL">SSL/TLS (Porta 465)</option>
+                                    <option value="NONE">Nenhuma</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="color-grid">
+                            <div className="hs-form-group">
+                                <label className="hs-label">Usuário SMTP</label>
+                                <div className="input-with-icon-wrapper">
+                                    <UserCheck size={16} className="input-icon" />
+                                    <input 
+                                        type="text" 
+                                        className="hs-input"
+                                        value={formData.smtp_user}
+                                        onChange={(e) => setFormData({...formData, smtp_user: e.target.value})}
+                                        placeholder="usuario@dominio.com"
+                                    />
+                                </div>
+                            </div>
+                            <div className="hs-form-group">
+                                <label className="hs-label">Senha SMTP</label>
+                                <div className="input-with-icon-wrapper">
+                                    <Key size={16} className="input-icon" />
+                                    <input 
+                                        type="password" 
+                                        className="hs-input"
+                                        value={formData.smtp_password}
+                                        onChange={(e) => setFormData({...formData, smtp_password: e.target.value})}
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="color-grid">
+                            <div className="hs-form-group">
+                                <label className="hs-label">E-mail do Remetente</label>
+                                <div className="input-with-icon-wrapper">
+                                    <Mail size={16} className="input-icon" />
+                                    <input 
+                                        type="email" 
+                                        className="hs-input"
+                                        value={formData.smtp_sender_email}
+                                        onChange={(e) => setFormData({...formData, smtp_sender_email: e.target.value})}
+                                        placeholder="no-reply@suaempresa.com"
+                                    />
+                                </div>
+                            </div>
+                            <div className="hs-form-group">
+                                <label className="hs-label">Nome do Remetente</label>
+                                <input 
+                                    type="text" 
+                                    className="hs-input"
+                                    value={formData.smtp_sender_name}
+                                    onChange={(e) => setFormData({...formData, smtp_sender_name: e.target.value})}
+                                    placeholder="Ex: Equipe de Vendas"
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="form-section">
+                        <div className="section-title">
+                            <Cpu size={18} />
+                            <h3>API de Leads (Integração Externa)</h3>
+                        </div>
+                        <p className="section-description">
+                            Use esta API para receber leads de formulários do seu site, landing pages ou sistemas externos diretamente no seu pipeline.
+                        </p>
+
+                        <div className="hs-form-group">
+                            <label className="hs-label">Chave da API Pública (X-API-Key)</label>
+                            <div className="api-key-wrapper">
+                                <div className="input-with-icon-wrapper" style={{ flex: 1 }}>
+                                    <Key size={16} className="input-icon" />
+                                    <input 
+                                        type="text" 
+                                        className="hs-input"
+                                        value={formData.lead_api_key}
+                                        readOnly
+                                        placeholder="Gere uma chave para começar..."
+                                        style={{ backgroundColor: '#f9fafb', cursor: 'default' }}
+                                    />
+                                </div>
+                                <button 
+                                    type="button" 
+                                    className="hs-button-secondary"
+                                    onClick={handleGenerateKey}
+                                    style={{ whiteSpace: 'nowrap' }}
+                                >
+                                    {formData.lead_api_key ? 'Regerar Chave' : 'Gerar Chave'}
+                                </button>
+                                {formData.lead_api_key && (
+                                    <button 
+                                        type="button" 
+                                        className="hs-button-secondary"
+                                        onClick={() => copyToClipboard(formData.lead_api_key)}
+                                        title="Copiar Chave"
+                                        style={{ padding: '8px' }}
+                                    >
+                                        <Copy size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="hs-form-group">
+                            <label className="hs-label">Destino dos Leads</label>
+                            <div className="form-grid-3">
+                                <div>
+                                    <label className="input-hint">Pipeline</label>
+                                    <select 
+                                        className="hs-select"
+                                        style={{ width: '100%' }}
+                                        value={formData.lead_pipeline_id}
+                                        onChange={(e) => setFormData({...formData, lead_pipeline_id: e.target.value, lead_stage_id: ''})}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="input-hint">Estágio Inicial</label>
+                                    <select 
+                                        className="hs-select"
+                                        style={{ width: '100%' }}
+                                        value={formData.lead_stage_id}
+                                        onChange={(e) => setFormData({...formData, lead_stage_id: e.target.value})}
+                                        disabled={!formData.lead_pipeline_id}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {selectedPipelineStages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="input-hint">Tipo de Objeto</label>
+                                    <select 
+                                        className="hs-select"
+                                        style={{ width: '100%' }}
+                                        value={formData.lead_type_id}
+                                        onChange={(e) => setFormData({...formData, lead_type_id: e.target.value})}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        {types.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {formData.lead_api_key && (
+                            <div className="integration-instructions animate-in">
+                                <div className="instruction-header">
+                                    <Code size={16} />
+                                    <span>Instruções de Integração</span>
+                                </div>
+                                <div className="code-block">
+                                    <pre>
+{`POST http://localhost:8000/public/leads
+Headers:
+  X-API-Key: ${formData.lead_api_key}
+  Content-Type: application/json
+
+Body:
+{
+  "title": "João Silva",
+  "email": "joao@exemplo.com",
+  "message": "Tenho interesse..."
+}`}
+                                    </pre>
+                                </div>
+                                <p className="input-hint" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <ExternalLink size={12} /> Todos os campos extras enviados no JSON serão salvos automaticamente.
+                                </p>
+                            </div>
+                        )}
                     </section>
 
                     <div className="form-actions">

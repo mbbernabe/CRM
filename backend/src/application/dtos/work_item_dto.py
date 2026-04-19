@@ -70,3 +70,15 @@ class WorkItemHistoryReadDTO(BaseModel):
 
 class WorkItemNoteCreateDTO(BaseModel):
     notes: str
+
+class WorkItemLinkReadDTO(BaseModel):
+    id: int
+    title: str
+    type_id: int
+    type_name: str
+    type_label: str
+    type_icon: Optional[str] = None
+    type_color: Optional[str] = None
+
+class WorkItemLinkCreateDTO(BaseModel):
+    target_item_id: int

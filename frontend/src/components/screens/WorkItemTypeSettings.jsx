@@ -295,21 +295,21 @@ const WorkItemTypeSettings = () => {
 
   const checkUpdatesForTypes = async (typesList) => {
     const updates = {};
-    for (const type of typesList) {
-        if (type.source_type_id) {
-            try {
-                const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${type.id}/updates`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.updates_available) {
+    const checks = typesList
+        .filter(t => t.source_type_id)
+        .map(type =>
+            fetchWithAuth(`http://localhost:8000/workitems/types/${type.id}/updates`)
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data && data.updates_available) {
                         updates[type.id] = data;
                     }
-                }
-            } catch (err) {
-                console.error(`Erro ao verificar atualizações para ${type.label}:`, err);
-            }
-        }
-    }
+                })
+                .catch(err => {
+                    console.error(`Erro ao verificar atualizações para ${type.label}:`, err);
+                })
+        );
+    await Promise.all(checks);
     setTypeUpdates(updates);
   };
 

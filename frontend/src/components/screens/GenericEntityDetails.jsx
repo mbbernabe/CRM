@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, User, Mail, Phone, Calendar, 
   ChevronDown, ChevronRight, Save, X, 
-  AlertCircle, GripVertical, Plus, Info
+  AlertCircle, GripVertical, Plus, Info,
+  Mail as MailIcon, Phone as PhoneIcon, MapPin, Hash, DollarSign
 } from 'lucide-react';
+import { formatters } from '../../utils/formatters';
 import './GenericEntityDetails.css';
+
+import DynamicFormField from '../common/DynamicFormField';
 
 const GenericEntityDetails = ({ 
   item, 
@@ -55,58 +59,6 @@ const GenericEntityDetails = ({
     acc[groupId].push(field);
     return acc;
   }, {}) || {};
-
-  const renderFieldInput = (field) => {
-    const value = formData.custom_fields[field.name] || '';
-    
-    switch (field.field_type) {
-      case 'textarea':
-        return (
-          <textarea 
-            className="hs-input" 
-            value={value}
-            onChange={e => handleFieldChange(field.name, e.target.value)}
-            required={field.required}
-            rows={3}
-          />
-        );
-      case 'select':
-        return (
-          <select 
-            className="hs-select" 
-            value={value}
-            onChange={e => handleFieldChange(field.name, e.target.value)}
-            required={field.required}
-          >
-            <option value="">Selecione...</option>
-            {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-        );
-      case 'boolean':
-        return (
-            <label className="hs-toggle">
-                <input 
-                    type="checkbox" 
-                    checked={value === true || value === 'true'}
-                    onChange={e => handleFieldChange(field.name, e.target.checked)}
-                />
-                <span className="toggle-slider"></span>
-                <span className="toggle-label">{value ? 'Sim' : 'Não'}</span>
-            </label>
-        );
-      default:
-        return (
-          <input 
-            type={field.field_type === 'number' ? 'number' : 'text'}
-            className="hs-input"
-            value={value}
-            onChange={e => handleFieldChange(field.name, e.target.value)}
-            required={field.required}
-            placeholder={`Digite ${field.label}...`}
-          />
-        );
-    }
-  };
 
   return (
     <form className="generic-entity-details" onSubmit={handleSubmit}>
@@ -163,13 +115,11 @@ const GenericEntityDetails = ({
               <div className="group-content">
                 <div className="fields-grid">
                   {fieldsByGroup[group.id]?.map(field => (
-                    <div key={field.id} className="hs-form-group">
-                      <label className="hs-label">
-                        {field.label}
-                        {field.required && <span className="required-indicator">*</span>}
-                      </label>
-                      {renderFieldInput(field)}
-                    </div>
+                      <DynamicFormField 
+                        prop={field} 
+                        value={formData.custom_fields[field.name]} 
+                        onChange={handleFieldChange} 
+                      />
                   ))}
                   {(!fieldsByGroup[group.id] || fieldsByGroup[group.id].length === 0) && (
                     <p className="empty-group-text">Nenhum campo neste grupo.</p>
@@ -193,10 +143,12 @@ const GenericEntityDetails = ({
                 <div className="group-content">
                     <div className="fields-grid">
                         {fieldsByGroup['unassigned'].map(field => (
-                            <div key={field.id} className="hs-form-group">
-                                <label className="hs-label">{field.label}</label>
-                                {renderFieldInput(field)}
-                            </div>
+                            <DynamicFormField 
+                                key={field.id}
+                                prop={field} 
+                                value={formData.custom_fields[field.name]} 
+                                onChange={handleFieldChange} 
+                            />
                         ))}
                     </div>
                 </div>

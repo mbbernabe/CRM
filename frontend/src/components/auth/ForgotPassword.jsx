@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, ArrowLeft, Send, CheckCircle } from 'lucide-react';
 import './ForgotPassword.css';
@@ -13,7 +14,7 @@ const ForgotPassword = ({ onBackToLogin }) => {
         e.preventDefault();
         setError('');
         try {
-            const response = await fetch('http://localhost:8000/auth/forgot-password', {
+            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })

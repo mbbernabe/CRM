@@ -14,6 +14,7 @@ class EmailService:
         self.user = smtp_settings.get("smtp_user", "").strip()
         self.password = smtp_settings.get("smtp_password", "").strip()
         self.from_email = smtp_settings.get("smtp_from", "").strip()
+        self.sender_name = smtp_settings.get("smtp_sender_name", "").strip()
         
         # Modo de segurança: 'NONE', 'STARTTLS', 'SSL'
         # Legado: Mapeia smtp_use_tls='True' para 'STARTTLS' se não houver smtp_security
@@ -59,7 +60,13 @@ class EmailService:
         """
         
         msg = MIMEText(body, 'html')
-        msg['From'] = self.from_email or self.user
+        
+        sender_email = self.from_email or self.user
+        if self.sender_name:
+            msg['From'] = f"{self.sender_name} <{sender_email}>"
+        else:
+            msg['From'] = sender_email
+            
         msg['To'] = to_email
         msg['Subject'] = subject
 
@@ -127,7 +134,13 @@ class EmailService:
         """
 
         msg = MIMEMultipart("alternative")
-        msg["From"] = self.from_email or self.user
+        
+        sender_email = self.from_email or self.user
+        if self.sender_name:
+            msg["From"] = f"{self.sender_name} <{sender_email}>"
+        else:
+            msg["From"] = sender_email
+            
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html"))

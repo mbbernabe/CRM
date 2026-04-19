@@ -24,8 +24,15 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
     )
 else:
-    # PostgreSQL (Supabase)
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    # PostgreSQL (Supabase) — Com Connection Pooling otimizado
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_size=5,           # Conexões mantidas abertas permanentemente
+        max_overflow=10,       # Conexões extras permitidas em pico de uso
+        pool_timeout=30,       # Timeout (seg) para obter conexão do pool
+        pool_recycle=1800,     # Reciclar conexões a cada 30 min (evita timeout do Supabase)
+        pool_pre_ping=True,    # Testa conexão antes de usar (evita erros de conn morta)
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config';
 import { CheckCircle2, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import './AcceptInvite.css';
 
@@ -21,7 +22,7 @@ const AcceptInvite = () => {
       setLoadingInfo(false);
       return;
     }
-    fetch(`http://localhost:8000/invitations/validate?token=${token}`)
+    fetch(`${API_BASE_URL}/invitations/validate?token=${token}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Convite inválido.');
@@ -44,7 +45,7 @@ const AcceptInvite = () => {
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8000/invitations/accept', {
+      const res = await fetch(`${API_BASE_URL}/invitations/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, name: formData.name, password: formData.password }),

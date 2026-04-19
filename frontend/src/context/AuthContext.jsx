@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 const AuthContext = createContext(null);
 
@@ -27,7 +28,7 @@ export const AuthProvider = ({ children }) => {
   const refreshWorkspace = async () => {
     if (!user || !user.workspace_id) return;
     try {
-      const res = await fetch(`http://localhost:8000/workspaces/${user.workspace_id}`);
+      const res = await fetch(`${API_BASE_URL}/workspaces/${user.workspace_id}`);
       if (res.ok) {
         const data = await res.json();
         setWorkspace(data);
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -109,7 +110,7 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/auth/forgot-password', {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -125,7 +126,7 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (token, new_password) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/auth/reset-password', {
+      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, new_password })
@@ -167,7 +168,15 @@ export const AuthProvider = ({ children }) => {
       headers['X-User-ID'] = user.id.toString();
     }
 
-    const response = await fetch(url, { ...options, headers });
+    // Auto-prepend base URL if the url is relative or contains the old hardcoded URL
+    let finalUrl = url;
+    if (url.startsWith('http://localhost:8000')) {
+      finalUrl = url.replace('http://localhost:8000', API_BASE_URL);
+    } else if (url.startsWith('/')) {
+      finalUrl = `${API_BASE_URL}${url}`;
+    }
+
+    const response = await fetch(finalUrl, { ...options, headers });
     return response;
   };
 

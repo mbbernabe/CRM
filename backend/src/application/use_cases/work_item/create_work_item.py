@@ -20,7 +20,8 @@ class CreateWorkItemUseCase:
         workspace_id: int,
         description: Optional[str] = None,
         custom_fields: Dict[str, Any] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        team_id: Optional[int] = None
     ) -> WorkItem:
         # Create the work item
         work_item = WorkItem(
@@ -31,6 +32,7 @@ class CreateWorkItemUseCase:
             type_id=type_id,
             custom_fields=custom_fields or {},
             workspace_id=workspace_id,
+            team_id=team_id,
             owner_id=user_id # Default owner is the creator
         )
         

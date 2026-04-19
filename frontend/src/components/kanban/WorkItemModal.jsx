@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { Save, AlertCircle, ChevronDown, Check, X } from 'lucide-react';
 import WorkItemHistoryPanel from './WorkItemHistoryPanel';
+import WorkItemLinksPanel from './WorkItemLinksPanel';
 import { validateEmail, validateCPF, maskCPF, maskPhone, maskCEP, validateCEP } from '../../utils/validation';
 import './WorkItemModal.css';
 
@@ -68,7 +69,7 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
   useEffect(() => {
     if (isOpen) {
       if (!types.length) fetchTypes();
-      fetchUsers();
+      if (!users.length) fetchUsers();
       
       if (initialData) {
         setFormData({
@@ -383,6 +384,7 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
 
         {initialData && (
           <div className="workitem-sidebar">
+             <WorkItemLinksPanel workItemId={initialData.id} addToast={addToast} />
              <WorkItemHistoryPanel workItemId={initialData.id} addToast={addToast} />
           </div>
         )}

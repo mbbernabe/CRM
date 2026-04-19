@@ -1,5 +1,6 @@
-import React from 'react';
-import { TrendingUp, Users, DollarSign, Target } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, Users, DollarSign, Target, RefreshCw, BarChart3, PieChart, Layout } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import './Dashboard.css';
 
 const StatCard = ({ title, value, change, icon, color }) => (
@@ -11,70 +12,237 @@ const StatCard = ({ title, value, change, icon, color }) => (
       </div>
     </div>
     <div className="stat-value">{value}</div>
-    <div className={`stat-change ${change.startsWith('+') ? 'positive' : 'negative'}`}>
-      {change} em relação ao mês passado
-    </div>
+    {change && (
+      <div className={`stat-change ${change.startsWith('+') ? 'positive' : 'negative'}`}>
+        {change} nos últimos 30 dias
+      </div>
+    )}
   </div>
 );
 
 const Dashboard = () => {
+  const { fetchWithAuth } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [pipelines, setPipelines] = useState([]);
+  const [selectedPipelineId, setSelectedPipelineId] = useState('');
+  const [funnelData, setFunnelData] = useState(null);
+  const [loadingFunnel, setLoadingFunnel] = useState(false);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setLoading(true);
+        const [statsRes, pipesRes] = await Promise.all([
+            fetchWithAuth('/analytics/overview'),
+            fetchWithAuth('/pipelines/')
+        ]);
+        
+        if (!statsRes.ok) throw new Error('Falha ao carregar estatísticas');
+        
+        const stats = await statsRes.json();
+        setData(stats);
+
+        if (pipesRes.ok) {
+            const pipes = await pipesRes.json();
+            setPipelines(pipes);
+            if (pipes.length > 0) {
+                setSelectedPipelineId(pipes[0].id);
+            }
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    if (selectedPipelineId) {
+        const loadFunnel = async () => {
+            try {
+                setLoadingFunnel(true);
+                const res = await fetchWithAuth(`/analytics/funnel/${selectedPipelineId}`);
+                if (res.ok) {
+                    setFunnelData(await res.json());
+                }
+            } catch (err) {
+                console.error('Erro ao carregar funil:', err);
+            } finally {
+                setLoadingFunnel(false);
+            }
+        };
+        loadFunnel();
+    }
+  }, [selectedPipelineId]);
+
+  if (loading) {
+    return (
+      <div className="dashboard-container loading-state">
+        <RefreshCw className="spinner" size={32} />
+        <p>Analisando dados do workspace...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="dashboard-container error-state">{error}</div>;
+  }
+
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container animate-in">
       <div className="stats-grid">
         <StatCard 
-          title="Total de Negócios" 
-          value="128" 
-          change="+12%" 
-          icon={<TrendingUp size={18} />} 
+          title="Total de Itens" 
+          value={data?.total_items || 0} 
+          change={`+${data?.new_items_30d || 0}`} 
+          icon={<Layout size={18} />} 
           color="var(--hs-blue)" 
         />
         <StatCard 
-          title="Valor em Pipeline" 
-          value="R$ 450.000" 
-          change="+5.4%" 
-          icon={<DollarSign size={18} />} 
+          title="Novos (30d)" 
+          value={data?.new_items_30d || 0} 
+          change="" 
+          icon={<TrendingUp size={18} />} 
           color="var(--hs-orange)" 
         />
         <StatCard 
-          title="Taxa de Conversão" 
-          value="24.5%" 
-          change="-2.1%" 
-          icon={<Target size={18} />} 
+          title="Responsáveis Ativos" 
+          value={data?.top_owners?.length || 0} 
+          change="" 
+          icon={<Users size={18} />} 
           color="#10b981" 
         />
       </div>
 
+      {/* Pipeline Funnel Section */}
+      <div className="funnel-section mini-card">
+          <div className="funnel-header">
+              <div className="title-with-icon">
+                  <Target size={18} />
+                  <h3>Funil de Vendas</h3>
+              </div>
+              <select 
+                className="hs-select funnel-select"
+                value={selectedPipelineId}
+                onChange={(e) => setSelectedPipelineId(e.target.value)}
+              >
+                  {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+          </div>
+
+          <div className="funnel-visual">
+              {loadingFunnel ? (
+                  <div className="funnel-loading"><RefreshCw className="spinner" size={24} /></div>
+              ) : (
+                  <div className="funnel-bars">
+                      {funnelData?.stages?.map((stage, i) => {
+                          const percentage = funnelData.total_items > 0 
+                            ? (stage.count / funnelData.total_items) * 100 
+                            : 0;
+                          return (
+                            <div key={i} className="funnel-step">
+                                <div className="step-info">
+                                    <span className="step-name">{stage.stage_name}</span>
+                                    <span className="step-count">{stage.count}</span>
+                                </div>
+                                <div className="step-bar-container">
+                                    <div 
+                                        className="step-bar-fill" 
+                                        style={{ 
+                                            width: `${Math.max(percentage, 2)}%`,
+                                            backgroundColor: stage.color || 'var(--hs-blue)',
+                                            opacity: 1 - (i * 0.1) // Efeito visual de funil
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                          );
+                      })}
+                      {(!funnelData?.stages || funnelData.stages.length === 0) && (
+                          <p className="empty-msg">Nenhum estágio configurado para esta pipeline.</p>
+                      )}
+                  </div>
+              )}
+          </div>
+      </div>
+
       <div className="dashboard-content">
-        <div className="chart-placeholder">
+        <div className="chart-placeholder main-chart">
           <div className="chart-header">
-            <h3>Desempenho de Vendas</h3>
+            <div className="title-with-icon">
+                <BarChart3 size={18} />
+                <h3>Crescimento de Itens</h3>
+            </div>
             <span className="chart-subtitle">Últimos 6 meses</span>
           </div>
           <div className="visual-bars">
-            {[40, 65, 45, 90, 75, 85].map((h, i) => (
+            {data?.evolution?.map((item, i) => (
               <div key={i} className="bar-column">
-                <div className="bar" style={{ height: `${h}%` }}></div>
-                <span className="bar-label">{['Set', 'Out', 'Nov', 'Dez', 'Jan', 'Fev'][i]}</span>
+                <div className="bar-wrapper">
+                    <div 
+                        className="bar" 
+                        style={{ height: `${Math.max((item.count / (data.total_items || 1)) * 100, 5)}%` }}
+                        title={`${item.count} itens`}
+                    ></div>
+                </div>
+                <span className="bar-label">{item.month}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="activity-list">
-          <h3>Atividade Recente</h3>
-          {[
-            { user: 'João Silva', action: 'moveu um negócio para', target: 'Proposta Enviada', time: 'Há 2 horas' },
-            { user: 'Maria Souza', action: 'criou um novo contato', target: 'Carlos Oliveira', time: 'Há 5 horas' },
-            { user: 'Roberto Alves', action: 'fechou um negócio com', target: 'Initech', time: 'Há 1 dia' },
-          ].map((act, i) => (
-            <div key={i} className="activity-item">
-              <div className="activity-avatar">{act.user[0]}</div>
-              <div className="activity-info">
-                <p><strong>{act.user}</strong> {act.action} <strong>{act.target}</strong></p>
-                <span className="activity-time">{act.time}</span>
-              </div>
+        <div className="side-panels">
+            <div className="activity-list mini-card">
+                <div className="card-title">
+                    <PieChart size={18} />
+                    <h3>Distribuição</h3>
+                </div>
+                <div className="distribution-list">
+                    {data?.type_distribution?.map((type, i) => (
+                        <div key={i} className="dist-item">
+                            <span className="dist-label">{type.label}</span>
+                            <div className="dist-bar-bg">
+                                <div 
+                                    className="dist-bar-fill" 
+                                    style={{ 
+                                        width: `${(type.count / (data.total_items || 1)) * 100}%`,
+                                        backgroundColor: i === 0 ? 'var(--hs-blue)' : i === 1 ? 'var(--hs-orange)' : '#10b981'
+                                    }}
+                                ></div>
+                            </div>
+                            <span className="dist-count">{type.count}</span>
+                        </div>
+                    ))}
+                    {(!data?.type_distribution || data.type_distribution.length === 0) && (
+                        <p className="empty-msg">Nenhum dado disponível.</p>
+                    )}
+                </div>
             </div>
-          ))}
+
+            <div className="activity-list mini-card">
+                <div className="card-title">
+                    <Users size={18} />
+                    <h3>Performance (Top 5)</h3>
+                </div>
+                <div className="owners-ranking">
+                    {data?.top_owners?.map((owner, i) => (
+                        <div key={i} className="activity-item">
+                            <div className="activity-avatar">{owner.name[0]}</div>
+                            <div className="activity-info">
+                                <p><strong>{owner.name}</strong></p>
+                                <span className="activity-time">{owner.count} itens atribuídos</span>
+                            </div>
+                        </div>
+                    ))}
+                    {(!data?.top_owners || data.top_owners.length === 0) && (
+                        <p className="empty-msg">Nenhum responsável atribuído.</p>
+                    )}
+                </div>
+            </div>
         </div>
       </div>
     </div>

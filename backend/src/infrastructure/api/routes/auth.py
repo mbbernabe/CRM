@@ -68,8 +68,9 @@ class ResetPasswordDTO(BaseModel):
 def forgot_password(dto: ForgotPasswordDTO, db: Session = Depends(get_db)):
     user_repo = SqlAlchemyUserRepository(db)
     settings_repo = SqlAlchemySettingsRepository(db)
+    workspace_repo = SqlAlchemyWorkspaceRepository(db)
     try:
-        success = RequestPasswordResetUseCase(user_repo, settings_repo).execute(dto.email)
+        success = RequestPasswordResetUseCase(user_repo, settings_repo, workspace_repo).execute(dto.email)
         if not success:
             # Identificamos falha técnica (SMTP), logamos e mostramos mensagem amigável
             logger.error(f"Falha técnica no envio de e-mail para {dto.email}. Verifique as configurações de SMTP.")

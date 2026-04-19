@@ -64,6 +64,7 @@ class WorkItem:
     type_id: int = 0
     custom_fields: Dict[str, Any] = field(default_factory=dict)
     workspace_id: Optional[int] = None
+    team_id: Optional[int] = None
     owner_id: Optional[int] = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
@@ -78,19 +79,26 @@ class IWorkItemRepository:
     def create(self, work_item: WorkItem) -> WorkItem:
         raise NotImplementedError
 
-    def get_by_id(self, id: int, workspace_id: int) -> Optional[WorkItem]:
+    def get_by_id(self, id: int, workspace_id: int, team_id: Optional[int] = None) -> Optional[WorkItem]:
         raise NotImplementedError
 
     def update(self, work_item: WorkItem) -> WorkItem:
         raise NotImplementedError
 
-    def list_by_pipeline(self, pipeline_id: int, workspace_id: int) -> List[WorkItem]:
+    def list_by_pipeline(self, pipeline_id: int, workspace_id: int, team_id: Optional[int] = None) -> List[WorkItem]:
         raise NotImplementedError
 
-    def list_by_stage(self, stage_id: int, workspace_id: int) -> List[WorkItem]:
+    def list_by_stage(self, stage_id: int, workspace_id: int, team_id: Optional[int] = None) -> List[WorkItem]:
+        raise NotImplementedError
+
+    def list_by_type(self, type_id: int, workspace_id: int, team_id: Optional[int] = None) -> List[WorkItem]:
         raise NotImplementedError
 
     def delete(self, id: int, workspace_id: int) -> bool:
+        raise NotImplementedError
+
+    def search(self, query: str, workspace_id: int, limit: int = 10, team_id: Optional[int] = None) -> List[WorkItem]:
+        """Busca itens pelo título no workspace, opcionalmente filtrando por time."""
         raise NotImplementedError
 
     def create_type(self, work_item_type: WorkItemType) -> WorkItemType:

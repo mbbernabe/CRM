@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, UniqueConstraint, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, UniqueConstraint, JSON, Index
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 class BaseModel(DeclarativeBase):
@@ -17,6 +17,19 @@ class WorkspaceModel(BaseModel):
     created_at = Column(DateTime, default=datetime.utcnow)
     invitation_expiry_days = Column(Integer, default=7)
     invitation_message = Column(Text, nullable=True)
+    smtp_host = Column(String, nullable=True)
+    smtp_port = Column(Integer, nullable=True)
+    smtp_user = Column(String, nullable=True)
+    smtp_password = Column(String, nullable=True)
+    smtp_sender_email = Column(String, nullable=True)
+    smtp_sender_name = Column(String, nullable=True)
+    smtp_security = Column(String, default="STARTTLS")
+    
+    # RF019: API Pública para Leads
+    lead_api_key = Column(String, unique=True, index=True, nullable=True)
+    lead_pipeline_id = Column(Integer, ForeignKey("pipelines.id"), nullable=True)
+    lead_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True)
+    lead_type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=True)
 
     teams = relationship("TeamModel", back_populates="workspace")
     users = relationship("UserModel", back_populates="workspace")
@@ -27,7 +40,7 @@ class TeamModel(BaseModel):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     workspace = relationship("WorkspaceModel", back_populates="teams")
@@ -41,7 +54,7 @@ class UserModel(BaseModel):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False) # Armazenada em texto plano inicialmente (conforme plano)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     role = Column(String, default="user")
     reset_password_token = Column(String, nullable=True, index=True)
     reset_password_expires = Column(DateTime, nullable=True)
@@ -54,13 +67,15 @@ class UserModel(BaseModel):
 
 class PipelineModel(BaseModel):
     __tablename__ = "pipelines"
-    __table_args__ = (UniqueConstraint('workspace_id', 'type_id', 'name', name='_workspace_pipeline_uc'),)
+    __table_args__ = (
+        UniqueConstraint('workspace_id', 'type_id', 'name', name='_workspace_pipeline_uc'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False, default=1) # Reference to WorkItemTypeModel.id
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     stages = relationship("PipelineStageModel", back_populates="pipeline", order_by="PipelineStageModel.order", cascade="all, delete-orphan")
@@ -80,27 +95,31 @@ class PipelineStageModel(BaseModel):
 
 class WorkItemFieldGroupModel(BaseModel):
     __tablename__ = "work_item_field_groups"
-    __table_args__ = (UniqueConstraint('type_id', 'name', name='_type_group_uc'),)
+    __table_args__ = (
+        UniqueConstraint('type_id', 'name', name='_type_group_uc'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
     name = Column(String, nullable=False)
     order = Column(Integer, default=0)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True, index=True)
 
     work_item_type = relationship("WorkItemTypeModel", back_populates="field_groups")
     field_definitions = relationship("WorkItemFieldDefinitionModel", back_populates="group")
 
 class WorkItemTypeModel(BaseModel):
     __tablename__ = "work_item_types"
-    __table_args__ = (UniqueConstraint('workspace_id', 'name', name='_workspace_item_type_uc'),)
+    __table_args__ = (
+        UniqueConstraint('workspace_id', 'name', name='_workspace_item_type_uc'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False) # slug
     label = Column(String, nullable=False) # display
     icon = Column(String, nullable=True)
     color = Column(String, nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True, index=True)
     is_system = Column(Boolean, default=False)
     source_type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=True)
 
@@ -109,7 +128,9 @@ class WorkItemTypeModel(BaseModel):
 
 class WorkItemFieldDefinitionModel(BaseModel):
     __tablename__ = "work_item_field_definitions"
-    __table_args__ = (UniqueConstraint('type_id', 'name', name='_type_field_uc'),)
+    __table_args__ = (
+        UniqueConstraint('type_id', 'name', name='_type_field_uc'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
@@ -128,6 +149,11 @@ class WorkItemFieldDefinitionModel(BaseModel):
 
 class WorkItemModel(BaseModel):
     __tablename__ = "work_items"
+    __table_args__ = (
+        Index('ix_work_items_workspace_pipeline', 'workspace_id', 'pipeline_id'),
+        Index('ix_work_items_workspace_type', 'workspace_id', 'type_id'),
+        Index('ix_work_items_workspace_stage', 'workspace_id', 'stage_id'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
@@ -136,7 +162,8 @@ class WorkItemModel(BaseModel):
     stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=False)
     type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=False)
     custom_fields = Column(JSON, nullable=True) # Central store for dynamic fields
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Responsibility owner
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -145,9 +172,13 @@ class WorkItemModel(BaseModel):
     stage = relationship("PipelineStageModel")
     work_item_type = relationship("WorkItemTypeModel")
     owner = relationship("UserModel")
+    team = relationship("TeamModel")
 
 class WorkItemHistoryModel(BaseModel):
     __tablename__ = "work_item_history"
+    __table_args__ = (
+        Index('ix_history_workitem_workspace', 'work_item_id', 'workspace_id'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     work_item_id = Column(Integer, ForeignKey("work_items.id"), nullable=False)
@@ -155,7 +186,7 @@ class WorkItemHistoryModel(BaseModel):
     to_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=False)
     changed_at = Column(DateTime, default=datetime.utcnow)
     changed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     notes = Column(Text, nullable=True)
 
 class WorkspaceInvitationModel(BaseModel):
@@ -164,7 +195,7 @@ class WorkspaceInvitationModel(BaseModel):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, nullable=False, index=True)
     token = Column(String, unique=True, index=True, nullable=False)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     role = Column(String, default="user")
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     invited_by = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -184,3 +215,21 @@ class SystemSettingsModel(BaseModel):
     description = Column(String, nullable=True)
     is_encrypted = Column(Boolean, default=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class WorkItemLinkModel(BaseModel):
+    __tablename__ = "work_item_links"
+    __table_args__ = (
+        UniqueConstraint('workspace_id', 'source_item_id', 'target_item_id', name='_workspace_link_uc'),
+        Index('ix_links_source_workspace', 'source_item_id', 'workspace_id'),
+        Index('ix_links_target_workspace', 'target_item_id', 'workspace_id'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
+    source_item_id = Column(Integer, ForeignKey("work_items.id"), nullable=False)
+    target_item_id = Column(Integer, ForeignKey("work_items.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    source_item = relationship("WorkItemModel", foreign_keys=[source_item_id])
+    target_item = relationship("WorkItemModel", foreign_keys=[target_item_id])
+

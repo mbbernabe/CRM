@@ -11,17 +11,20 @@ class GetPipelineBoardUseCase:
         self.work_item_repo = work_item_repo
         self.pipeline_repo = pipeline_repo
 
-    def execute(self, pipeline_id: int, workspace_id: int) -> Dict[str, Any]:
+    def execute(self, pipeline_id: int, workspace_id: int, user_role: str = "admin", user_team_id: Optional[int] = None) -> Dict[str, Any]:
         # 1. Fetch Pipeline Structure
         pipeline = self.pipeline_repo.get_by_id(pipeline_id, workspace_id)
         if not pipeline:
             raise ValueError("Pipeline não encontrado.")
 
-        # 2. Fetch WorkItems for this pipeline
-        work_items = self.work_item_repo.list_by_pipeline(pipeline_id, workspace_id)
+        # 2. Visibilidade por Time (RF010)
+        # Regra: Admins veem tudo. Usuários comuns veem apenas o que pertence ao seu time.
+        team_filter = user_team_id if user_role not in ["admin", "super_admin"] else None
         
-        # 3. Aggregation Logic: Groups items by stage
-        # In a real environment, we would also fetch WorkItemType labels for the UI
+        # 3. Fetch WorkItems for this pipeline
+        work_items = self.work_item_repo.list_by_pipeline(pipeline_id, workspace_id, team_id=team_filter)
+        
+        # 4. Aggregation Logic: Groups items by stage
         types = self.work_item_repo.list_types(workspace_id)
         type_map = {t.id: t for t in types}
 

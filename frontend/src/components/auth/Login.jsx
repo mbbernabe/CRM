@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import { LogIn, AlertCircle } from 'lucide-react';
 import './Login.css';
@@ -44,7 +45,7 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
 
     // Nenhuma credencial funcionou — banco vazio, criar o primeiro superadmin
     try {
-      const registerRes = await fetch('http://localhost:8000/auth/register', {
+      const registerRes = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

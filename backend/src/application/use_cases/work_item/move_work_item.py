@@ -20,12 +20,15 @@ class MoveWorkItemUseCase:
         to_stage_id: int, 
         workspace_id: int,
         user_id: Optional[int] = None,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
+        user_role: str = "admin",
+        user_team_id: Optional[int] = None
     ) -> WorkItem:
-        # 1. Fetch current item
-        item = self.work_item_repo.get_by_id(workitem_id, workspace_id)
+        # 1. Fetch current item with team filter
+        team_filter = user_team_id if user_role not in ["admin", "super_admin"] else None
+        item = self.work_item_repo.get_by_id(workitem_id, workspace_id, team_id=team_filter)
         if not item:
-            raise ValueError("WorkItem não encontrado.")
+            raise ValueError("WorkItem não encontrado ou você não tem permissão para movê-lo.")
 
         if item.stage_id == to_stage_id:
             return item # No move needed
