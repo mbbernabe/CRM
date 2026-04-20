@@ -16,6 +16,13 @@ def list_pipelines(db: Session = Depends(get_db), workspace_id: int = Depends(ge
     use_case = PipelineUseCases(repository)
     return use_case.list_pipelines(workspace_id)
 
+# IMPORTANTE: Esta rota deve vir ANTES de /{pipeline_id} para evitar conflito de path params
+@router.get("/templates", response_model=List[PipelineReadDTO])
+def list_pipeline_templates(source_type_id: int, db: Session = Depends(get_db)):
+    repository = SqlAlchemyPipelineRepository(db)
+    use_case = PipelineUseCases(repository)
+    return use_case.list_templates(source_type_id)
+
 @router.get("/{pipeline_id}", response_model=PipelineReadDTO)
 def get_pipeline(pipeline_id: int, db: Session = Depends(get_db), workspace_id: int = Depends(get_workspace_id)):
     repository = SqlAlchemyPipelineRepository(db)
@@ -24,12 +31,6 @@ def get_pipeline(pipeline_id: int, db: Session = Depends(get_db), workspace_id: 
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline não encontrada")
     return pipeline
-
-@router.get("/templates", response_model=List[PipelineReadDTO])
-def list_pipeline_templates(source_type_id: int, db: Session = Depends(get_db)):
-    repository = SqlAlchemyPipelineRepository(db)
-    use_case = PipelineUseCases(repository)
-    return use_case.list_templates(source_type_id)
 
 @router.post("/import", response_model=PipelineReadDTO)
 def import_pipeline(dto: PipelineImportDTO, db: Session = Depends(get_db), workspace_id: int = Depends(get_workspace_id)):
@@ -77,11 +78,23 @@ def update_pipeline(
     pipeline_id: int, 
     dto: PipelineUpdateDTO, 
     db: Session = Depends(get_db), 
-    workspace_id: Optional[int] = Depends(get_workspace_id_optional)
+    workspace_id_header: Optional[int] = Depends(get_workspace_id_optional),
+    role: str = Depends(get_current_user_role)
 ):
+    from src.infrastructure.database.models import PipelineModel
+    pipeline_record = db.query(PipelineModel).filter(PipelineModel.id == pipeline_id).first()
+    if not pipeline_record:
+        raise HTTPException(status_code=404, detail="Pipeline não encontrada")
+        
+    final_workspace_id = workspace_id_header
+    if pipeline_record.workspace_id is None:
+        if role != "superadmin":
+            raise HTTPException(status_code=403, detail="Sem permissão")
+        final_workspace_id = None
+
     repository = SqlAlchemyPipelineRepository(db)
     use_case = PipelineUseCases(repository)
-    success = use_case.update_pipeline(pipeline_id, dto, workspace_id)
+    success = use_case.update_pipeline(pipeline_id, dto, final_workspace_id)
     if not success:
         raise HTTPException(status_code=404, detail="Pipeline não encontrada")
     return {"message": "Pipeline atualizada com sucesso"}
@@ -90,11 +103,23 @@ def update_pipeline(
 def delete_pipeline(
     pipeline_id: int, 
     db: Session = Depends(get_db), 
-    workspace_id: Optional[int] = Depends(get_workspace_id_optional)
+    workspace_id_header: Optional[int] = Depends(get_workspace_id_optional),
+    role: str = Depends(get_current_user_role)
 ):
+    from src.infrastructure.database.models import PipelineModel
+    pipeline_record = db.query(PipelineModel).filter(PipelineModel.id == pipeline_id).first()
+    if not pipeline_record:
+        raise HTTPException(status_code=404, detail="Pipeline não encontrada")
+
+    final_workspace_id = workspace_id_header
+    if pipeline_record.workspace_id is None:
+        if role != "superadmin":
+            raise HTTPException(status_code=403, detail="Sem permissão")
+        final_workspace_id = None
+
     repository = SqlAlchemyPipelineRepository(db)
     use_case = PipelineUseCases(repository)
-    success = use_case.delete_pipeline(pipeline_id, workspace_id)
+    success = use_case.delete_pipeline(pipeline_id, final_workspace_id)
     if not success:
         raise HTTPException(status_code=404, detail="Pipeline não encontrada")
     return None

@@ -1,0 +1,31 @@
+label,name,type,group
+Nome do Negócio,nome_negocio,text,Informações do Negócio
+Valor Estimado,valor_estimado,currency,Informações do Negócio
+Moeda,moeda,select,Informações do Negócio
+Probabilidade de Fechamento (%),probabilidade,number,Informações do Negócio
+Data de Fechamento Esperada,data_fechamento_esperada,date,Informações do Negócio
+Etapa do Funil (Atual),etapa_funil,select,Informações do Negócio
+Fonte de Origem,fonte_origem,select,Marketing & Vendas
+Campanha Relacionada,campanha_id,text,Marketing & Vendas
+Vendedor Responsável,vendedor,text,Marketing & Vendas
+Equipe Comercial,equipe_comercial,select,Marketing & Vendas
+Tipo de Negócio (Novo/Base),tipo_negocio,select,Marketing & Vendas
+Motivo da Perda,motivo_perda,textarea,Análise de Perda
+Concorrente Principal,concorrente_principal,text,Análise de Perda
+Data da Perda,data_perda,date,Análise de Perda
+Próximo Passo,proximo_passo,text,Acompanhamento
+Última Interação,ultima_interacao,date,Acompanhamento
+Número de Contatos Realizados,contatos_realizados,number,Acompanhamento
+Potencial de Expansão,potencial_expansao,currency,Análise Financeira
+Custo de Aquisição (CAC),cac_estimado,currency,Análise Financeira
+Margem Estimada,margem_estimada,number,Análise Financeira
+Condição de Faturamento,condicao_faturamento,select,Análise Financeira
+Necessidades do Cliente,necessidades_cliente,textarea,Qualificação
+Pontos de Dor (Pain Points),pain_points,multiselect,Qualificação
+Decisor Identificado,decisor_identificado,boolean,Qualificação
+BANT: Orçamento Disponível,bant_budget,boolean,Qualificação
+BANT: Autoridade Confirmada,bant_authority,boolean,Qualificação
+BANT: Necessidade Clara,bant_need,boolean,Qualificação
+BANT: Cronograma Definido,bant_timeline,boolean,Qualificação
+Link da Proposta (PDF),link_proposta,text,Documentação
+Observações do Negócio,observacoes,textarea,Documentação

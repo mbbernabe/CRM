@@ -1053,3 +1053,82 @@ th.active-sort .sort-icon {
     margin-top: 8px;
     font-size: 14px;
 }
+.table-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Column Picker */
+.column-picker-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.column-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+}
+
+.column-picker-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: white;
+    border: 1px solid var(--hs-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 101;
+    min-width: 200px;
+    padding: 12px;
+}
+
+.picker-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--hs-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--hs-border-light);
+}
+
+.picker-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.column-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--hs-text-secondary);
+    padding: 4px 0;
+}
+
+.column-picker-item:hover {
+    color: var(--hs-blue);
+}
+
+.column-picker-item input {
+    cursor: pointer;
+}
+
+.animate-in {
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

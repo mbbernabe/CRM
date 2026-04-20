@@ -66,7 +66,7 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
 
   return (
     <div ref={setNodeRef} style={style} className={`field-row ${isDragging ? 'dragging' : ''}`}>
-      <div className="drag-handle" {...attributes} {...listeners}>
+      <div className="drag-handle" {...attributes} {...listeners} title="Arraste para reordenar este campo">
         <GripVertical size={14} />
       </div>
       
@@ -132,7 +132,7 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
         </div>
       </div>
 
-      <button type="button" className="field-remove" onClick={onRemove}>
+      <button type="button" className="field-remove" onClick={onRemove} title="Remover este campo">
         <X size={16} />
       </button>
     </div>
@@ -160,7 +160,7 @@ const SortableGroupPanel = ({ id, group, fields, onAddField, onRemoveGroup, onGr
     <div ref={setNodeRef} style={style} className={`group-panel ${isDragging ? 'dragging' : ''} ${!isExpanded ? 'collapsed' : ''}`}>
       <div className="group-panel-header">
         <div className="group-header-left">
-          <div className="group-drag-handle" {...attributes} {...listeners}>
+          <div className="group-drag-handle" {...attributes} {...listeners} title="Arraste para reordenar este grupo">
             <GripVertical size={16} />
           </div>
           <button 
@@ -320,6 +320,8 @@ const WorkItemTypeSettings = () => {
     actions: 80
   });
   const [isResizing, setIsResizing] = useState(null);
+  const [visibleColumns, setVisibleColumns] = useState(['label', 'field_type', 'group', 'required', 'actions']);
+  const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -564,10 +566,16 @@ const WorkItemTypeSettings = () => {
     // Filtro
     if (tableSearch) {
         const search = tableSearch.toLowerCase();
-        result = result.filter(f => 
-            f.label.toLowerCase().includes(search) || 
-            f.name.toLowerCase().includes(search)
-        );
+        result = result.filter(f => {
+            const groupName = formData.field_groups.find(g => g.id === f.group_id)?.name || 'Geral';
+            const optionsStr = Array.isArray(f.options) ? f.options.join(' ') : (f.options || '');
+            
+            return f.label.toLowerCase().includes(search) || 
+                   f.name.toLowerCase().includes(search) ||
+                   f.field_type.toLowerCase().includes(search) ||
+                   groupName.toLowerCase().includes(search) ||
+                   optionsStr.toLowerCase().includes(search);
+        });
     }
 
     // Ordenação
@@ -1070,135 +1078,183 @@ const WorkItemTypeSettings = () => {
                    </SortableContext>
                  </DndContext>
                </div>
-                </div>
+              </div>
               )}
-
               {activeModalTab === 'table' && (
-                <div className="form-section field-table-view animate-in">
-                    <div className="table-toolbar">
-                        <div className="table-toolbar-left">
-                            <div className="table-search-wrapper">
-                                <Search size={16} className="table-search-icon" />
-                                <input 
-                                    type="text" 
-                                    className="table-search-input" 
-                                    placeholder="Buscar campos por nome ou ID..."
-                                    value={tableSearch}
-                                    onChange={e => setTableSearch(e.target.value)}
-                                />
-                            </div>
-                            
-                            {selectedIndices.length > 0 && (
-                                <div className="table-bulk-actions">
-                                    <span className="bulk-actions-label">{selectedIndices.length} selecionados</span>
-                                    <button 
-                                        type="button" 
-                                        className="hs-button-danger hs-button-sm"
-                                        onClick={handleBulkDelete}
-                                    >
-                                        <Trash2 size={14} /> Excluir em Lote
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                        <div className="section-actions">
-                            <button type="button" className="hs-button-link" onClick={() => setIsFieldImportModalOpen(true)}>
-                                <Download size={14} /> Importar CSV
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="table-vessel hs-scroll-x">
-                        <table className="hs-table-lite" style={{ tableLayout: 'fixed', width: 'auto', minWidth: '100%' }}>
-                            <thead>
-                                <tr>
-                                    <th className="col-checkbox" style={{ width: columnWidths.checkbox }}>
-                                        <input 
-                                            type="checkbox" 
-                                            onChange={toggleSelectAll}
-                                            checked={filteredAndSortedFields.length > 0 && filteredAndSortedFields.every(f => selectedIndices.includes(f.originalIndex))}
-                                        />
-                                    </th>
-                                    {[
-                                        { key: 'label', label: 'Rótulo (Label)' },
-                                        { key: 'name', label: 'Nome Interno' },
-                                        { key: 'field_type', label: 'Tipo' },
-                                        { key: 'group', label: 'Grupo' },
-                                        { key: 'required', label: 'Obrigatório' },
-                                        { key: 'actions', label: 'Ações', sortable: false }
-                                    ].map((col) => (
-                                        <th 
-                                            key={col.key}
-                                            className={`${col.sortable !== false ? 'sortable' : ''} ${tableSort.key === col.key ? 'active-sort' : ''}`}
-                                            style={{ width: columnWidths[col.key] }}
-                                            onClick={() => col.sortable !== false && handleSortTable(col.key)}
-                                        >
-                                            <div className="header-content">
-                                                {col.label}
-                                                {col.sortable !== false && (
-                                                    <span className="sort-icon">
-                                                        {tableSort.key === col.key ? (
-                                                            tableSort.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                                                        ) : <ArrowUpDown size={14} />}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div 
-                                                className={`resizer ${isResizing?.column === col.key ? 'resizing' : ''}`} 
-                                                onMouseDown={(e) => startResize(e, col.key)}
-                                                onClick={e => e.stopPropagation()}
-                                            />
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredAndSortedFields.map((field) => (
-                                    <tr key={field.originalIndex} className={selectedIndices.includes(field.originalIndex) ? 'row-selected' : ''}>
-                                        <td className="col-checkbox">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={selectedIndices.includes(field.originalIndex)}
-                                                onChange={() => toggleSelectField(field.originalIndex)}
-                                            />
-                                        </td>
-                                        <td>
-                                            <input 
-                                                type="text" className="hs-input-compact" 
-                                                value={field.label} 
-                                                onChange={e => handleFieldChange(field.originalIndex, 'label', e.target.value)}
-                                            />
-                                        </td>
-                                        <td><code>{field.name}</code></td>
-                                        <td>{field.field_type}</td>
-                                        <td>{formData.field_groups.find(g => g.id === field.group_id)?.name || 'Geral'}</td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={field.required} 
-                                                onChange={e => handleFieldChange(field.originalIndex, 'required', e.target.checked)}
-                                            />
-                                        </td>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <button type="button" className="icon-button danger" onClick={() => handleRemoveField(field.originalIndex)}>
-                                                <X size={14} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredAndSortedFields.length === 0 && (
-                                    <tr>
-                                        <td colSpan="7" className="empty-filter-results">
-                                            <Search size={32} opacity={0.2} />
-                                            <p>Nenhum campo encontrado para "{tableSearch}"</p>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="field-table-container">
+                 <div className="form-section field-table-view animate-in">
+                     <div className="table-toolbar">
+                         <div className="table-toolbar-left">
+                             <div className="table-search-wrapper" title="Busca por Rótulo, Nome Interno, Tipo, Grupo e Opções">
+                                 <Search size={16} className="table-search-icon" />
+                                 <input 
+                                     type="text" 
+                                     className="table-search-input" 
+                                     placeholder="Buscar campos..."
+                                     value={tableSearch}
+                                     onChange={e => setTableSearch(e.target.value)}
+                                 />
+                             </div>
+                             
+                             {selectedIndices.length > 0 && (
+                                 <div className="table-bulk-actions">
+                                     <span className="bulk-actions-label">{selectedIndices.length} selecionados</span>
+                                     <button 
+                                         type="button" 
+                                         className="hs-button-danger hs-button-sm"
+                                         onClick={handleBulkDelete}
+                                         title="Excluir todos os campos selecionados"
+                                     >
+                                         <Trash2 size={14} /> Excluir em Lote
+                                     </button>
+                                 </div>
+                             )}
+                         </div>
+ 
+                         <div className="column-picker-wrapper">
+                             <button 
+                                 type="button" 
+                                 className="hs-button-secondary hs-button-sm"
+                                 onClick={() => setIsColumnPickerOpen(!isColumnPickerOpen)}
+                                 title="Escolher colunas exibidas"
+                             >
+                                 <Settings2 size={14} /> Colunas
+                             </button>
+                             {isColumnPickerOpen && (
+                                 <>
+                                     <div className="column-picker-overlay" onClick={() => setIsColumnPickerOpen(false)} />
+                                     <div className="column-picker-dropdown animate-in">
+                                         <div className="picker-header">Colunas da Tabela</div>
+                                         <div className="picker-options">
+                                             {[
+                                                 { key: 'label', label: 'Rótulo (Label)' },
+                                                 { key: 'name', label: 'Nome Interno' },
+                                                 { key: 'field_type', label: 'Tipo' },
+                                                 { key: 'group', label: 'Grupo' },
+                                                 { key: 'required', label: 'Obrigatório' }
+                                             ].map(col => (
+                                                 <label key={col.key} className="column-picker-item">
+                                                     <input 
+                                                         type="checkbox" 
+                                                         checked={visibleColumns.includes(col.key)}
+                                                         onChange={e => {
+                                                             if (e.target.checked) setVisibleColumns([...visibleColumns, col.key]);
+                                                             else setVisibleColumns(visibleColumns.filter(c => c !== col.key));
+                                                         }}
+                                                     />
+                                                     <span>{col.label}</span>
+                                                 </label>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 </>
+                             )}
+                         </div>
+                         <div className="section-actions">
+                             <button type="button" className="hs-button-link" onClick={() => setIsFieldImportModalOpen(true)}>
+                                 <Download size={14} /> Importar CSV
+                             </button>
+                         </div>
+                     </div>
+ 
+                     <div className="table-vessel hs-scroll-x">
+                         <table className="hs-table-lite" style={{ tableLayout: 'fixed', width: 'auto', minWidth: '100%' }}>
+                             <thead>
+                                 <tr>
+                                     <th className="col-checkbox" style={{ width: columnWidths.checkbox }}>
+                                         <input 
+                                             type="checkbox" 
+                                             onChange={toggleSelectAll}
+                                             checked={filteredAndSortedFields.length > 0 && filteredAndSortedFields.every(f => selectedIndices.includes(f.originalIndex))}
+                                         />
+                                     </th>
+                                     {[
+                                         { key: 'label', label: 'Rótulo (Label)' },
+                                         { key: 'name', label: 'Nome Interno' },
+                                         { key: 'field_type', label: 'Tipo' },
+                                         { key: 'group', label: 'Grupo' },
+                                         { key: 'required', label: 'Obrigatório' },
+                                         { key: 'actions', label: 'Ações', sortable: false }
+                                     ].filter(col => visibleColumns.includes(col.key)).map((col) => (
+                                         <th 
+                                             key={col.key}
+                                             className={`${col.sortable !== false ? 'sortable' : ''} ${tableSort.key === col.key ? 'active-sort' : ''}`}
+                                             style={{ width: columnWidths[col.key] }}
+                                             onClick={() => col.sortable !== false && handleSortTable(col.key)}
+                                         >
+                                             <div className="header-content">
+                                                 {col.label}
+                                                 {col.sortable !== false && (
+                                                     <span className="sort-icon">
+                                                         {tableSort.key === col.key ? (
+                                                             tableSort.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                                         ) : <ArrowUpDown size={14} />}
+                                                     </span>
+                                                 )}
+                                             </div>
+                                             <div 
+                                                 className={`resizer ${isResizing?.column === col.key ? 'resizing' : ''}`} 
+                                                 onMouseDown={(e) => startResize(e, col.key)}
+                                                 onClick={e => e.stopPropagation()}
+                                             />
+                                         </th>
+                                     ))}
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 {filteredAndSortedFields.map((field) => (
+                                     <tr key={field.originalIndex} className={selectedIndices.includes(field.originalIndex) ? 'row-selected' : ''}>
+                                         <td className="col-checkbox">
+                                             <input 
+                                                 type="checkbox" 
+                                                 checked={selectedIndices.includes(field.originalIndex)}
+                                                 onChange={() => toggleSelectField(field.originalIndex)}
+                                             />
+                                         </td>
+                                         {visibleColumns.includes('label') && (
+                                             <td>
+                                                 <input 
+                                                     type="text" className="hs-input-compact" 
+                                                     value={field.label} 
+                                                     onChange={e => handleFieldChange(field.originalIndex, 'label', e.target.value)}
+                                                 />
+                                             </td>
+                                         )}
+                                         {visibleColumns.includes('name') && <td><code>{field.name}</code></td>}
+                                         {visibleColumns.includes('field_type') && <td>{field.field_type}</td>}
+                                         {visibleColumns.includes('group') && <td>{formData.field_groups.find(g => g.id === field.group_id)?.name || 'Geral'}</td>}
+                                         {visibleColumns.includes('required') && (
+                                             <td style={{ textAlign: 'center' }}>
+                                                 <input 
+                                                     type="checkbox" 
+                                                     checked={field.required} 
+                                                     onChange={e => handleFieldChange(field.originalIndex, 'required', e.target.checked)}
+                                                 />
+                                             </td>
+                                         )}
+                                         {visibleColumns.includes('actions') && (
+                                             <td style={{ textAlign: 'center' }}>
+                                                 <button type="button" className="icon-button danger" onClick={() => handleRemoveField(field.originalIndex)} title="Excluir este campo">
+                                                     <X size={14} />
+                                                 </button>
+                                             </td>
+                                         )}
+                                     </tr>
+                                 ))}
+                                 {filteredAndSortedFields.length === 0 && (
+                                     <tr>
+                                         <td colSpan="7" className="empty-filter-results">
+                                             <Search size={32} opacity={0.2} />
+                                             <p>Nenhum campo encontrado para "{tableSearch}"</p>
+                                         </td>
+                                     </tr>
+                                 )}
+                             </tbody>
+                         </table>
+                     </div>
+                 </div>
                 </div>
-            )}
+               )}
             </div>
           </div>
 

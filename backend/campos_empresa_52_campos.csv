@@ -1,0 +1,53 @@
+label,name,type,group
+Razão Social,razao_social,text,Informações Básicas
+Nome Fantasia,nome_fantasia,text,Informações Básicas
+CNPJ,cnpj,text,Informações Básicas
+Inscrição Estadual,inscricao_estadual,text,Informações Básicas
+Inscrição Municipal,inscricao_municipal,text,Informações Básicas
+Data de Fundação,data_fundacao,date,Informações Básicas
+Site Institucional,site,text,Informações Básicas
+E-mail Geral,email_geral,email,Informações Básicas
+Telefone Principal,telefone_principal,phone,Informações Básicas
+Celular/WhatsApp,celular_whatsapp,phone,Informações Básicas
+CEP,cep,cep,Informações Básicas
+Logradouro,logradouro,text,Informações Básicas
+Número,numero,number,Informações Básicas
+Complemento,complemento,text,Informações Básicas
+Bairro,bairro,text,Informações Básicas
+Cidade,cidade,text,Informações Básicas
+Estado (UF),estado,text,Informações Básicas
+País,pais,text,Informações Básicas
+Faturamento Anual,faturamento_anual,currency,Financeiro & Fiscal
+Limite de Crédito,limite_credito,currency,Financeiro & Fiscal
+Condição de Pagamento Padrão,condicao_pagamento,select,Financeiro & Fiscal
+Banco Principal,banco_principal,text,Financeiro & Fiscal
+Agência,agencia,text,Financeiro & Fiscal
+Conta Corrente,conta_corrente,text,Financeiro & Fiscal
+PIX (Chave),chave_pix,text,Financeiro & Fiscal
+Optante pelo Simples Nacional,optante_simples,boolean,Financeiro & Fiscal
+Regime Tributário,regime_tributario,select,Financeiro & Fiscal
+Setor de Atuação,setor_atuacao,select,Segmentação
+Segmento de Mercado,segmento,multiselect,Segmentação
+Porte da Empresa,porte,select,Segmentação
+Número de Funcionários,num_funcionarios,number,Segmentação
+Público Alvo,publico_alvo,multiselect,Segmentação
+Empresa Matriz,empresa_matriz,text,Segmentação
+Unidades/Filiais,unidades_filiais,number,Segmentação
+Origem do Lead,origem_lead,select,Marketing & Origem
+Campanha de Origem,campanha_origem,text,Marketing & Origem
+Perfil do LinkedIn,linkedin_company,text,Marketing & Origem
+ID do Facebook Ads,fb_ads_id,text,Marketing & Origem
+ID do Google Analytics,ga_id,text,Marketing & Origem
+Score de Qualificação,lead_score,number,Marketing & Origem
+Interesses da Empresa,interesses,multiselect,Marketing & Origem
+Responsável Comercial,vendedor_responsavel,text,Detalhes Comerciais
+SLA de Atendimento,sla_atendimento,number,Detalhes Comerciais
+Data da Última Compra,data_ultima_compra,date,Detalhes Comerciais
+Volume de Compras Mensal,volume_mensal,number,Detalhes Comerciais
+Nível de Satisfação (NPS),nps_score,number,Detalhes Comerciais
+Status da Conta,status_conta,select,Detalhes Comerciais
+Possui Contrato Ativo,contrato_ativo,boolean,Detalhes Comerciais
+Observações Gerais,observacoes,textarea,Detalhes Comerciais
+Tecnologias Utilizadas,stack_tecnologico,multiselect,Detalhes Comerciais
+Principais Concorrentes,concorrentes,textarea,Detalhes Comerciais
+Motivo de Perda Histórico,motivo_perda,textarea,Detalhes Comerciais

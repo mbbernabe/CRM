@@ -1,0 +1,28 @@
+label,name,type,group
+Nome do Serviço,nome_servico,text,Catálogo Técnico
+Código SKU/Serviço,sku_servico,text,Catálogo Técnico
+Categoria do Serviço,categoria,select,Catálogo Técnico
+Descrição Comercial,descricao_comercial,textarea,Catálogo Técnico
+Valor Unitário,valor_unitario,currency,Precificação
+Custo Estimado de Execução,custo_execucao,currency,Precificação
+Margem de Lucro (%),margem_lucro,number,Precificação
+Impostos Incidentes,impostos,multiselect,Precificação
+Unidade de Medida (Hora/Dia/Mês),unidade_medida,select,Precificação
+Tempo Estimado de Entrega (h),tempo_entrega,number,Entrega & SLA
+SLA de Resposta (h),sla_resposta,number,Entrega & SLA
+Nível de Criticidade,criticidade,select,Entrega & SLA
+Atendimento Presencial?,presencial,boolean,Entrega & SLA
+Região de Atendimento,regiao,multiselect,Entrega & SLA
+Periodicidade de Renovação,periodicidade,select,Recorrência & Contrato
+Garantia (Meses),garantia,number,Recorrência & Contrato
+Multa por Rescisão,multa_rescisao,currency,Recorrência & Contrato
+Requisitos Técnicos Mínimos,requisitos_tecnicos,textarea,Especificações
+Softwares Necessários,softwares_requisitos,multiselect,Especificações
+Hardware Necessário,hardware_requisitos,multiselect,Especificações
+Certificação Exigida,certificacao_exigida,text,Especificações
+Termos de Uso (Link),link_termos,text,Documentação
+Manual de Operação (Link),link_manual,text,Documentação
+FAQ do Serviço,faq_link,text,Documentação
+Ativo no Catálogo,ativo,boolean,Configurações
+Destaque no Site/Portal,destaque,boolean,Configurações
+Código Fiscal (NBS),codigo_fiscal,text,Configurações

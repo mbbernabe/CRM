@@ -1,0 +1,24 @@
+label,name,type,group
+Assunto da Tarefa,assunto,text,Informações Básicas
+Prioridade,prioridade,select,Informações Básicas
+Status,status,select,Informações Básicas
+Data de Início,data_inicio,date,Planejamento
+Data de Vencimento,vencimento,date,Planejamento
+Horário Agendado,horario,text,Planejamento
+Lembrete Ativo,lembrete,boolean,Planejamento
+Tempo para Lembrete (min),tempo_lembrete,number,Planejamento
+Esforço Estimado (horas),esforco_estimado,number,Execução
+Esforço Realizado (horas),esforco_real,number,Execução
+Dificuldade,dificuldade,select,Execução
+Responsável Técnico,responsavel,text,Execução
+Descrição Detalhada,descricao,textarea,Detalhes
+Checklist de Conclusão,checklist,textarea,Detalhes
+Local da Tarefa,local,text,Detalhes
+Tarefa Recorrente,recorrente,boolean,Configurações
+Frequência,frequencia,select,Configurações
+Notificar por E-mail,notificar_email,boolean,Configurações
+Projeto Relacionado,projeto_id,text,Vínculos
+ID Externo (Integração),external_id,text,Vínculos
+SLA de Entrega (h),sla_horas,number,Controle de Qualidade
+Evidência de Conclusão (Link),link_evidencia,text,Controle de Qualidade
+Notas de Feedback,feedback_notas,textarea,Controle de Qualidade
