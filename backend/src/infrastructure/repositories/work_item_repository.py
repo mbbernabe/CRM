@@ -167,7 +167,7 @@ class WorkItemRepository(IWorkItemRepository):
             is_system=work_item_type.is_system
         )
         self.db.add(model)
-        self.db.commit()
+        self.db.flush() # flush instead of commit to allow atomic operations in use cases
         self.db.refresh(model)
         work_item_type.id = model.id
         return work_item_type
@@ -436,7 +436,7 @@ class WorkItemRepository(IWorkItemRepository):
                         self.db.add(new_g)
                         self.db.flush() # Get the new ID immediately
                         group_id_map[g_entity.name] = new_g.id
-                        if g_entity.id: # Capture temp ID if present
+                        if g_entity.id is not None: # Capture temp ID if present
                              group_id_map[str(g_entity.id)] = new_g.id
                 
                 self.db.flush()
@@ -510,14 +510,18 @@ class WorkItemRepository(IWorkItemRepository):
             return self.get_type_by_id(type_id, workspace_id)
         except Exception as e:
             self.db.rollback()
-            error_msg = str(e)
-            if "duplicate key value violates unique constraint" in error_msg:
+            error_msg = str(e).lower()
+            if "duplicate key" in error_msg or "unique constraint" in error_msg:
                 if "_type_field_uc" in error_msg:
                     raise ValueError("Já existe um campo com este nome (ID Interno) neste modelo. Use nomes únicos.")
                 if "_type_group_uc" in error_msg:
                     raise ValueError("Já existe um grupo com este nome neste modelo.")
+                if "_workspace_item_type_uc" in error_msg:
+                    raise ValueError("Já existe um tipo de objeto com este nome neste workspace.")
+                
+                raise ValueError(f"Erro de unicidade: {str(e)}")
             
-            logger.error(f"Erro ao atualizar WorkItemType {type_id}: {error_msg}", exc_info=True)
+            logger.error(f"Erro ao atualizar WorkItemType {type_id}: {str(e)}", exc_info=True)
             raise e
 
     def delete_type(self, type_id: int, workspace_id: Optional[int]) -> bool:

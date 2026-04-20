@@ -70,18 +70,9 @@ def create_global_template(
     repo = WorkItemRepository(db)
     use_case = ManageItemTypesUseCase(repo)
     
-    # Criamos a entidade com workspace_id nulo explicitamente
-    new_type = WorkItemType(
-        name=data.name,
-        label=data.label,
-        icon=data.icon,
-        color=data.color,
-        workspace_id=None,
-        is_system=True
-    )
-    
     try:
-        created = repo.create_type(new_type)
+        # Usamos o use case para garantir que campos e grupos sejam salvos atomicamente
+        created = use_case.create_type(data, None)
         return created
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

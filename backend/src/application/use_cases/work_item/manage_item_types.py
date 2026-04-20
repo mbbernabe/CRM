@@ -19,24 +19,13 @@ class ManageItemTypesUseCase:
         )
         created_type = self.repository.create_type(item_type)
         
-        # Create groups first to get IDs
-        group_id_map = {} # temp_id or name -> real_id
-        if dto.field_groups:
-            for g_dto in dto.field_groups:
-                g_entity = WorkItemFieldGroup(
-                    name=g_dto.name,
-                    order=g_dto.order,
-                    workspace_id=workspace_id,
-                    type_id=created_type.id
-                )
-                # We need a repository method to create a single group or handle it in update_type
-                # For simplicity here, we'll use update_type to sync everything at the end
-                pass
-
-        # Use update_type logic to handle the complex syncing of groups and fields
+        # Sincroniza campos e grupos imediatamente após a criação do registro base
         return self.update_type(
             created_type.id, 
             WorkItemTypeUpdateDTO(
+                label=dto.label,
+                icon=dto.icon,
+                color=dto.color,
                 field_definitions=dto.field_definitions,
                 field_groups=dto.field_groups
             ), 

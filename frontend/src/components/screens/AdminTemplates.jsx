@@ -632,7 +632,7 @@ const AdminTemplates = () => {
         return {
             label: f.label,
             name: f.name || slugify(f.label),
-            field_type: f.type || 'text', // Mapear 'type' para 'field_type'
+            field_type: f.field_type || 'text', // Mapear 'field_type' vindo do modal
             group_id: group ? group.id : null,
             order: formData.field_definitions.length + i,
             required: false,
