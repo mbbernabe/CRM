@@ -56,11 +56,12 @@ export const AuthProvider = ({ children }) => {
       }
       
       if (!res.ok) {
+        // Se o detalhe for um objeto, anexamos à mensagem de erro de forma que possamos parsear se necessário
+        // ou lançamos um erro customizado (mais limpo)
         const errorDetail = data.detail;
-        const errorMessage = typeof errorDetail === 'string' 
-          ? errorDetail 
-          : (Array.isArray(errorDetail) ? errorDetail[0]?.msg : JSON.stringify(errorDetail));
-        throw new Error(errorMessage || 'Erro ao fazer login');
+        const error = new Error(typeof errorDetail === 'string' ? errorDetail : (errorDetail.message || 'Erro ao fazer login'));
+        error.detail = errorDetail; // Anexa o objeto completo para uso no componente
+        throw error;
       }
       
       setUser(data.user);

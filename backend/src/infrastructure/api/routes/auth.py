@@ -49,7 +49,10 @@ def login(dto: LoginRequestDTO, db: Session = Depends(get_db)):
             workspace=workspace
         )
     except AuthenticationException as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
+        detail = {"message": e.message}
+        if e.data:
+            detail.update(e.data)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
     except Exception as e:
         log_exception(logger, e, "login")
         raise HTTPException(

@@ -1,4 +1,5 @@
 from typing import Optional, List
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserReadDTO(BaseModel):
@@ -9,6 +10,9 @@ class UserReadDTO(BaseModel):
     workspace_name: Optional[str] = None
     team_id: Optional[int] = None
     role: str = "user"
+    is_active: bool = True
+    deactivated_at: Optional[datetime] = None
+    last_activity: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 

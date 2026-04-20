@@ -23,6 +23,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware para rastrear última atividade do usuário
+from datetime import datetime
+from src.infrastructure.database.db import SessionLocal
+from src.infrastructure.database.models import UserModel
+
+@app.middleware("http")
+async def update_last_activity(request, call_next):
+    user_id = request.headers.get("X-User-ID")
+    if user_id and user_id.isdigit():
+        db = SessionLocal()
+        try:
+            db.query(UserModel).filter(UserModel.id == int(user_id)).update({"last_activity": datetime.utcnow()})
+            db.commit()
+        except Exception:
+            db.rollback()
+        finally:
+            db.close()
+    
+    response = await call_next(request)
+    return response
+
 # Inicializa o banco de dados
 init_db()
 

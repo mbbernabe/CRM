@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from src.domain.entities.user import User
 from src.domain.entities.workspace import Workspace
 from src.domain.entities.team import Team
@@ -96,6 +97,15 @@ class LoginUseCase:
             logger.warning(f"Tentativa de login: Senha incorreta para o usuário - {dto.email}")
             raise AuthenticationException("E-mail ou senha incorretos. Por favor, tente novamente.")
         
+        if not user.is_active:
+            logger.warning(f"Tentativa de login: Conta desativada - {dto.email}")
+            raise AuthenticationException(
+                "Sua conta está desativada. Por favor, entre em contato com o administrador do sistema.",
+                data={"deactivated_at": user.deactivated_at.isoformat() if user.deactivated_at else None}
+            )
+
         logger.info(f"Login bem-sucedido: {dto.email}")
+        user.last_activity = datetime.utcnow()
+        self.user_repo.save(user)
         workspace = self.workspace_repo.get_by_id(user.workspace_id)
         return user, workspace

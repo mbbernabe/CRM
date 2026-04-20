@@ -95,6 +95,8 @@ Todo código gerado deve respeitar a hierarquia e o isolamento por `workspace_id
   import { API_BASE_URL } from '../../config';
   const res = await fetch(`${API_BASE_URL}/auth/login`, { ... });
   ```
+- **Confirmação de Exclusão**: É PROIBIDO o uso de `window.confirm()` no frontend. Toda ação de exclusão deve ser precedida por um Modal de confirmação seguindo o padrão de design do projeto.
+- **Padrão de Tabelas**: Implementações de tabelas no frontend devem seguir o padrão de "Advanced Datatables" (Sorting, Resizing, Column Visibility, Bulk Actions). NUNCA criar tabelas estáticas sem essas capacidades para visões de gestão de dados.
 
 ## 📜 Protocolo de Log de Histórico (Audit)
 Para cada alteração em `Contact`, o agente deve capturar:

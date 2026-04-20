@@ -24,6 +24,14 @@ Garantir que o CRM não seja apenas funcional, mas também intuitivo, esteticame
 ### 2. Consistência e Tematização (HubSpot Style)
 - **Cores**: Use a paleta de cores definida (HubSpot Orange para indicadores, azul para links).
 - **Componentes**: Utilize Toasts, Modais e Alerts para feedback imediato de ações do usuário.
+- **Confirmação de Exclusão**: É PROIBIDO o uso de `window.confirm()` no frontend. Toda ação de exclusão deve ser precedida por um Modal de confirmação seguindo o padrão de design do projeto.
+- **Tabelas de Dados Avançadas (Datatables)**: Toda visão em lista/tabela complexa DEVE oferecer:
+    - **Ordenação (Sorting)**: Cabeçalhos clicáveis com ícones de direção.
+    - **Redimensionamento (Resizing)**: Bordas de colunas arrastáveis.
+    - **Seletor de Colunas**: Menu para alternar visibilidade de colunas.
+    - **Identificadores Ocultos**: Colunas de IDs internos ou Slugs devem vir ocultas por padrão.
+    - **Seleção em Massa**: Checkboxes para selecionar múltiplos registros e ações em lote (ex: excluir).
+    - **Pesquisa Local**: Campo de filtro rápido integrado à barra de ferramentas da tabela.
 
 
 ### 1. Proposta de Nova Tela/Funcionalidade

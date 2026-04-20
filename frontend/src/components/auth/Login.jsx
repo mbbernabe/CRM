@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { API_BASE_URL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle, X } from 'lucide-react';
+
 import './Login.css';
 
-const Login = ({ onSwitchToRegister, onForgotPassword }) => {
+const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  // Removido inactiveInfo local para usar tela dedicada via App.jsx
   const { login, loading } = useAuth();
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,9 +19,22 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
     try {
       await login(email, password);
     } catch (err) {
-      setError(err.message);
+
+      // Verifica se é erro de conta desativada (pela mensagem ou pelo campo específico)
+      const isInactive = err.detail && (err.detail.deactivated_at !== undefined || (typeof err.message === 'string' && err.message.includes('desativada')));
+
+      if (isInactive && onDeactivated) {
+        onDeactivated(err.detail || { message: err.message });
+      } else {
+        setError(err.message);
+      }
     }
+
+
+
   };
+
+
 
   const handleQuickAccess = async () => {
     setError('');
@@ -136,7 +152,9 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
         </div>
       </div>
 
+      {/* Modal removido em favor da DeactivatedScreen dedicada em App.jsx */}
     </div>
+
   );
 };
 

@@ -85,7 +85,19 @@
 .table-actions {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 16px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: var(--hs-radius-lg);
+    border: 1px solid var(--hs-border-light);
+    box-shadow: var(--hs-shadow-sm);
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .search-bar {
@@ -349,4 +361,89 @@
 .error-container p { 
   margin-bottom: 24px; 
   color: #516f90; 
+}
+
+.status-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-pill.active {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #d1fae5;
+}
+
+.status-pill.inactive {
+    background: #fff1f2;
+    color: #e11d48;
+    border: 1px solid #ffe4e6;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--hs-text-primary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-dot.online {
+    background: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    animation: pulse-green 2s infinite;
+}
+
+.status-dot.offline {
+    background: #94a3b8;
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.dropdown-menu button.success-action {
+    color: #059669;
+}
+
+.dropdown-menu button.success-action:hover {
+    background: #ecfdf5;
+}
+
+.deactivated-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.inactive-duration {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #e11d48;
+    font-weight: 600;
+    font-size: 13px;
+    background: #fff1f2;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.inactive-duration svg {
+    color: #e11d48;
+}
+
+.text-muted {
+    color: var(--hs-text-secondary);
+    opacity: 0.5;
 }

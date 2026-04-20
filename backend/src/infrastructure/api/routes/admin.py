@@ -46,6 +46,23 @@ def list_users(db: Session = Depends(get_db), superadmin_role: str = Depends(req
             detail="Não foi possível carregar a lista de usuários. Por favor, tente novamente mais tarde."
         )
 
+@router.post("/users/{user_id}/toggle-status")
+def toggle_user_status(user_id: int, db: Session = Depends(get_db), superadmin: str = Depends(require_superadmin)):
+    user_repo = SqlAlchemyUserRepository(db)
+    user = user_repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    user.is_active = not user.is_active
+    if not user.is_active:
+        from datetime import datetime
+        user.deactivated_at = datetime.utcnow()
+    else:
+        user.deactivated_at = None
+        
+    user_repo.save(user)
+    return {"id": user.id, "is_active": user.is_active, "deactivated_at": user.deactivated_at}
+
 # --- Template Management (Global Library) ---
 
 @router.get("/templates", response_model=List[WorkItemTypeReadDTO])

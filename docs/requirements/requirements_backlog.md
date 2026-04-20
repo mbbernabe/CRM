@@ -60,6 +60,8 @@
 - [x] **Registro**: Criação de conta com nome, e-mail, senha e nome do Workspace. Cria automaticamente o Workspace, Time "Geral" e o primeiro usuário admin. *(Backend: `RegisterUserUseCase`, Frontend: `Register.jsx`)*
 - [x] **Recuperação de Senha**: Fluxo completo — tela "Esqueci minha senha", envio de e-mail com token JWT, tela de redefinição. *(Backend: `password_reset_use_case.py`, Frontend: `ForgotPassword.jsx`, `ResetPassword.jsx`)*
 - [x] **Configurações Globais (SMTP)**: Tela de SuperAdmin para configurar servidor SMTP, credenciais, URL base de reset. *(Backend: `admin_settings.py`, Frontend: `SystemSettings.jsx`)*
+- [ ] **Perfil do Usuário & Ativação (Onboarding)**: Interface dedicada para o usuário ativar seu perfil, fazer upload de uma imagem (Avatar) com redimensionamento, e complementar informações como telefone, WhatsApp e cargo para identificação no sistema.
+- [ ] **Alteração de Senha (Logado)**: Funcionalidade nas configurações de perfil para o usuário autenticado redefinir sua senha. Deve exigir a confirmação da senha atual por questões de segurança.
 
 ## 💲 Gestão de Planos & Assinaturas (SaaS)
 - [ ] **Criação de Planos (Super Admin)**: O Super Administrador poderá criar planos de assinatura personalizados aplicáveis às Áreas de Trabalho.
@@ -81,6 +83,12 @@
     2.  **SMTP por Workspace (RF017)**: Migrar configuração de SMTP de global para por workspace.
     3.  **Visibilidade por Time (RF010)**: Implementar filtro automático de registros por `team_id`.
     4.  **API Pública para Leads (RF019)**: Criar endpoints configuráveis e seguros para ingestão de leads externos.
+
+---
+
+## 📅 Notas de Brainstorming [20/04/2026]
+- **Conquista Recente**: Implementação da **DeactivatedScreen** dedicada (tela premium para usuários suspensos) e correção do bug de unmount no `App.jsx`.
+- **Pendência Importante**: Atualizar os dados de contato (Chat/Telefone) na `DeactivatedScreen.jsx`. Atualmente estão com placeholders ("0800 123 4567").
 
 ---
 

@@ -293,6 +293,38 @@ const AdminTemplates = () => {
   const [isMassImportOpen, setIsMassImportOpen] = useState(false);
   const [massText, setMassText] = useState('');
   const [isImportingMassive, setIsImportingMassive] = useState(false);
+  const [isDeletePipelineModalOpen, setIsDeletePipelineModalOpen] = useState(false);
+  const [pipelineToDelete, setPipelineToDelete] = useState(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  
+  // Library filtering and view mode
+  const [libraryViewMode, setLibraryViewMode] = useState('grid'); // 'grid' | 'list'
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [libVisibleColumns, setLibVisibleColumns] = useState(['label', 'field_count', 'actions']);
+  const [libColumnWidths, setLibColumnWidths] = useState({
+    label: 300,
+    name: 200,
+    field_count: 150,
+    actions: 100
+  });
+  const [libSort, setLibSort] = useState({ key: 'label', direction: 'asc' });
+  const [isLibColumnPickerOpen, setIsLibColumnPickerOpen] = useState(false);
+  const [libSelectedIds, setLibSelectedIds] = useState([]);
+  const [isLibBulkDeleteModalOpen, setIsLibBulkDeleteModalOpen] = useState(false);
+  
+  // Pipelines filtering and view mode (inside modal)
+  const [pipelineViewMode, setPipelineViewMode] = useState('grid');
+  const [pipelineSearch, setPipelineSearch] = useState('');
+  const [pipeVisibleColumns, setPipeVisibleColumns] = useState(['name', 'stage_count', 'actions']);
+  const [pipeColumnWidths, setPipeColumnWidths] = useState({
+    name: 300,
+    stage_count: 150,
+    actions: 100
+  });
+  const [pipeSort, setPipeSort] = useState({ key: 'name', direction: 'asc' });
+  const [isPipeColumnPickerOpen, setIsPipeColumnPickerOpen] = useState(false);
+  const [pipeSelectedIds, setPipeSelectedIds] = useState([]);
+  const [isPipeBulkDeleteModalOpen, setIsPipeBulkDeleteModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -420,16 +452,64 @@ const AdminTemplates = () => {
     setSelectedIndices(prev => prev.filter(idx => idx !== index).map(idx => idx > index ? idx - 1 : idx));
   };
 
-  const handleBulkDelete = () => {
+   const handleBulkDelete = () => {
     if (selectedIndices.length === 0) return;
-    if (!window.confirm(`Tem certeza que deseja excluir ${selectedIndices.length} campos deste modelo global?`)) return;
+    setIsBulkDeleteModalOpen(true);
+  };
 
+  const confirmBulkDelete = () => {
     setFormData({
         ...formData,
         field_definitions: formData.field_definitions.filter((_, i) => !selectedIndices.includes(i))
     });
     setSelectedIndices([]);
+    setLibSelectedIds([]);
+    setPipeSelectedIds([]);
     addToast(`${selectedIndices.length} campos excluídos com sucesso.`, 'success');
+  };
+
+  const handleLibBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+        const results = await Promise.all(
+            libSelectedIds.map(id => fetchWithAuth(`http://localhost:8000/admin/templates/${id}`, { method: 'DELETE' }))
+        );
+        const successes = results.filter(r => r.ok).length;
+        if (successes > 0) {
+            addToast(`${successes} modelos excluídos da biblioteca`, 'success');
+            fetchTemplates();
+            setLibSelectedIds([]);
+            setIsLibBulkDeleteModalOpen(false);
+        } else {
+            addToast("Erro ao excluir modelos selecionados", "error");
+        }
+    } catch (err) {
+        addToast(err.message, "error");
+    } finally {
+        setIsDeleting(false);
+    }
+  };
+
+  const handlePipeBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+        const results = await Promise.all(
+            pipeSelectedIds.map(id => fetchWithAuth(`http://localhost:8000/pipelines/${id}`, { method: 'DELETE' }))
+        );
+        const successes = results.filter(r => r.ok).length;
+        if (successes > 0) {
+            addToast(`${successes} pipelines de template removidas`, 'success');
+            fetchTemplatePipelines(selectedTemplate.id);
+            setPipeSelectedIds([]);
+            setIsPipeBulkDeleteModalOpen(false);
+        } else {
+            addToast("Erro ao excluir pipelines selecionadas", "error");
+        }
+    } catch (err) {
+        addToast(err.message, "error");
+    } finally {
+        setIsDeleting(false);
+    }
   };
 
   const handleSortTable = (key) => {
@@ -492,13 +572,72 @@ const AdminTemplates = () => {
     return result;
   }, [formData.field_definitions, formData.field_groups, tableSort, tableSearch]);
 
+  const filteredLibrary = useMemo(() => {
+    let result = [...templates];
+    
+    if (librarySearch) {
+        const search = librarySearch.toLowerCase();
+        result = result.filter(t => 
+            t.label.toLowerCase().includes(search) || 
+            t.name.toLowerCase().includes(search)
+        );
+    }
+
+    const { key, direction } = libSort;
+    result.sort((a, b) => {
+        let valA = a[key] || '';
+        let valB = b[key] || '';
+        if (key === 'field_count') {
+            valA = a.field_definitions?.length || 0;
+            valB = b.field_definitions?.length || 0;
+        }
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return result;
+  }, [templates, librarySearch, libSort]);
+
+  const filteredPipelines = useMemo(() => {
+    let result = [...templatePipelines];
+    
+    if (pipelineSearch) {
+        const search = pipelineSearch.toLowerCase();
+        result = result.filter(p => 
+            p.name.toLowerCase().includes(search)
+        );
+    }
+
+    const { key, direction } = pipeSort;
+    result.sort((a, b) => {
+        let valA = a[key] || '';
+        let valB = b[key] || '';
+        if (key === 'stage_count') {
+            valA = a.stages?.length || 0;
+            valB = b.stages?.length || 0;
+        }
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return result;
+  }, [templatePipelines, pipelineSearch, pipeSort]);
+
   // Redimensionamento de Colunas
-  const startResize = (e, column) => {
+  const startResize = (e, column, type = 'field') => {
     e.preventDefault();
+    let startWidth = 0;
+    if (type === 'field') startWidth = columnWidths[column];
+    else if (type === 'library') startWidth = libColumnWidths[column];
+    else if (type === 'pipeline') startWidth = pipeColumnWidths[column];
+
     setIsResizing({
         column,
+        type,
         startX: e.pageX,
-        startWidth: columnWidths[column]
+        startWidth: startWidth
     });
   };
 
@@ -507,10 +646,15 @@ const AdminTemplates = () => {
 
     const doResize = (e) => {
         const diff = e.pageX - isResizing.startX;
-        setColumnWidths(prev => ({
-            ...prev,
-            [isResizing.column]: Math.max(50, isResizing.startWidth + diff)
-        }));
+        const newWidth = Math.max(50, isResizing.startWidth + diff);
+        
+        if (isResizing.type === 'field') {
+            setColumnWidths(prev => ({ ...prev, [isResizing.column]: newWidth }));
+        } else if (isResizing.type === 'library') {
+            setLibColumnWidths(prev => ({ ...prev, [isResizing.column]: newWidth }));
+        } else if (isResizing.type === 'pipeline') {
+            setPipeColumnWidths(prev => ({ ...prev, [isResizing.column]: newWidth }));
+        }
     };
 
     const stopResize = () => setIsResizing(null);
@@ -730,32 +874,201 @@ const AdminTemplates = () => {
         </div>
       </div>
 
-      <div className="types-grid">
-        {templates.length === 0 ? (
+      <div className="library-toolbar">
+          <div className="search-box">
+              <Search size={16} />
+              <input 
+                  type="text" 
+                  placeholder="Pesquisar na biblioteca global..." 
+                  value={librarySearch}
+                  onChange={e => setLibrarySearch(e.target.value)}
+              />
+          </div>
+          <div className="view-toggles">
+              <button 
+                  className={`view-toggle ${libraryViewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setLibraryViewMode('grid')}
+                  title="Visão em Cards"
+              >
+                  <Palette size={16} />
+              </button>
+              <button 
+                  className={`view-toggle ${libraryViewMode === 'list' ? 'active' : ''}`}
+                  onClick={() => setLibraryViewMode('list')}
+                  title="Visão em Lista"
+              >
+                  <ListIcon size={16} />
+              </button>
+          </div>
+          {libraryViewMode === 'list' && (
+              <>
+                  {libSelectedIds.length > 0 && (
+                      <button className="hs-button-danger hs-button-sm" onClick={() => setIsLibBulkDeleteModalOpen(true)}>
+                          <Trash2 size={14} /> Excluir ({libSelectedIds.length})
+                      </button>
+                  )}
+                  <div className="column-picker-wrapper">
+                      <button 
+                          className={`hs-button-secondary hs-button-sm ${isLibColumnPickerOpen ? 'active' : ''}`}
+                          onClick={() => setIsLibColumnPickerOpen(!isLibColumnPickerOpen)}
+                      >
+                          <Settings2 size={14} /> Colunas
+                      </button>
+                      {isLibColumnPickerOpen && (
+                          <div className="column-picker-dropdown">
+                              <div className="picker-header">Exibir Colunas</div>
+                              <div className="picker-options">
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={libVisibleColumns.includes('checkbox')} 
+                                          onChange={() => setLibVisibleColumns(prev => prev.includes('checkbox') ? prev.filter(c => c !== 'checkbox') : [...prev, 'checkbox'])}
+                                      />
+                                      Seleção
+                                  </label>
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={libVisibleColumns.includes('label')} 
+                                          onChange={() => setLibVisibleColumns(prev => prev.includes('label') ? prev.filter(c => c !== 'label') : [...prev, 'label'])}
+                                      />
+                                      Nome do Modelo
+                                  </label>
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={libVisibleColumns.includes('name')} 
+                                          onChange={() => setLibVisibleColumns(prev => prev.includes('name') ? prev.filter(c => c !== 'name') : [...prev, 'name'])}
+                                      />
+                                      Identificador
+                                  </label>
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={libVisibleColumns.includes('field_count')} 
+                                          onChange={() => setLibVisibleColumns(prev => prev.includes('field_count') ? prev.filter(c => c !== 'field_count') : [...prev, 'field_count'])}
+                                      />
+                                      Total de Campos
+                                  </label>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </>
+          )}
+      </div>
+
+      <div className={`library-content ${libraryViewMode}-view`}>
+        {filteredLibrary.length === 0 ? (
            <div className="empty-types">
-              <Settings2 size={48} className="empty-icon" />
-              <p>Nenhum modelo global criado ainda.</p>
-              <button className="hs-button-link" onClick={handleOpenCreate}>Criar o primeiro modelo da biblioteca</button>
+              {librarySearch ? <Search size={48} className="empty-icon" /> : <Settings2 size={48} className="empty-icon" />}
+              <p>{librarySearch ? `Nenhum modelo encontrado para "${librarySearch}"` : "Nenhum modelo global criado ainda."}</p>
+              {!librarySearch && <button className="hs-button-link" onClick={handleOpenCreate}>Criar o primeiro modelo da biblioteca</button>}
            </div>
+        ) : libraryViewMode === 'grid' ? (
+          <div className="types-grid">
+            {filteredLibrary.map(tmpl => (
+              <div key={tmpl.id} className="type-card">
+                <div className="type-card-body">
+                   <div className="type-icon-circle" style={{ backgroundColor: tmpl.color + '20', color: tmpl.color }}>
+                      <Code size={20} />
+                   </div>
+                   <div className="type-info">
+                      <h3>{tmpl.label}</h3>
+                      <span className="type-slug">{tmpl.name}</span>
+                      <span className="fields-count">{tmpl.field_definitions?.length || 0} campos definidos</span>
+                   </div>
+                </div>
+                <div className="type-card-actions">
+                   <button className="icon-button" onClick={() => handleOpenEdit(tmpl)} title="Editar"><Edit size={16} /></button>
+                   <button className="icon-button delete" onClick={() => { setSelectedTemplate(tmpl); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          templates.map(tmpl => (
-            <div key={tmpl.id} className="type-card">
-              <div className="type-card-body">
-                 <div className="type-icon-circle" style={{ backgroundColor: tmpl.color + '20', color: tmpl.color }}>
-                    <Code size={20} />
-                 </div>
-                 <div className="type-info">
-                    <h3>{tmpl.label}</h3>
-                    <span className="type-slug">{tmpl.name}</span>
-                    <span className="fields-count">{tmpl.field_definitions?.length || 0} campos definidos</span>
-                 </div>
-              </div>
-              <div className="type-card-actions">
-                 <button className="icon-button" onClick={() => handleOpenEdit(tmpl)} title="Editar"><Edit size={16} /></button>
-                 <button className="icon-button delete" onClick={() => { setSelectedTemplate(tmpl); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
-              </div>
-            </div>
-          ))
+          <div className="types-list" style={{ overflowX: 'auto' }}>
+             <table className="hs-table" style={{ tableLayout: 'fixed', width: 'fit-content', minWidth: '100%' }}>
+                <thead>
+                    <tr>
+                        {libVisibleColumns.includes('checkbox') && (
+                            <th style={{ width: libColumnWidths.checkbox || 50 }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={libSelectedIds.length === filteredLibrary.length && filteredLibrary.length > 0}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setLibSelectedIds(filteredLibrary.map(t => t.id));
+                                        else setLibSelectedIds([]);
+                                    }}
+                                />
+                            </th>
+                        )}
+                        {libVisibleColumns.includes('label') && (
+                            <th style={{ width: libColumnWidths.label }}>
+                                <div className="th-content" onClick={() => setLibSort({ key: 'label', direction: libSort.key === 'label' && libSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                    Nome do Modelo {libSort.key === 'label' && (libSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                                </div>
+                                <div className="resizer" onMouseDown={e => startResize(e, 'label', 'library')} />
+                            </th>
+                        )}
+                        {libVisibleColumns.includes('name') && (
+                            <th style={{ width: libColumnWidths.name }}>
+                                <div className="th-content" onClick={() => setLibSort({ key: 'name', direction: libSort.key === 'name' && libSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                    Identificador {libSort.key === 'name' && (libSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                                </div>
+                                <div className="resizer" onMouseDown={e => startResize(e, 'name', 'library')} />
+                            </th>
+                        )}
+                        {libVisibleColumns.includes('field_count') && (
+                            <th style={{ width: libColumnWidths.field_count }}>
+                                <div className="th-content" onClick={() => setLibSort({ key: 'field_count', direction: libSort.key === 'field_count' && libSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                    Campos {libSort.key === 'field_count' && (libSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                                </div>
+                                <div className="resizer" onMouseDown={e => startResize(e, 'field_count', 'library')} />
+                            </th>
+                        )}
+                        {libVisibleColumns.includes('actions') && (
+                            <th style={{ width: libColumnWidths.actions || 100, textAlign: 'right' }}>Ações</th>
+                        )}
+                    </tr>
+                </thead>
+                <tbody>
+                    {filteredLibrary.map(tmpl => (
+                        <tr key={tmpl.id} className={libSelectedIds.includes(tmpl.id) ? 'selected' : ''}>
+                            {libVisibleColumns.includes('checkbox') && (
+                                <td>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={libSelectedIds.includes(tmpl.id)}
+                                        onChange={() => setLibSelectedIds(prev => prev.includes(tmpl.id) ? prev.filter(id => id !== tmpl.id) : [...prev, tmpl.id])}
+                                    />
+                                </td>
+                            )}
+                            {libVisibleColumns.includes('label') && (
+                                <td>
+                                    <div className="list-item-name">
+                                        <div className="type-icon-mini" style={{ color: tmpl.color }}>
+                                            <Code size={14} />
+                                        </div>
+                                        <strong>{tmpl.label}</strong>
+                                    </div>
+                                </td>
+                            )}
+                            {libVisibleColumns.includes('name') && <td><code>{tmpl.name}</code></td>}
+                            {libVisibleColumns.includes('field_count') && <td>{tmpl.field_definitions?.length || 0} campos</td>}
+                            {libVisibleColumns.includes('actions') && (
+                                <td style={{ textAlign: 'right' }}>
+                                    <div className="list-actions">
+                                        <button className="icon-button" onClick={() => handleOpenEdit(tmpl)} title="Editar"><Edit size={14} /></button>
+                                        <button className="icon-button delete" onClick={() => { setSelectedTemplate(tmpl); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={14} /></button>
+                                    </div>
+                                </td>
+                            )}
+                        </tr>
+                    ))}
+                </tbody>
+             </table>
+          </div>
         )}
       </div>
 
@@ -1083,41 +1396,188 @@ const AdminTemplates = () => {
                             </button>
                         </div>
 
-                        <div className="pipelines-grid">
-                            {templatePipelines.length === 0 ? (
+                        <div className="pipelines-toolbar">
+                            <div className="search-box-sm">
+                                <Search size={14} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Filtrar pipelines..." 
+                                    value={pipelineSearch}
+                                    onChange={e => setPipelineSearch(e.target.value)}
+                                />
+                            </div>
+                            <div className="view-toggles-sm">
+                                <button 
+                                    className={`view-toggle-sm ${pipelineViewMode === 'grid' ? 'active' : ''}`}
+                                    onClick={() => setPipelineViewMode('grid')}
+                                >
+                                    <Palette size={14} />
+                                </button>
+                                <button 
+                                    className={`view-toggle-sm ${pipelineViewMode === 'list' ? 'active' : ''}`}
+                                    onClick={() => setPipelineViewMode('list')}
+                                >
+                                    <ListIcon size={14} />
+                                </button>
+                            </div>
+                            {pipelineViewMode === 'list' && (
+                                <>
+                                    {pipeSelectedIds.length > 0 && (
+                                        <button className="hs-button-danger hs-button-xs" style={{ marginLeft: '12px' }} onClick={() => setIsPipeBulkDeleteModalOpen(true)}>
+                                            <Trash2 size={12} /> Excluir ({pipeSelectedIds.length})
+                                        </button>
+                                    )}
+                                    <div className="column-picker-wrapper-sm">
+                                        <button 
+                                            className={`hs-button-secondary hs-button-xs ${isPipeColumnPickerOpen ? 'active' : ''}`}
+                                            onClick={() => setIsPipeColumnPickerOpen(!isPipeColumnPickerOpen)}
+                                        >
+                                            <Settings2 size={12} /> Colunas
+                                        </button>
+                                        {isPipeColumnPickerOpen && (
+                                            <div className="column-picker-dropdown-sm">
+                                                <div className="picker-header">Exibir Colunas</div>
+                                                <div className="picker-options">
+                                                    <label className="column-picker-item">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={pipeVisibleColumns.includes('checkbox')} 
+                                                            onChange={() => setPipeVisibleColumns(prev => prev.includes('checkbox') ? prev.filter(c => c !== 'checkbox') : [...prev, 'checkbox'])}
+                                                        />
+                                                        Seleção
+                                                    </label>
+                                                    <label className="column-picker-item">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={pipeVisibleColumns.includes('name')} 
+                                                            onChange={() => setPipeVisibleColumns(prev => prev.includes('name') ? prev.filter(c => c !== 'name') : [...prev, 'name'])}
+                                                        />
+                                                        Nome da Pipeline
+                                                    </label>
+                                                    <label className="column-picker-item">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={pipeVisibleColumns.includes('stage_count')} 
+                                                            onChange={() => setPipeVisibleColumns(prev => prev.includes('stage_count') ? prev.filter(c => c !== 'stage_count') : [...prev, 'stage_count'])}
+                                                        />
+                                                        Total de Estágios
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className={`pipelines-container ${pipelineViewMode}-view`}>
+                            {filteredPipelines.length === 0 ? (
                                 <div className="empty-pipelines">
                                     <RefreshCw size={32} />
-                                    <p>Nenhuma pipeline configurada para este modelo.</p>
+                                    <p>{pipelineSearch ? `Nenhuma pipeline encontrada para "${pipelineSearch}"` : "Nenhuma pipeline configurada para este modelo."}</p>
+                                </div>
+                            ) : pipelineViewMode === 'grid' ? (
+                                <div className="pipelines-grid">
+                                    {filteredPipelines.map((p, idx) => (
+                                        <div key={p.id || idx} className="pipeline-template-card">
+                                            <div className="card-info">
+                                                <h5>{p.name}</h5>
+                                                <span>{p.stages?.length || 0} estágios</span>
+                                            </div>
+                                            <div className="card-actions">
+                                                <button type="button" className="icon-button" onClick={() => {
+                                                    setCurrentPipelineIndex(idx);
+                                                    setPipelineFormData({
+                                                        id: p.id,
+                                                        name: p.name,
+                                                        stages: [...p.stages]
+                                                    });
+                                                    setIsPipelineModalOpen(true);
+                                                }}><Edit size={14} /></button>
+                                                <button type="button" className="icon-button danger" onClick={() => {
+                                                    setPipelineToDelete(p);
+                                                    setIsDeletePipelineModalOpen(true);
+                                                }}><Trash2 size={14} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             ) : (
-                                templatePipelines.map((p, idx) => (
-                                    <div key={p.id || idx} className="pipeline-template-card">
-                                        <div className="card-info">
-                                            <h5>{p.name}</h5>
-                                            <span>{p.stages?.length || 0} estágios</span>
-                                        </div>
-                                        <div className="card-actions">
-                                            <button type="button" className="icon-button" onClick={() => {
-                                                setCurrentPipelineIndex(idx);
-                                                setPipelineFormData({
-                                                    id: p.id,
-                                                    name: p.name,
-                                                    stages: [...p.stages]
-                                                });
-                                                setIsPipelineModalOpen(true);
-                                            }}><Edit size={14} /></button>
-                                            <button type="button" className="icon-button danger" onClick={async () => {
-                                                if (window.confirm("Remover esta pipeline do template?")) {
-                                                    const res = await fetchWithAuth(`http://localhost:8000/pipelines/${p.id}`, { method: 'DELETE' });
-                                                    if (res.ok) {
-                                                        addToast("Pipeline de template removida");
-                                                        fetchTemplatePipelines(selectedTemplate.id);
-                                                    }
-                                                }
-                                            }}><Trash2 size={14} /></button>
-                                        </div>
-                                    </div>
-                                ))
+                                <div className="pipelines-list-compact" style={{ overflowX: 'auto' }}>
+                                    <table className="hs-table-compact" style={{ tableLayout: 'fixed', width: 'fit-content', minWidth: '100%' }}>
+                                        <thead>
+                                            <tr>
+                                                {pipeVisibleColumns.includes('checkbox') && (
+                                                    <th style={{ width: 40 }}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={pipeSelectedIds.length === filteredPipelines.length && filteredPipelines.length > 0}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setPipeSelectedIds(filteredPipelines.map(p => p.id));
+                                                                else setPipeSelectedIds([]);
+                                                            }}
+                                                        />
+                                                    </th>
+                                                )}
+                                                {pipeVisibleColumns.includes('name') && (
+                                                    <th style={{ width: pipeColumnWidths.name }}>
+                                                        <div className="th-content" onClick={() => setPipeSort({ key: 'name', direction: pipeSort.key === 'name' && pipeSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                                            Nome da Pipeline {pipeSort.key === 'name' && (pipeSort.direction === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
+                                                        </div>
+                                                        <div className="resizer" onMouseDown={e => startResize(e, 'name', 'pipeline')} />
+                                                    </th>
+                                                )}
+                                                {pipeVisibleColumns.includes('stage_count') && (
+                                                    <th style={{ width: pipeColumnWidths.stage_count }}>
+                                                        <div className="th-content" onClick={() => setPipeSort({ key: 'stage_count', direction: pipeSort.key === 'stage_count' && pipeSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                                            Estágios {pipeSort.key === 'stage_count' && (pipeSort.direction === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />)}
+                                                        </div>
+                                                        <div className="resizer" onMouseDown={e => startResize(e, 'stage_count', 'pipeline')} />
+                                                    </th>
+                                                )}
+                                                {pipeVisibleColumns.includes('actions') && (
+                                                    <th style={{ width: pipeColumnWidths.actions, textAlign: 'right' }}>Ações</th>
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredPipelines.map((p, idx) => (
+                                                <tr key={p.id || idx} className={pipeSelectedIds.includes(p.id) ? 'selected' : ''}>
+                                                    {pipeVisibleColumns.includes('checkbox') && (
+                                                        <td>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={pipeSelectedIds.includes(p.id)}
+                                                                onChange={() => setPipeSelectedIds(prev => prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id])}
+                                                            />
+                                                        </td>
+                                                    )}
+                                                    {pipeVisibleColumns.includes('name') && <td><strong>{p.name}</strong></td>}
+                                                    {pipeVisibleColumns.includes('stage_count') && <td>{p.stages?.length || 0} estágios</td>}
+                                                    {pipeVisibleColumns.includes('actions') && (
+                                                        <td style={{ textAlign: 'right' }}>
+                                                            <div className="list-actions">
+                                                                <button type="button" className="icon-button" onClick={() => {
+                                                                    setCurrentPipelineIndex(idx);
+                                                                    setPipelineFormData({
+                                                                        id: p.id,
+                                                                        name: p.name,
+                                                                        stages: [...p.stages]
+                                                                    });
+                                                                    setIsPipelineModalOpen(true);
+                                                                }}><Edit size={12} /></button>
+                                                                <button type="button" className="icon-button danger" onClick={() => {
+                                                                    setPipelineToDelete(p);
+                                                                    setIsDeletePipelineModalOpen(true);
+                                                                }}><Trash2 size={12} /></button>
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -1213,6 +1673,34 @@ const AdminTemplates = () => {
           </div>
       </Modal>
 
+      <Modal isOpen={isLibBulkDeleteModalOpen} onClose={() => setIsLibBulkDeleteModalOpen(false)} title="Excluir Modelos em Massa">
+        <div className="delete-confirm">
+           <AlertCircle size={48} className="danger-icon" />
+           <p>Tem certeza que deseja excluir <strong>{libSelectedIds.length}</strong> modelos da biblioteca global?</p>
+           <p className="subtext">Esta ação é irreversível e removerá os modelos de futuras importações.</p>
+           <div className="actions">
+              <button className="hs-button-secondary" onClick={() => setIsLibBulkDeleteModalOpen(false)}>Cancelar</button>
+              <button className="hs-button-danger" onClick={handleLibBulkDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão em Massa'}
+              </button>
+           </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isPipeBulkDeleteModalOpen} onClose={() => setIsPipeBulkDeleteModalOpen(false)} title="Excluir Pipelines em Massa">
+        <div className="delete-confirm">
+           <AlertCircle size={48} className="danger-icon" />
+           <p>Tem certeza que deseja excluir <strong>{pipeSelectedIds.length}</strong> pipelines de template?</p>
+           <p className="subtext">Esta ação removerá as definições de fluxo para este modelo permanentemente.</p>
+           <div className="actions">
+              <button className="hs-button-secondary" onClick={() => setIsPipeBulkDeleteModalOpen(false)}>Cancelar</button>
+              <button className="hs-button-danger" onClick={handlePipeBulkDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão em Massa'}
+              </button>
+           </div>
+        </div>
+      </Modal>
+
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Modelo Global">
         <div className="delete-confirm">
            <AlertCircle size={48} className="danger-icon" />
@@ -1222,6 +1710,51 @@ const AdminTemplates = () => {
               <button className="hs-button-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
               <button className="hs-button-danger" onClick={handleDelete} disabled={isDeleting}>
                   {isDeleting ? 'Excluindo da Biblioteca...' : 'Confirmar Exclusão'}
+              </button>
+           </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isDeletePipelineModalOpen} onClose={() => setIsDeletePipelineModalOpen(false)} title="Excluir Pipeline de Template">
+        <div className="delete-confirm">
+           <AlertCircle size={48} className="danger-icon" />
+           <p>Tem certeza que deseja excluir a pipeline <strong>{pipelineToDelete?.name}</strong> deste modelo?</p>
+           <p className="subtext">Esta ação removerá a predefinição deste fluxo para novas importações.</p>
+           <div className="actions">
+              <button className="hs-button-secondary" onClick={() => setIsDeletePipelineModalOpen(false)}>Cancelar</button>
+              <button className="hs-button-danger" onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                      const res = await fetchWithAuth(`http://localhost:8000/pipelines/${pipelineToDelete.id}`, { method: 'DELETE' });
+                      if (res.ok) {
+                          addToast("Pipeline de template removida");
+                          setIsDeletePipelineModalOpen(false);
+                          fetchTemplatePipelines(selectedTemplate.id);
+                      } else {
+                          const err = await res.json();
+                          addToast(err.detail || "Erro ao excluir pipeline", "error");
+                      }
+                  } catch (err) {
+                      addToast(err.message, "error");
+                  } finally {
+                      setIsDeleting(false);
+                  }
+              }} disabled={isDeleting}>
+                  {isDeleting ? 'Removendo...' : 'Confirmar Exclusão'}
+              </button>
+           </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isBulkDeleteModalOpen} onClose={() => setIsBulkDeleteModalOpen(false)} title="Excluir Campos em Massa">
+        <div className="delete-confirm">
+           <AlertCircle size={48} className="danger-icon" />
+           <p>Tem certeza que deseja excluir <strong>{selectedIndices.length}</strong> campos deste modelo global?</p>
+           <p className="subtext">Esta ação removerá as definições permanentemente deste rascunho de modelo.</p>
+           <div className="actions">
+              <button className="hs-button-secondary" onClick={() => setIsBulkDeleteModalOpen(false)}>Cancelar</button>
+              <button className="hs-button-danger" onClick={confirmBulkDelete}>
+                  Confirmar Exclusão em Massa
               </button>
            </div>
         </div>

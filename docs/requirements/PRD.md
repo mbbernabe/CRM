@@ -46,6 +46,8 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF025 | **Gestão Administrativa de Templates Globais**: Interface de Super Admin para gerenciar o catálogo de modelos, incluindo descrições de marketing, ícones e categorização. | **P1 (Alta)** | **Pendente** |
 | RF026 | **Template de Tarefas Mandatório**: Provisionamento automático do tipo "Tarefa" e sua pipeline padrão em todo novo Workspace. | **P0 (Crítica)** | **Pendente** |
 | RF027 | **Central de Tarefas (My Tasks Center)**: Painel consolidado do usuário para gerir suas tarefas diárias, vencidas e sem data, focado em produtividade operacional. | **P1 (Alta)** | **Pendente** |
+| RF028 | **Perfil do Usuário & Ativação (Onboarding)**: Interface para o usuário complementar informações pessoais (avatar, WhatsApp, cargo) e ativar seu perfil, personalizando sua identidade no Workspace. | **P1 (Alta)** | **Pendente** |
+| RF029 | **Alteração de Senha (Logado)**: Funcionalidade no perfil do usuário permitindo a troca de senha mediante validação da senha atual. | **P2 (Média)** | **Pendente** |
 
 
 ---
@@ -163,6 +165,8 @@ frontend/src/
 - **Como** gerente de marketing, **eu quero** disponibilizar um endpoint de API do meu CRM para o meu website **para que** os formulários preenchidos caiam diretamente no funil de vendas, sem entrada manual.
 - **Como** Super Administrador (Vendor) da plataforma, **eu quero** ser capaz de criar planos de assinatura parametrizados (ex: preços, limite de licenças e acesso a módulos) **para que** eu consiga gerenciar e monetizar a base de clientes do SaaS sob diferentes esteiras de oferta.
 - **Como** membro de um time, **eu quero** vincular um WorkItem a outros WorkItems relacionados **para que** eu possa enxergar, em um único painel organizado por tipo, todas as relações do objeto — como um Ticket originado de um Contato ou um Negócio ligado a uma Empresa.
+- **Como** usuário do sistema, **eu quero** poder configurar meu perfil adicionando minha foto (avatar), WhatsApp e outras informações **para que** meus colegas de time possam me identificar facilmente nas tarefas e históricos do CRM.
+- **Como** usuário autenticado, **eu quero** poder alterar minha senha nas configurações do meu perfil **para que** eu possa manter a segurança da minha conta atualizada.
 
 ---
 
@@ -189,6 +193,8 @@ frontend/src/
 
 | Data | Mudança |
 |------|---------|
+| 20/04/2026 | Inclusão do **RF029 (Alteração de Senha)**, permitindo que usuários já autenticados alterem sua credencial nas configurações de perfil. |
+| 20/04/2026 | Inclusão do **RF028 (Perfil do Usuário & Ativação)**, permitindo personalização de avatar e adição de contatos como WhatsApp e telefone. |
 | 20/04/2026 | Expansão da visão de Produtividade. Adicionados requisitos **RF026 (Tarefas Mandatórias)** e **RF027 (Central de Tarefas)**. O sistema passará a provisionar tarefas automaticamente para facilitar o fluxo de trabalho diário. |
 | 20/04/2026 | Brainstorming de Modernização UI/UX. Adicionados requisitos **RF023 (Empty State/Onboarding)**, **RF024 (Live Preview Builder)** e **RF025 (Admin de Templates)**. Decidida estratégia de gestão de templates via interface de Super Admin com metadados de marketing. |
 | 19/04/2026 | Implementação completa da **Visibilidade por Time (RF010)**. Filtros automáticos adicionados aos repositórios e casos de uso de WorkItems. Adicionada dependência de segurança para validar `role` e `team_id` via DB. Controle de acesso aplicado a Board, Listagens, Busca, Histórico e Vínculos. |

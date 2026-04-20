@@ -1,7 +1,8 @@
 class DomainException(Exception):
     """Exceção base para erros de negócio que devem ser exibidos ao usuário."""
-    def __init__(self, message: str):
+    def __init__(self, message: str, data: dict = None):
         self.message = message
+        self.data = data or {}
         super().__init__(self.message)
 
 class AuthenticationException(DomainException):

@@ -22,6 +22,8 @@ import AcceptInvite from './components/auth/AcceptInvite';
 import { ToastProvider } from './components/common/Toast';
 import WorkspaceMembers from './components/screens/WorkspaceMembers';
 import AdminTemplates from './components/screens/AdminTemplates';
+import DeactivatedScreen from './components/auth/DeactivatedScreen';
+
 
 
 const PIPELINES = [
@@ -91,10 +93,16 @@ function AppInner() {
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(() => {
     return window.location.pathname.includes('accept-invite');
   });
+  const [isDeactivated, setIsDeactivated] = useState(false);
+  const [inactiveInfo, setInactiveInfo] = useState(null);
 
-  if (loading) {
-     return <div className="loading-screen">Carregando...</div>;
-  }
+
+  // O loading global do AuthContext não deve desmontar a aplicação inteira, 
+  // caso contrário perdemos o estado dos componentes (como o Login) durante a requisição.
+  // if (loading) {
+  //    return <div className="loading-screen">Carregando...</div>;
+  // }
+
 
   if (isAcceptingInvite) {
     return <AcceptInvite />;
@@ -110,6 +118,19 @@ function AppInner() {
     }} />;
   }
 
+  if (isDeactivated) {
+    return (
+      <DeactivatedScreen 
+        inactiveInfo={inactiveInfo} 
+        onBackToLogin={() => {
+          setIsDeactivated(false);
+          setInactiveInfo(null);
+        }} 
+      />
+    );
+  }
+
+
   if (!isAuthenticated) {
     if (isForgotPassword) {
       return <ForgotPassword onBackToLogin={() => setIsForgotPassword(false)} />;
@@ -120,8 +141,13 @@ function AppInner() {
       <Login 
         onSwitchToRegister={() => setIsRegistering(true)} 
         onForgotPassword={() => setIsForgotPassword(true)}
+        onDeactivated={(info) => {
+          setInactiveInfo(info);
+          setIsDeactivated(true);
+        }}
       />
     );
+
   }
 
   const activePipeline = PIPELINES.find(p => p.id === activePipelineId);

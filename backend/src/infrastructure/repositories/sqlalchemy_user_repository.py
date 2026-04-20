@@ -21,6 +21,9 @@ class SqlAlchemyUserRepository(IUserRepository):
             role=model.role,
             reset_password_token=model.reset_password_token,
             reset_password_expires=model.reset_password_expires,
+            is_active=model.is_active,
+            deactivated_at=model.deactivated_at,
+            last_activity=model.last_activity,
             created_at=model.created_at
         )
 
@@ -47,6 +50,9 @@ class SqlAlchemyUserRepository(IUserRepository):
                 model.workspace_id = user.workspace_id
                 model.reset_password_token = user.reset_password_token
                 model.reset_password_expires = user.reset_password_expires
+                model.is_active = user.is_active
+                model.deactivated_at = user.deactivated_at
+                model.last_activity = user.last_activity
         else:
             model = UserModel(
                 name=user.name,
@@ -56,7 +62,10 @@ class SqlAlchemyUserRepository(IUserRepository):
                 workspace_id=user.workspace_id,
                 role=user.role,
                 reset_password_token=user.reset_password_token,
-                reset_password_expires=user.reset_password_expires
+                reset_password_expires=user.reset_password_expires,
+                is_active=user.is_active,
+                deactivated_at=user.deactivated_at,
+                last_activity=user.last_activity
             )
             self.db.add(model)
         

@@ -21,6 +21,9 @@ class User:
     workspace_name: Optional[str] = None
     reset_password_token: Optional[str] = None
     reset_password_expires: Optional[datetime] = None
+    is_active: bool = True
+    deactivated_at: Optional[datetime] = None
+    last_activity: Optional[datetime] = None
     created_at: datetime = datetime.utcnow()
     
     # Relacionamento carreado (opcional)

@@ -59,6 +59,9 @@ class UserModel(BaseModel):
     reset_password_token = Column(String, nullable=True, index=True)
     reset_password_expires = Column(DateTime, nullable=True)
     preferences = Column(JSON, nullable=True) # UI and user settings
+    is_active = Column(Boolean, default=True)
+    deactivated_at = Column(DateTime, nullable=True)
+    last_activity = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     team = relationship("TeamModel", back_populates="users")
