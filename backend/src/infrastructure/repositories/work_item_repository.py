@@ -177,8 +177,7 @@ class WorkItemRepository(IWorkItemRepository):
             selectinload(WorkItemTypeModel.field_definitions),
             selectinload(WorkItemTypeModel.field_groups)
         ).filter(
-            (WorkItemTypeModel.workspace_id == workspace_id) |
-            (WorkItemTypeModel.workspace_id == None)
+            WorkItemTypeModel.workspace_id == workspace_id
         ).all()
         types = []
         for m in models:
@@ -628,9 +627,9 @@ class WorkItemRepository(IWorkItemRepository):
     def import_global_field(self, global_field_id: int, local_type_id: int, workspace_id: int) -> CustomFieldDefinition:
         logger = logging.getLogger(__name__)
         # 1. Obter campo global
-        gf = self.db.query(WorkItemFieldDefinitionModel).filter(
+        gf = self.db.query(WorkItemFieldDefinitionModel).join(WorkItemTypeModel).filter(
             WorkItemFieldDefinitionModel.id == global_field_id,
-            WorkItemFieldDefinitionModel.workspace_id == None
+            WorkItemTypeModel.workspace_id == None
         ).first()
         if not gf:
             raise ValueError("Campo global não encontrado")
@@ -774,8 +773,7 @@ class WorkItemRepository(IWorkItemRepository):
                 field_type=f.get("field_type", "text"),
                 is_required=f.get("is_required", False),
                 is_default=f.get("is_default", False),
-                options_json=json.dumps(f.get("options")) if f.get("options") else None,
-                workspace_id=workspace_id
+                options_json=json.dumps(f.get("options")) if f.get("options") else None
             )
             self.db.add(new_fd)
             count += 1
@@ -797,6 +795,5 @@ class WorkItemRepository(IWorkItemRepository):
             is_default=fd.is_default,
             order=fd.order,
             group_id=fd.group_id,
-            workspace_id=fd.workspace_id,
             source_field_id=fd.source_field_id
         )

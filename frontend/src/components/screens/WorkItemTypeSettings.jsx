@@ -323,6 +323,20 @@ const WorkItemTypeSettings = () => {
   const [visibleColumns, setVisibleColumns] = useState(['label', 'field_type', 'group', 'required', 'actions']);
   const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
 
+  // Types filtering and view mode
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibleListColumns, setVisibleListColumns] = useState(['label', 'field_count', 'actions']);
+  const [listColumnWidths, setListColumnWidths] = useState({
+    label: 300,
+    name: 200,
+    field_count: 150,
+    actions: 100
+  });
+  const [listSort, setListSort] = useState({ key: 'label', direction: 'asc' });
+  const [isListColumnPickerOpen, setIsListColumnPickerOpen] = useState(false);
+  const [listSelectedIds, setListSelectedIds] = useState([]);
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -598,13 +612,45 @@ const WorkItemTypeSettings = () => {
     return result;
   }, [formData.field_definitions, formData.field_groups, tableSort, tableSearch]);
 
+  const filteredTypes = useMemo(() => {
+    let result = [...types];
+    
+    if (searchQuery) {
+        const search = searchQuery.toLowerCase();
+        result = result.filter(t => 
+            t.label.toLowerCase().includes(search) || 
+            t.name.toLowerCase().includes(search)
+        );
+    }
+
+    const { key, direction } = listSort;
+    result.sort((a, b) => {
+        let valA = a[key] || '';
+        let valB = b[key] || '';
+        if (key === 'field_count') {
+            valA = a.field_definitions?.length || 0;
+            valB = b.field_definitions?.length || 0;
+        }
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return result;
+  }, [types, searchQuery, listSort]);
+
   // Redimensionamento de Colunas
-  const startResize = (e, column) => {
+  const startResize = (e, column, type = 'field') => {
     e.preventDefault();
+    let startWidth = 0;
+    if (type === 'field') startWidth = columnWidths[column];
+    else if (type === 'list') startWidth = listColumnWidths[column];
+
     setIsResizing({
         column,
+        type,
         startX: e.pageX,
-        startWidth: columnWidths[column]
+        startWidth: startWidth
     });
   };
 
@@ -613,10 +659,13 @@ const WorkItemTypeSettings = () => {
 
     const doResize = (e) => {
         const diff = e.pageX - isResizing.startX;
-        setColumnWidths(prev => ({
-            ...prev,
-            [isResizing.column]: Math.max(50, isResizing.startWidth + diff)
-        }));
+        const newWidth = Math.max(50, isResizing.startWidth + diff);
+        
+        if (isResizing.type === 'field') {
+            setColumnWidths(prev => ({ ...prev, [isResizing.column]: newWidth }));
+        } else if (isResizing.type === 'list') {
+            setListColumnWidths(prev => ({ ...prev, [isResizing.column]: newWidth }));
+        }
     };
 
     const stopResize = () => setIsResizing(null);
@@ -902,20 +951,100 @@ const WorkItemTypeSettings = () => {
         </div>
       </div>
 
-      <div className="types-grid">
-        {types.length === 0 ? (
+      <div className="library-toolbar">
+          <div className="search-box">
+              <Search size={16} />
+              <input 
+                  type="text" 
+                  placeholder="Pesquisar tipos de objetos..." 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+              />
+          </div>
+          <div className="view-toggles">
+              <button 
+                  className={`view-toggle ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Visão em Cards"
+              >
+                  <Palette size={16} />
+              </button>
+              <button 
+                  className={`view-toggle ${viewMode === 'list' ? 'active' : ''}`}
+                  onClick={() => setViewMode('list')}
+                  title="Visão em Lista"
+              >
+                  <ListIcon size={16} />
+              </button>
+          </div>
+          {viewMode === 'list' && (
+              <>
+                  <div className="column-picker-wrapper">
+                      <button 
+                          className={`hs-button-secondary hs-button-sm ${isListColumnPickerOpen ? 'active' : ''}`}
+                          onClick={() => setIsListColumnPickerOpen(!isListColumnPickerOpen)}
+                      >
+                          <Settings2 size={14} /> Colunas
+                      </button>
+                      {isListColumnPickerOpen && (
+                          <div className="column-picker-dropdown">
+                              <div className="picker-header">Exibir Colunas</div>
+                              <div className="picker-options">
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={visibleListColumns.includes('checkbox')} 
+                                          onChange={() => setVisibleListColumns(prev => prev.includes('checkbox') ? prev.filter(c => c !== 'checkbox') : [...prev, 'checkbox'])}
+                                      />
+                                      Seleção
+                                  </label>
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={visibleListColumns.includes('label')} 
+                                          onChange={() => setVisibleListColumns(prev => prev.includes('label') ? prev.filter(c => c !== 'label') : [...prev, 'label'])}
+                                      />
+                                      Nome do Tipo
+                                  </label>
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={visibleListColumns.includes('name')} 
+                                          onChange={() => setVisibleListColumns(prev => prev.includes('name') ? prev.filter(c => c !== 'name') : [...prev, 'name'])}
+                                      />
+                                      Identificador
+                                  </label>
+                                  <label className="column-picker-item">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={visibleListColumns.includes('field_count')} 
+                                          onChange={() => setVisibleListColumns(prev => prev.includes('field_count') ? prev.filter(c => c !== 'field_count') : [...prev, 'field_count'])}
+                                      />
+                                      Total de Campos
+                                  </label>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </>
+          )}
+      </div>
+
+      <div className={`library-content ${viewMode}-view`}>
+        {filteredTypes.length === 0 ? (
            <div className="empty-types">
-              <Settings2 size={48} className="empty-icon" />
-              <p>Nenhum tipo customizado criado ainda.</p>
-              <button className="hs-button-link" onClick={handleOpenCreate}>Comece criando o primeiro tipo de objeto</button>
+              {searchQuery ? <Search size={48} className="empty-icon" /> : <Settings2 size={48} className="empty-icon" />}
+              <p>{searchQuery ? `Nenhum tipo de objeto encontrado para "${searchQuery}"` : "Nenhum tipo customizado criado ainda."}</p>
+              {!searchQuery && <button className="hs-button-link" onClick={handleOpenCreate}>Comece criando o primeiro tipo de objeto</button>}
            </div>
-        ) : (
-           types.map((type) => {
+        ) : viewMode === 'grid' ? (
+          <div className="types-grid">
+           {filteredTypes.map((type) => {
             if (!type) return null;
             return (
               <div key={type.id || Math.random()} className="type-card">
                 <div className="type-card-body">
-                   <div className="type-icon-circle" style={{ backgroundColor: safeAlphaColor(type.color), color: safeColor(type.color) }}>
+                   <div className="type-icon-circle" style={{ backgroundColor: type.color + '20', color: type.color }}>
                       <Code size={20} />
                    </div>
                    <div className="type-info">
@@ -951,7 +1080,112 @@ const WorkItemTypeSettings = () => {
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
+        ) : (
+          <div className="types-list" style={{ overflowX: 'auto' }}>
+             <table className="hs-table" style={{ tableLayout: 'fixed', width: 'fit-content', minWidth: '100%' }}>
+                <thead>
+                    <tr>
+                        {visibleListColumns.includes('checkbox') && (
+                            <th style={{ width: listColumnWidths.checkbox || 50 }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={listSelectedIds.length === filteredTypes.length && filteredTypes.length > 0}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setListSelectedIds(filteredTypes.map(t => t.id));
+                                        else setListSelectedIds([]);
+                                    }}
+                                />
+                            </th>
+                        )}
+                        {visibleListColumns.includes('label') && (
+                            <th style={{ width: listColumnWidths.label }}>
+                                <div className="th-content" onClick={() => setListSort({ key: 'label', direction: listSort.key === 'label' && listSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                    Nome do Tipo {listSort.key === 'label' && (listSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                                </div>
+                                <div className="resizer" onMouseDown={e => startResize(e, 'label', 'list')} />
+                            </th>
+                        )}
+                        {visibleListColumns.includes('name') && (
+                            <th style={{ width: listColumnWidths.name }}>
+                                <div className="th-content" onClick={() => setListSort({ key: 'name', direction: listSort.key === 'name' && listSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                    Identificador {listSort.key === 'name' && (listSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                                </div>
+                                <div className="resizer" onMouseDown={e => startResize(e, 'name', 'list')} />
+                            </th>
+                        )}
+                        {visibleListColumns.includes('field_count') && (
+                            <th style={{ width: listColumnWidths.field_count }}>
+                                <div className="th-content" onClick={() => setListSort({ key: 'field_count', direction: listSort.key === 'field_count' && listSort.direction === 'asc' ? 'desc' : 'asc' })}>
+                                    Campos {listSort.key === 'field_count' && (listSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                                </div>
+                                <div className="resizer" onMouseDown={e => startResize(e, 'field_count', 'list')} />
+                            </th>
+                        )}
+                        {visibleListColumns.includes('actions') && (
+                            <th style={{ width: listColumnWidths.actions || 100, textAlign: 'right' }}>Ações</th>
+                        )}
+                    </tr>
+                </thead>
+                <tbody>
+                    {filteredTypes.map(type => (
+                        <tr key={type.id} className={listSelectedIds.includes(type.id) ? 'selected' : ''}>
+                            {visibleListColumns.includes('checkbox') && (
+                                <td>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={listSelectedIds.includes(type.id)}
+                                        onChange={() => setListSelectedIds(prev => prev.includes(type.id) ? prev.filter(id => id !== type.id) : [...prev, type.id])}
+                                    />
+                                </td>
+                            )}
+                            {visibleListColumns.includes('label') && (
+                                <td>
+                                    <div className="list-item-name">
+                                        <div className="type-icon-mini" style={{ color: type.color }}>
+                                            <Code size={14} />
+                                        </div>
+                                        <strong>{type.label}</strong>
+                                    </div>
+                                </td>
+                            )}
+                            {visibleListColumns.includes('name') && <td><code>{type.name}</code></td>}
+                            {visibleListColumns.includes('field_count') && <td>{type.field_definitions?.length || 0} campos</td>}
+                            {visibleListColumns.includes('actions') && (
+                                <td style={{ textAlign: 'right' }}>
+                                    <div className="list-actions">
+                                        {type.id && typeUpdates && typeUpdates[type.id] && (
+                                            <button 
+                                               className="icon-button notification animate-pulse" 
+                                               onClick={(e) => {
+                                                   e.stopPropagation();
+                                                   setSyncingType(type);
+                                                   if (typeUpdates[type.id]?.diffs) {
+                                                      setSelectedSyncFields(typeUpdates[type.id].diffs.map(d => d.source_field_id));
+                                                   } else {
+                                                      setSelectedSyncFields([]);
+                                                   }
+                                                   setIsSyncModalOpen(true);
+                                               }}
+                                               title="Atualizações disponíveis"
+                                               style={{ backgroundColor: '#fff7ed', border: '1px solid #fdba74', marginRight: '8px' }}
+                                            >
+                                               <RefreshCw size={14} color="#f97316" />
+                                            </button>
+                                        )}
+                                        <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={14} /></button>
+                                        {!type.is_system && (
+                                            <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={14} /></button>
+                                        )}
+                                    </div>
+                                </td>
+                            )}
+                        </tr>
+                    ))}
+                </tbody>
+             </table>
+          </div>
         )}
       </div>
 
