@@ -23,7 +23,21 @@
 - [ ] **Lógica Inter-propriedades**: Autopreenchimento (ex: CEP preenche Logradouro/Cidade/UF) e cálculos entre campos.
 - [ ] **Responsividade Premium**: ~~Implementar e validar adaptabilidade em todas as telas existentes e futuras (Mobile/Tablet/Desktop).~~ ✅ Implementado — Sidebar colapsável, mobile header com hamburger, overlay.
 
-## 📋 Gestão de WorkItems & Atividades
+## 🎨 Modernização UI/UX (Módulos & Onboarding)
+- [ ] **Onboarding Inteligente (Empty State)**: Substituir a mensagem de "vazio" por cards visuais de templates populares (Vendas, RH, Suporte).
+- [ ] **Instalação em 1 Clique**: Ao clicar em um template da vitrine, o sistema deve provisionar o objeto e suas pipelines automaticamente.
+- [ ] **Editor Visual com Live Preview**: Redesenhar o builder de campos para incluir um painel de visualização em tempo real de como o formulário ficará.
+- [ ] **Progressive Disclosure**: Reorganizar as telas de configuração para ocultar complexidade técnica (IDs internos, grupos complexos) em seções "Avançadas".
+- [ ] **Painel Administrativo de Templates (Super Admin)**: Criar interface para que o dono do SaaS possa configurar os modelos globais com metadados de marketing (descrição, categorias, ícones premium).
+
+## 🎯 Produtividade & Tarefas (My Tasks Center)
+- [ ] **Provisionamento Mandatório de Tarefas (RF026)**: Ao criar um novo Workspace, o sistema deve injetar automaticamente o `WorkItemType` "Tarefa" e uma pipeline de 3 estágios (A fazer, Fazendo, Feito).
+- [ ] **Central "Minhas Tarefas" (Dashboard)**: Uma visão consolidada onde o usuário vê apenas suas tarefas, agrupadas por:
+    - **🚨 Vencidas**: Destaque visual crítico para o que passou do prazo.
+    - **📅 Para Hoje**: Foco no trabalho imediato.
+    - **📝 Sem Data / Backlog**: Tarefas que ainda precisam de agendamento.
+- [ ] **Widget de Acesso Rápido**: Mini-lista de tarefas acessível no Header ou Sidebar para consulta rápida de qualquer tela.
+- [ ] **Vinculação Contextual**: Garantir que toda tarefa possa ser vinculada a um Contato, Negócio ou Empresa com facilidade (usando RF021).
 - [x] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído. *(Backend: `owner_id` em `WorkItemModel`, Frontend: `AssignWorkItemModal.jsx`, `WorkItemCard.jsx` com avatar)*
 - [x] **Histórico de Ações**: Todas as ações em um WorkItem são registradas em atividades automaticamente (criação, movimentação, edição de campos, atribuição). *(Backend: `ManageWorkItemHistoryUseCase`, Frontend: `WorkItemHistoryPanel.jsx`)*
 - [x] **Observações/Notas**: O usuário pode criar observações que são registradas no histórico. *(Backend: `POST /{item_id}/notes`, Frontend: `WorkItemHistoryPanel.jsx`)*

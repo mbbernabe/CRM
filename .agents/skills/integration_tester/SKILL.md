@@ -12,6 +12,7 @@ Validar fluxos de ponta a ponta (API -> Use Case -> Repo -> DB) garantindo a int
 Os testes de integração devem ser organizados em:
 - `tests/integration/`: Testes que envolvem rotas da API e persistência real (ou em memória).
 - `tests/integration/flows/`: Testes de processos complexos que envolvem múltiplos passos ou entidades interdependentes.
+- `resources/csv/`: Massa de dados estática para testes de importação e preenchimento.
 - `scripts/testing/`: Scripts de massa de dados complexa, automações de testes e ferramentas auxiliares de diagnóstico de integração.
 
 ## 🛠️ Frameworks e Ferramentas

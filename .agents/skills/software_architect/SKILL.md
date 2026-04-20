@@ -13,6 +13,8 @@ Todo código gerado deve respeitar a hierarquia e o isolamento por `workspace_id
 - `src/domain/`: Entidades (ex: `Workspace`, `User`, `Team`) e Interfaces (Repositories).
 - `src/application/`: Use Cases (sempre exigindo `workspace_id` para operações de dados) e DTOs.
 - `src/infrastructure/`: Implementações SQL (SQLAlchemy), API (FastAPI) e Security.
+- `migrations/`: Scripts de migração de banco de dados e sementes (ex: `migrations/migrate_db_schema.py`).
+- `resources/csv/`: Templates e dados estáticos em formato CSV para importações em massa.
 - `scripts/`: Ferramentas determinísticas organizadas por contexto (ex: `scripts/database/reset_db.py`, `scripts/auth/test_auth.py`).
 
 ## 🛠️ Regras de Arquitetura Multi-Tenant
@@ -34,7 +36,7 @@ Todo código gerado deve respeitar a hierarquia e o isolamento por `workspace_id
 
 ### 3. Camada de Infraestrutura (Infrastructure)
 - **ORM:** Utilizar SQLAlchemy (Mapping Declarativo).
-- **Migrations:** Toda alteração de schema deve ser acompanhada de um script de migração do **Alembic**.
+- **Migrations:** Toda alteração de schema deve ser acompanhada de um script de migração do **Alembic** (ou script manual equivalente) localizado em `backend/migrations/`.
 - **Repositórios:** Implementar os métodos definidos nas interfaces do domínio.
 - **Eager Loading Obrigatório:** Toda query que acessa relacionamentos DEVE usar `selectinload` ou `joinedload` (ver seção de Performance).
 - **Índices:** Toda coluna usada em filtros frequentes (especialmente `workspace_id`) DEVE ter `index=True` (ver seção de Performance).

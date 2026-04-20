@@ -12,6 +12,7 @@ Garantir a confiabilidade do sistema através da criação e manutenção de su�
 Os testes devem ser organizados para espelhar a estrutura do código-fonte:
 - `tests/unit/domain/`: Testes para Entidades (sempre validando `workspace_id`) e Value Objects.
 - `tests/unit/application/`: Testes para Use Cases (validando isolamento por workspace e mensagens amigáveis).
+- `resources/csv/`: Massa de dados estática para testes.
 - `scripts/testing/`: Scripts determinísticos de suporte, mocks reutilizáveis e massa de dados em `backend/scripts/`.
 
 ## 📐 Regras Técnicas de Implementação (Foco em Workspace)

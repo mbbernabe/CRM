@@ -12,6 +12,7 @@ Atuar como a ponte entre as necessidades do usuário e a implementação técnic
 4. **Análise de Impacto**: Avaliar como novas mudanças afetam os requisitos existentes.
 
 - `docs/requirements/`: Local central para PRD e Backlog (foco em SaaS Multi-tenant).
+- `resources/csv/`: Definições de campos e modelos de dados para importação.
 - `scripts/diagnostics/`: Scripts de exploração de dados e auditoria para levantamento de requisitos técnicos em `backend/scripts/`.
 
 ## 🛠️ Protocolos de Trabalho (Foco em Workspace)

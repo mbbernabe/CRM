@@ -13,6 +13,8 @@ Todo código de domínio deve ser organizado da seguinte forma:
 - `src/domain/entities/`: Classes (ex: `Workspace`, `User`, `Team`) com `workspace_id` obrigatório para isolamento.
 - `src/domain/exceptions/`: Exceções de negócio amigáveis (ex: `DomainException`, `AuthenticationException`) e erros sistêmicos.
 - `src/domain/results/`: Classes para lidar com resultados de validação.
+- `migrations/`: Scripts de migração de banco de dados e sementes.
+- `resources/csv/`: Templates e dados estáticos em formato CSV.
 - `scripts/`: Scripts determinísticos para carga de dados, reset de banco e diagnósticos em `backend/scripts/`.
 
 ## 🛠️ Padrões de Validação, Erros e Multi-Tenancy

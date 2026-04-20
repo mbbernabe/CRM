@@ -41,6 +41,12 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF019 | **API Pública (Leads Inbound)**: Criação de API configurável e segura para receber leads gerados por fontes e aplicações de terceiros (ex: formulário de website) injetando-os direto no CRM. | **P1 (Alta)** | **Pendente** |
 | RF020 | **Gestão de Planos (SaaS)**: O Super Administrador poderá criar e gerenciar planos de assinatura, definindo limites de recursos, preços e permissões atrelados a cada plano da Área de Trabalho. | **P1 (Alta)** | **Pendente** |
 | RF021 | **Vinculação entre WorkItems**: Um WorkItem pode ser vinculado a um ou mais outros WorkItems. Na visualização, os vínculos são exibidos agrupados por tipo de WorkItem (ex: Contatos, Negócios, Tickets). A relação é bidirecional e isolada por `workspace_id`. | **P1 (Alta)** | **✅ Concluído** |
+| RF023 | **Onboarding Inteligente (Empty State de Módulos)**: Substituir tela vazia por vitrine de modelos (templates) com cards visuais e instalação em 1 clique. | **P1 (Alta)** | **Pendente** |
+| RF024 | **Editor Visual com Live Preview**: Redesenho do criador de tipos de objetos com foco em *Progressive Disclosure* (campos básicos vs avançados) e pré-visualização em tempo real do formulário. | **P1 (Alta)** | **Pendente** |
+| RF025 | **Gestão Administrativa de Templates Globais**: Interface de Super Admin para gerenciar o catálogo de modelos, incluindo descrições de marketing, ícones e categorização. | **P1 (Alta)** | **Pendente** |
+| RF026 | **Template de Tarefas Mandatório**: Provisionamento automático do tipo "Tarefa" e sua pipeline padrão em todo novo Workspace. | **P0 (Crítica)** | **Pendente** |
+| RF027 | **Central de Tarefas (My Tasks Center)**: Painel consolidado do usuário para gerir suas tarefas diárias, vencidas e sem data, focado em produtividade operacional. | **P1 (Alta)** | **Pendente** |
+
 
 ---
 
@@ -138,9 +144,10 @@ frontend/src/
 2.  ~~**Módulo de Gestão de Times & Auth**: Estrutura de Users, Teams, Invites e Tenancy.~~ ✅
 3.  ~~**Módulo de Fluxos (Pipelines)**: Estruturação de estágios e transições.~~ ✅
 4.  ~~**Módulo de Vinculação entre WorkItems**: Relações bidirecionais entre objetos.~~ ✅
-5.  **Módulo de Visibilidade por Time**: Filtro de dados por `team_id`.
-6.  **Módulo de Integrações externas**: Webhooks e conectores sociais.
-7.  **Módulo de Planos & Assinaturas**: Monetização SaaS.
+5.  **Módulo de Visibilidade por Time**: Filtro de dados por `team_id`. | ✅ Concluído
+6.  **Módulo de Modernização UI/UX (Módulos)**: Onboarding, Templates e Live Preview. | **Pendente**
+7.  **Módulo de Integrações externas**: Webhooks e conectores sociais. | Pendente
+8.  **Módulo de Planos & Assinaturas**: Monetização SaaS. | Pendente
 
 ---
 
@@ -167,10 +174,23 @@ frontend/src/
 
 ---
 
-## 8. Changelog de Atualizações do PRD
+---
+187: 
+188: ## 9. Design & Prototipagem (Wireframes)
+189: 
+190: Documentação visual dos conceitos de UX/UI discutidos:
+191: 
+192: - [**Módulos & Onboarding (Modernização)**](file:///C:/Users/Admin/.gemini/antigravity/brain/67f1c977-e3d2-41a0-8b11-ab69271195d8/ux_wireframes_crm.md): Conceitos de *Empty State* com vitrine de templates e o novo *Live Preview Builder*.
+193: - [**Central de Tarefas (My Tasks Center)**](file:///C:/Users/Admin/.gemini/antigravity/brain/67f1c977-e3d2-41a0-8b11-ab69271195d8/wireframe_my_tasks_center.md): Layout de quartel-general diário com visão de 3 colunas (Vencidas, Hoje, Backlog) e acesso global via *Drawer*.
+194: 
+195: ---
+196: 
+197: ## 8. Changelog de Atualizações do PRD
 
 | Data | Mudança |
 |------|---------|
+| 20/04/2026 | Expansão da visão de Produtividade. Adicionados requisitos **RF026 (Tarefas Mandatórias)** e **RF027 (Central de Tarefas)**. O sistema passará a provisionar tarefas automaticamente para facilitar o fluxo de trabalho diário. |
+| 20/04/2026 | Brainstorming de Modernização UI/UX. Adicionados requisitos **RF023 (Empty State/Onboarding)**, **RF024 (Live Preview Builder)** e **RF025 (Admin de Templates)**. Decidida estratégia de gestão de templates via interface de Super Admin com metadados de marketing. |
 | 19/04/2026 | Implementação completa da **Visibilidade por Time (RF010)**. Filtros automáticos adicionados aos repositórios e casos de uso de WorkItems. Adicionada dependência de segurança para validar `role` e `team_id` via DB. Controle de acesso aplicado a Board, Listagens, Busca, Histórico e Vínculos. |
 | 19/04/2026 | Implementação completa da **Vinculação entre WorkItems (RF021)**. Adicionada tabela `work_item_links`, repositório, caso de uso com registro de histórico bidirecional e nova interface no frontend (WorkItemLinksPanel) integrada ao modal de detalhes. Adicionado também endpoint de busca global por título. |
 | 17/04/2026 | Auditoria completa do código-fonte. Atualização massiva de status: RF004, RF005, RF009, RF011, RF012, RF013, RF014, RF015, RF016, RF022 marcados como **Concluído**. RF007 reclassificado para **Em Andamento** (tipos de campo `cpf`, `cep`, `phone` existem no backend, falta implementar máscaras de input no frontend). Adicionada seção de Arquitetura Técnica Implementada. Roadmap atualizado. |
