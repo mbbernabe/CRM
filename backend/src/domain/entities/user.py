@@ -15,16 +15,28 @@ class User:
     name: str = ""
     email: str = ""
     password: str = ""
-    team_id: Optional[int] = None
-    workspace_id: Optional[int] = None
-    role: str = "user"
-    workspace_name: Optional[str] = None
-    reset_password_token: Optional[str] = None
-    reset_password_expires: Optional[datetime] = None
+    last_active_workspace_id: Optional[int] = None
+    last_active_membership_id: Optional[int] = None
+    preferences: Optional[dict] = None
     is_active: bool = True
     deactivated_at: Optional[datetime] = None
     last_activity: Optional[datetime] = None
     created_at: datetime = datetime.utcnow()
     
-    # Relacionamento carreado (opcional)
-    team: Optional[Team] = None
+    # Relacionamentos
+    memberships: Optional[list] = None
+
+@dataclass
+class Membership:
+    id: Optional[int] = None
+    user_id: int = 0
+    workspace_id: int = 0
+    team_id: Optional[int] = None
+    role: str = "user"
+    is_active: bool = True
+    joined_at: datetime = datetime.utcnow()
+    
+    # Carregados via eager loading
+    workspace_name: Optional[str] = None
+    team_name: Optional[str] = None
+    primary_color: Optional[str] = None

@@ -9,8 +9,8 @@ from src.infrastructure.repositories.sqlalchemy_team_repository import SqlAlchem
 from src.infrastructure.repositories.sqlalchemy_settings_repository import SqlAlchemySettingsRepository
 from src.infrastructure.services.email_service import EmailService
 from src.infrastructure.security.auth_utils import SecurityUtils
-from src.domain.entities.user import User
-
+from src.domain.entities.user import User, Membership
+from src.infrastructure.repositories.sqlalchemy_membership_repository import SqlAlchemyMembershipRepository
 
 class SendInvitationUseCase:
     def __init__(
@@ -33,10 +33,11 @@ class SendInvitationUseCase:
         role: str = "user",
         team_id: Optional[int] = None,
     ) -> WorkspaceInvitation:
-        # 1. Check if user already a member
+        # 1. Check if user already a member of THIS workspace
         existing = self.user_repo.get_by_email(email)
-        if existing and existing.workspace_id == workspace_id:
-            raise ValueError(f"O e-mail '{email}' já é membro desta área de trabalho.")
+        if existing and existing.memberships:
+            if any(m.workspace_id == workspace_id for m in existing.memberships):
+                raise ValueError(f"O e-mail '{email}' já é membro desta área de trabalho.")
 
         # 2. Get workspace to determine expiry
         workspace = self.workspace_repo.get_by_id(workspace_id)
@@ -111,9 +112,11 @@ class AcceptInvitationUseCase:
         self,
         invitation_repo: InvitationRepository,
         user_repo: SqlAlchemyUserRepository,
+        membership_repo: SqlAlchemyMembershipRepository
     ):
         self.invitation_repo = invitation_repo
         self.user_repo = user_repo
+        self.membership_repo = membership_repo
 
     def execute(self, token: str, name: str, password: str) -> User:
         # 1. Validate invitation
@@ -127,21 +130,38 @@ class AcceptInvitationUseCase:
 
         # 2. Check if email already registered
         existing = self.user_repo.get_by_email(invitation.email)
+        
         if existing:
-            raise ValueError("Este e-mail já possui uma conta cadastrada. Faça login diretamente.")
+            # 2.1 Just add membership to existing user
+            membership = Membership(
+                user_id=existing.id,
+                workspace_id=invitation.workspace_id,
+                team_id=invitation.team_id,
+                role=invitation.role
+            )
+            self.membership_repo.create(membership)
+            self.invitation_repo.mark_accepted(token)
+            return existing
 
-        # 3. Create user
+        # 3. Create new user
         user = User(
             name=name,
             email=invitation.email,
             password=SecurityUtils.hash_password(password),
-            workspace_id=invitation.workspace_id,
-            team_id=invitation.team_id,
-            role=invitation.role,
+            last_active_workspace_id=invitation.workspace_id
         )
         saved_user = self.user_repo.save(user)
 
-        # 4. Mark invitation as accepted
+        # 4. Create membership
+        membership = Membership(
+            user_id=saved_user.id,
+            workspace_id=invitation.workspace_id,
+            team_id=invitation.team_id,
+            role=invitation.role
+        )
+        self.membership_repo.create(membership)
+
+        # 5. Mark invitation as accepted
         self.invitation_repo.mark_accepted(token)
 
         return saved_user

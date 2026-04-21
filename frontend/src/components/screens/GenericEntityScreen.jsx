@@ -10,7 +10,7 @@ import GenericEntityDetails from './GenericEntityDetails';
 import './GenericEntityScreen.css';
 
 const GenericEntityScreen = ({ typeName = 'contact' }) => {
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, workspace } = useAuth();
   const [items, setItems] = useState([]);
   const [itemType, setItemType] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const GenericEntityScreen = ({ typeName = 'contact' }) => {
 
   const fetchTypeInfo = async () => {
     try {
-      const res = await fetchWithAuth('http://localhost:8000/workitems/types');
+      const res = await fetchWithAuth('/workitems/types');
       if (res.ok) {
         const types = await res.json();
         const type = types.find(t => t.name === typeName);
@@ -35,9 +35,7 @@ const GenericEntityScreen = ({ typeName = 'contact' }) => {
   const fetchItems = async () => {
     if (!itemType) return;
     try {
-      // Usaremos uma rota específica para listar por tipo (adicionamos no repository)
-      // Se não houver, listaremos todos e filtraremos no front (alfa)
-      const res = await fetchWithAuth(`http://localhost:8000/workitems/types/${itemType.id}/items`);
+      const res = await fetchWithAuth(`/workitems/types/${itemType.id}/items`);
       if (res.ok) {
         setItems(await res.json());
       }
@@ -47,8 +45,9 @@ const GenericEntityScreen = ({ typeName = 'contact' }) => {
   };
 
   useEffect(() => {
+    setItems([]);
     fetchTypeInfo();
-  }, [typeName]);
+  }, [workspace?.id, typeName]);
 
   useEffect(() => {
     if (itemType) {
@@ -71,8 +70,8 @@ const GenericEntityScreen = ({ typeName = 'contact' }) => {
     setIsSaving(true);
     try {
       const url = selectedItem 
-        ? `http://localhost:8000/workitems/${selectedItem.id}`
-        : `http://localhost:8000/workitems`;
+        ? `/workitems/${selectedItem.id}`
+        : `/workitems`;
       
       const payload = {
         ...formData,

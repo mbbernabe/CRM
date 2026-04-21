@@ -46,9 +46,9 @@ const WorkspaceMembers = () => {
     setLoading(true);
     try {
       const [membersRes, invitesRes, teamsRes] = await Promise.all([
-        fetchWithAuth(`http://localhost:8000/workspaces/${workspace.id}/users`),
-        fetchWithAuth(`http://localhost:8000/invitations`),
-        fetchWithAuth(`http://localhost:8000/teams`),
+        fetchWithAuth(`/workspaces/${workspace.id}/users`),
+        fetchWithAuth(`/invitations`),
+        fetchWithAuth(`/teams`),
       ]);
       if (membersRes.ok) setMembers(await membersRes.json());
       if (invitesRes.ok) setInvitations(await invitesRes.json());
@@ -68,7 +68,7 @@ const WorkspaceMembers = () => {
     setInviteError('');
     setInviteSuccess('');
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/invitations`, {
+      const res = await fetchWithAuth(`/invitations`, {
         method: 'POST',
         body: JSON.stringify({
           email: inviteForm.email,
@@ -94,7 +94,7 @@ const WorkspaceMembers = () => {
     setTeamSubmitting(true);
     setTeamError('');
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/teams`, {
+      const res = await fetchWithAuth(`/teams`, {
         method: 'POST',
         body: JSON.stringify({ name: newTeamName }),
       });
@@ -114,7 +114,7 @@ const WorkspaceMembers = () => {
   const handleDeleteTeam = async (id) => {
     if (!window.confirm('Excluir este time?')) return;
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/teams/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/teams/${id}`, { method: 'DELETE' });
       if (!res.ok) {
           const data = await res.json();
           alert(data.detail || 'Erro ao excluir time.');
@@ -129,7 +129,7 @@ const WorkspaceMembers = () => {
   const handleCancelInvite = async (id) => {
     if (!window.confirm('Cancelar este convite?')) return;
     try {
-      await fetchWithAuth(`http://localhost:8000/invitations/${id}`, { method: 'DELETE' });
+      await fetchWithAuth(`/invitations/${id}`, { method: 'DELETE' });
       fetchData();
     } catch (e) {
       console.error(e);

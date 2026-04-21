@@ -104,9 +104,9 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
 
           <div className="form-group">
             <label>E-mail <span className="required-indicator">*</span></label>
-            <input 
-              type="email" 
-              className="hs-input" 
+            <input
+              type="email"
+              className="hs-input"
               placeholder="seu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -115,13 +115,10 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
           </div>
 
           <div className="form-group">
-            <div className="label-row">
-                <label>Senha <span className="required-indicator">*</span></label>
-                <button type="button" onClick={onForgotPassword} className="hs-link-small">Esqueci minha senha</button>
-            </div>
-            <input 
-              type="password" 
-              className="hs-input" 
+
+            <input
+              type="password"
+              className="hs-input"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -137,9 +134,9 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
             <span>OU</span>
           </div>
 
-          <button 
-            type="button" 
-            className="hs-button-secondary dev-button" 
+          <button
+            type="button"
+            className="hs-button-secondary dev-button"
             onClick={handleQuickAccess}
             disabled={loading}
           >
@@ -149,6 +146,10 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
 
         <div className="auth-footer">
           <p>Não tem uma conta? <button onClick={onSwitchToRegister} className="hs-link">Cadastre-se</button></p>
+        </div>
+        <div className="label-row">
+          <label>Senha <span className="required-indicator">*</span></label>
+          <button type="button" onClick={onForgotPassword} className="hs-link-small">Esqueci minha senha</button>
         </div>
       </div>
 

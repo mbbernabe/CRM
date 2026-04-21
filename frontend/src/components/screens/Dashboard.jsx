@@ -21,7 +21,7 @@ const StatCard = ({ title, value, change, icon, color }) => (
 );
 
 const Dashboard = () => {
-  const { fetchWithAuth } = useAuth();
+  const { user, workspace, fetchWithAuth } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -29,6 +29,10 @@ const Dashboard = () => {
   const [selectedPipelineId, setSelectedPipelineId] = useState('');
   const [funnelData, setFunnelData] = useState(null);
   const [loadingFunnel, setLoadingFunnel] = useState(false);
+
+  // Determina o contexto do time
+  const currentMembership = user?.memberships?.find(m => m.workspace_id === workspace?.id);
+  const teamName = currentMembership?.team_name || 'Geral';
 
   useEffect(() => {
     const loadStats = async () => {
@@ -58,7 +62,7 @@ const Dashboard = () => {
       }
     };
     loadStats();
-  }, []);
+  }, [workspace?.id]);
 
   useEffect(() => {
     if (selectedPipelineId) {
@@ -94,6 +98,17 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container animate-in">
+      <header className="dashboard-header">
+        <div className="welcome-section">
+          <h1>Olá, {user?.name?.split(' ')[0]}! 👋</h1>
+          <p className="context-meta">
+            Você está visualizando os dados de <strong>{workspace?.name}</strong> 
+            <span className="separator">•</span> 
+            Equipe: <span className="team-badge-inline">{teamName}</span>
+          </p>
+        </div>
+      </header>
+
       <div className="stats-grid">
         <StatCard 
           title="Total de Itens" 

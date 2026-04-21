@@ -23,8 +23,10 @@ def register(dto: UserCreateDTO, db: Session = Depends(get_db)):
     user_repo = SqlAlchemyUserRepository(db)
     team_repo = SqlAlchemyTeamRepository(db)
     workspace_repo = SqlAlchemyWorkspaceRepository(db)
+    from src.infrastructure.repositories.sqlalchemy_membership_repository import SqlAlchemyMembershipRepository
+    membership_repo = SqlAlchemyMembershipRepository(db)
     try:
-        user, workspace = RegisterUserUseCase(user_repo, team_repo, workspace_repo).execute(dto)
+        user, workspace = RegisterUserUseCase(user_repo, team_repo, workspace_repo, membership_repo).execute(dto)
         return AuthResponseDTO(
             user=UserReadDTO.model_validate(user),
             workspace=workspace
@@ -106,3 +108,48 @@ def reset_password(dto: ResetPasswordDTO, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Não foi possível redefinir sua senha agora. Por favor, entre em contato com o suporte se o problema persistir."
         )
+
+from src.infrastructure.api.dependencies import get_user_id_optional
+
+@router.get("/me", response_model=UserReadDTO)
+def get_me(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_user_id_optional)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    
+    user_repo = SqlAlchemyUserRepository(db)
+    user = user_repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return user
+
+@router.post("/switch-context/{context_id}")
+def switch_context(
+    context_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_user_id_optional)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    
+    user_repo = SqlAlchemyUserRepository(db)
+    user = user_repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Tentar encontrar a membership pelo ID (context_id)
+    membership = next((m for m in user.memberships if m.id == context_id), None)
+    
+    if not membership:
+        # Fallback: Se o ID for um workspace_id, pegar a primeira membership dele
+        membership = next((m for m in user.memberships if m.workspace_id == context_id), None)
+        
+    if not membership:
+        raise HTTPException(status_code=403, detail="Acesso negado a este contexto")
+        
+    user.last_active_workspace_id = membership.workspace_id
+    user.last_active_membership_id = membership.id
+    user_repo.save(user)
+    return {"status": "ok", "workspace_id": membership.workspace_id, "membership_id": membership.id}

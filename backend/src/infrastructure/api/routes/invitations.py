@@ -64,6 +64,7 @@ def send_invitation(
     if not user_id:
         raise HTTPException(status_code=401, detail="Autenticação necessária.")
     try:
+        from src.infrastructure.repositories.sqlalchemy_membership_repository import SqlAlchemyMembershipRepository
         use_case = SendInvitationUseCase(
             invitation_repo=InvitationRepository(db),
             user_repo=SqlAlchemyUserRepository(db),
@@ -116,9 +117,11 @@ def validate_invitation(token: str, db: Session = Depends(get_db)):
 @router.post("/accept")
 def accept_invitation(dto: AcceptInviteDTO, db: Session = Depends(get_db)):
     try:
+        from src.infrastructure.repositories.sqlalchemy_membership_repository import SqlAlchemyMembershipRepository
         use_case = AcceptInvitationUseCase(
             invitation_repo=InvitationRepository(db),
             user_repo=SqlAlchemyUserRepository(db),
+            membership_repo=SqlAlchemyMembershipRepository(db)
         )
         user = use_case.execute(token=dto.token, name=dto.name, password=dto.password)
         return {"message": "Convite aceito com sucesso! Você já pode fazer login.", "email": user.email}

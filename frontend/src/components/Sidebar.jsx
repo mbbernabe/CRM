@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
+import WorkspaceSwitcher from './common/WorkspaceSwitcher';
 
 const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -28,7 +29,12 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
   
   const userInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
 
-  // ... (menuItems definition stays same)
+  // Buscar role no workspace atual
+  const currentMembership = user?.memberships?.find(m => m.workspace_id === workspace?.id);
+  const currentRole = currentMembership?.role || 'user';
+  const isPowerUser = currentRole === 'superadmin' || currentRole === 'admin';
+
+  // ... (menuItems definition)
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', id: 'dashboard' },
     { icon: <GitBranch size={20} />, label: 'Processos', id: 'pipeline-board' },
@@ -49,14 +55,12 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
     ]
   };
 
-  const isPowerUser = user?.role === 'superadmin' || user?.role === 'admin';
-
   if (isPowerUser) {
     configGroup.children = configGroup.children.filter(c => c.id !== 'workspace-settings');
     configGroup.children.push({ label: 'Área de Trabalho', id: 'workspace-settings' });
     configGroup.children.push({ label: 'Membros & Convites', id: 'workspace-members' });
     
-    if (user?.role === 'superadmin') {
+    if (currentRole === 'superadmin') {
       configGroup.children = configGroup.children.filter(c => c.id !== 'system-settings');
       configGroup.children.push({ label: 'E-mail (SMTP)', id: 'system-settings' });
     }
@@ -65,7 +69,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
       menuItems.push(configGroup);
     }
     
-    if (user?.role === 'superadmin') {
+    if (currentRole === 'superadmin') {
       const adminGroup = {
         icon: <Shield size={20} />,
         label: 'Administração',
@@ -100,14 +104,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="sidebar-header">
-        <div className="sidebar-logo">
-          {workspace?.logo_url ? (
-            <img src={workspace.logo_url} alt="Logo" className="workspace-logo-img" />
-          ) : (
-            <div className="logo-placeholder">{workspace?.name?.charAt(0) || 'C'}</div>
-          )}
-          <span className="logo-text">{workspace?.name || 'CRM'}</span>
-        </div>
+        <WorkspaceSwitcher />
         <button className="close-sidebar show-on-mobile" onClick={onClose}>
           <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
         </button>

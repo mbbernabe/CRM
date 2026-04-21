@@ -59,7 +59,7 @@ const SortableStage = ({ stage, onEdit, onDelete }) => {
 
 // --- Main Inner Component ---
 const PipelineSettingsInner = ({ addToast }) => {
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, workspace } = useAuth();
   const [workItemTypes, setWorkItemTypes] = useState([]);
   const [activeTab, setActiveTab] = useState(null); // Will be set to the first type ID
   const [pipelines, setPipelines] = useState([]);
@@ -95,16 +95,16 @@ const PipelineSettingsInner = ({ addToast }) => {
     setLoading(true);
     try {
       // Fetch Work Item Types first
-      const typesRes = await fetchWithAuth('http://localhost:8000/workitems/types');
+      const typesRes = await fetchWithAuth('/workitems/types');
       const typesData = await typesRes.json();
       setWorkItemTypes(typesData);
       
-      if (typesData.length > 0 && !activeTab) {
+      if (typesData.length > 0) {
         setActiveTab(typesData[0].id);
       }
 
       // Fetch Pipelines
-      const res = await fetchWithAuth('http://localhost:8000/pipelines/');
+      const res = await fetchWithAuth('/pipelines/');
       const data = await res.json();
       setPipelines(data);
     } catch (err) {
@@ -116,8 +116,9 @@ const PipelineSettingsInner = ({ addToast }) => {
   };
 
   useEffect(() => {
+    setActiveTab(null);
     fetchInitialData();
-  }, []);
+  }, [workspace?.id]);
 
   const filteredPipelines = Array.isArray(pipelines) ? pipelines.filter(p => p.type_id === activeTab) : [];
   const activeType = workItemTypes.find(t => t.id === activeTab);
@@ -157,13 +158,13 @@ const PipelineSettingsInner = ({ addToast }) => {
       };
 
       if (modalType === 'create') {
-        const res = await fetchWithAuth('http://localhost:8000/pipelines/', {
+        const res = await fetchWithAuth('/pipelines/', {
           method: 'POST',
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error("Erro ao criar pipeline");
       } else {
-        const res = await fetchWithAuth(`http://localhost:8000/pipelines/${selectedPipeline.id}`, {
+        const res = await fetchWithAuth(`/pipelines/${selectedPipeline.id}`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         });

@@ -10,7 +10,7 @@ import { useToast } from '../common/Toast';
 import './PipelineBoardScreen.css';
 
 const PipelineBoardScreenInner = ({ addToast }) => {
-  const { fetchWithAuth } = useAuth();
+  const { fetchWithAuth, workspace } = useAuth();
   const [pipelines, setPipelines] = useState([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState(null);
   const [boardData, setBoardData] = useState(null);
@@ -22,23 +22,22 @@ const PipelineBoardScreenInner = ({ addToast }) => {
   const [deleteConfirmItem, setDeleteConfirmItem] = useState(null);
   const [contextMenu, setContextMenu] = useState({ x: 0, y: 0, item: null, isOpen: false });
 
-  const hasFetchedPipelines = useRef(false);
-
   const fetchPipelines = useCallback(async () => {
-    if (hasFetchedPipelines.current) return;
-    hasFetchedPipelines.current = true;
     try {
-      const res = await fetchWithAuth('http://localhost:8000/pipelines/');
+      setLoading(true);
+      const res = await fetchWithAuth('/pipelines/');
       const data = await res.json();
       setPipelines(data);
       if (data.length > 0) {
-        setSelectedPipelineId(prev => prev || data[0].id);
+        setSelectedPipelineId(data[0].id);
       } else {
-        setLoading(false);
+        setBoardData(null);
+        setSelectedPipelineId(null);
       }
     } catch (err) {
       console.error("Erro ao buscar pipelines:", err);
       setError("Não foi possível carregar as pipelines.");
+    } finally {
       setLoading(false);
     }
   }, [fetchWithAuth]);
@@ -47,7 +46,7 @@ const PipelineBoardScreenInner = ({ addToast }) => {
     if (!pipelineId) return;
     setLoading(true);
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/workitems/board/${pipelineId}`);
+      const res = await fetchWithAuth(`/workitems/board/${pipelineId}`);
       if (!res.ok) throw new Error("Erro ao carregar dados do quadro.");
       const data = await res.json();
       setBoardData(data);
@@ -62,7 +61,7 @@ const PipelineBoardScreenInner = ({ addToast }) => {
 
   useEffect(() => {
     fetchPipelines();
-  }, [fetchPipelines]);
+  }, [workspace?.id, fetchPipelines]);
 
   useEffect(() => {
     if (selectedPipelineId) {
@@ -119,7 +118,7 @@ const PipelineBoardScreenInner = ({ addToast }) => {
   const handleDeleteItem = async () => {
     if (!deleteConfirmItem) return;
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/workitems/${deleteConfirmItem.id}`, {
+      const res = await fetchWithAuth(`/workitems/${deleteConfirmItem.id}`, {
         method: 'DELETE'
       });
       if (!res.ok) {

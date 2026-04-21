@@ -8,27 +8,47 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('crm_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
+
+  const [activeMembershipId, setActiveMembershipId] = useState(() => {
+    return localStorage.getItem('crm_active_membership_id') || null;
+  });
+
   const [workspace, setWorkspace] = useState(() => {
     const savedWorkspace = localStorage.getItem('crm_workspace');
     return savedWorkspace ? JSON.parse(savedWorkspace) : null;
   });
+
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Sincronizar usuário com o backend ao carregar
+    if (user && !loading) {
+      refreshUser();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Se não houver membership ativo mas houver usuário, tenta definir um default
+    if (user && !activeMembershipId && user.memberships?.length > 0) {
+      const defaultId = user.last_active_membership_id || user.memberships[0].id;
+      setActiveMembershipId(defaultId.toString());
+      localStorage.setItem('crm_active_membership_id', defaultId.toString());
+    }
+  }, [user, activeMembershipId]);
 
   useEffect(() => {
     // Aplicar cores dinâmicas se houver workspace
     if (workspace) {
       document.documentElement.style.setProperty('--hs-blue', workspace.primary_color || '#0091ae');
       document.documentElement.style.setProperty('--hs-orange', workspace.accent_color || '#ff7a59');
-    } else if (user && !loading) {
-      // Se temos usuário mas não temos os dados do workspace (ex: refresh), buscamos
-      refreshWorkspace();
     }
-  }, [workspace, user]);
+  }, [workspace]);
 
-  const refreshWorkspace = async () => {
-    if (!user || !user.workspace_id) return;
+  const refreshWorkspace = async (workspaceId) => {
+    const id = workspaceId || (workspace ? workspace.id : null);
+    if (!id) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/workspaces/${user.workspace_id}`);
+      const res = await fetch(`${API_BASE_URL}/workspaces/${id}`);
       if (res.ok) {
         const data = await res.json();
         setWorkspace(data);
@@ -37,6 +57,55 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error('Erro ao atualizar workspace branding:', e);
     }
+  };
+
+  const refreshUser = async () => {
+    if (!user) return;
+    try {
+      const res = await fetchWithAuth('/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+        localStorage.setItem('crm_user', JSON.stringify(data));
+      }
+    } catch (e) {
+      console.error('Erro ao atualizar dados do usuário:', e);
+    }
+  };
+
+  const switchMembership = async (membershipId) => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const membership = user.memberships?.find(m => m.id === parseInt(membershipId));
+      if (!membership) return;
+
+      // 1. Atualizar Membership no Frontend
+      setActiveMembershipId(membershipId.toString());
+      localStorage.setItem('crm_active_membership_id', membershipId.toString());
+
+      // 2. Buscar e Atualizar o Workspace correspondente
+      const res = await fetch(`${API_BASE_URL}/workspaces/${membership.workspace_id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWorkspace(data);
+        localStorage.setItem('crm_workspace', JSON.stringify(data));
+      }
+      
+      // 3. Notificar o backend sobre a troca para atualizar last_active_membership_id
+      await fetchWithAuth(`/auth/switch-context/${membership.id}`, { method: 'POST' });
+      
+      // 4. Atualizar o objeto usuário
+      await refreshUser();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchWorkspace = async (workspaceId) => {
+    // Mantido por compatibilidade: pega a primeira membership desse workspace
+    const m = user.memberships?.find(m => m.workspace_id === parseInt(workspaceId));
+    if (m) await switchMembership(m.id);
   };
 
   const login = async (email, password) => {
@@ -52,22 +121,22 @@ export const AuthProvider = ({ children }) => {
       try {
         data = await res.json();
       } catch (e) {
-        throw new Error('Falha ao processar resposta do servidor. Verifique se o backend está ativo.');
+        throw new Error('Falha ao processar resposta do servidor.');
       }
       
       if (!res.ok) {
-        // Se o detalhe for um objeto, anexamos à mensagem de erro de forma que possamos parsear se necessário
-        // ou lançamos um erro customizado (mais limpo)
         const errorDetail = data.detail;
         const error = new Error(typeof errorDetail === 'string' ? errorDetail : (errorDetail.message || 'Erro ao fazer login'));
-        error.detail = errorDetail; // Anexa o objeto completo para uso no componente
+        error.detail = errorDetail;
         throw error;
       }
       
       setUser(data.user);
       setWorkspace(data.workspace);
       localStorage.setItem('crm_user', JSON.stringify(data.user));
-      localStorage.setItem('crm_workspace', JSON.stringify(data.workspace));
+      if (data.workspace) {
+        localStorage.setItem('crm_workspace', JSON.stringify(data.workspace));
+      }
       return data.user;
     } finally {
       setLoading(false);
@@ -87,7 +156,7 @@ export const AuthProvider = ({ children }) => {
       try {
         data = await res.json();
       } catch (e) {
-        throw new Error('Falha no cadastro: Servidor indisponível ou erro inesperado.');
+        throw new Error('Falha no cadastro.');
       }
       
       if (!res.ok) {
@@ -153,23 +222,25 @@ export const AuthProvider = ({ children }) => {
         'Content-Type': 'application/json'
     };
     
-    if (user && user.workspace_id) {
-      headers['X-Workspace-ID'] = user.workspace_id.toString();
-    }
-
-    if (user && user.team_id) {
-      headers['X-Team-ID'] = user.team_id.toString();
-    }
-    
-    if (user && user.role) {
-      headers['X-User-Role'] = user.role;
-    }
-
+    // Identifica o Usuário e seu papel no workspace ativo via Membership
     if (user && user.id) {
       headers['X-User-ID'] = user.id.toString();
+      
+      // Busca a membership ativa pelo ID
+      const membership = user.memberships?.find(m => m.id.toString() === activeMembershipId?.toString());
+      
+      if (membership) {
+        headers['X-Workspace-ID'] = membership.workspace_id.toString();
+        headers['X-User-Role'] = membership.role;
+        if (membership.team_id) {
+          headers['X-Team-ID'] = membership.team_id.toString();
+        }
+      } else if (workspace && workspace.id) {
+         // Fallback se não houver membership ativo mas houver workspace (alfa)
+         headers['X-Workspace-ID'] = workspace.id.toString();
+      }
     }
 
-    // Auto-prepend base URL if the url is relative or contains the old hardcoded URL
     let finalUrl = url;
     if (url.startsWith('http://localhost:8000')) {
       finalUrl = url.replace('http://localhost:8000', API_BASE_URL);
@@ -183,8 +254,8 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-        user, workspace, login, register, logout, loading, 
-        forgotPassword, resetPassword, refreshWorkspace,
+        user, workspace, activeMembershipId, login, register, logout, loading, 
+        forgotPassword, resetPassword, refreshWorkspace, switchWorkspace, switchMembership, refreshUser,
         isAuthenticated: !!user,
         fetchWithAuth
     }}>

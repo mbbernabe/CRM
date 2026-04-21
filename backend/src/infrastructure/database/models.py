@@ -32,7 +32,7 @@ class WorkspaceModel(BaseModel):
     lead_type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=True)
 
     teams = relationship("TeamModel", back_populates="workspace")
-    users = relationship("UserModel", back_populates="workspace")
+    memberships = relationship("MembershipModel", back_populates="workspace")
     invitations = relationship("WorkspaceInvitationModel", back_populates="workspace")
 
 class TeamModel(BaseModel):
@@ -44,7 +44,7 @@ class TeamModel(BaseModel):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     workspace = relationship("WorkspaceModel", back_populates="teams")
-    users = relationship("UserModel", back_populates="team")
+    memberships = relationship("MembershipModel", back_populates="team")
 
 class UserModel(BaseModel):
     __tablename__ = "users"
@@ -52,20 +52,48 @@ class UserModel(BaseModel):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False) # Armazenada em texto plano inicialmente (conforme plano)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
-    role = Column(String, default="user")
-    reset_password_token = Column(String, nullable=True, index=True)
-    reset_password_expires = Column(DateTime, nullable=True)
+    password = Column(String, nullable=False)
+    
+    # Contexto e Status
+    last_active_workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+    last_active_membership_id = Column(Integer, ForeignKey("memberships.id"), nullable=True)
     preferences = Column(JSON, nullable=True) # UI and user settings
     is_active = Column(Boolean, default=True)
     deactivated_at = Column(DateTime, nullable=True)
     last_activity = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    team = relationship("TeamModel", back_populates="users")
-    workspace = relationship("WorkspaceModel", back_populates="users")
+    memberships = relationship("MembershipModel", back_populates="user", cascade="all, delete-orphan")
+
+class MembershipModel(BaseModel):
+    __tablename__ = "memberships"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'workspace_id', 'team_id', name='_user_workspace_team_membership_uc'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True, index=True)
+    role = Column(String, default="user") # 'admin', 'user'
+    is_active = Column(Boolean, default=True)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("UserModel", back_populates="memberships")
+    workspace = relationship("WorkspaceModel", back_populates="memberships")
+    team = relationship("TeamModel", back_populates="memberships")
+
+    @property
+    def workspace_name(self):
+        return self.workspace.name if self.workspace else None
+
+    @property
+    def team_name(self):
+        return self.team.name if self.team else None
+
+    @property
+    def primary_color(self):
+        return self.workspace.primary_color if self.workspace else None
 
 
 class PipelineModel(BaseModel):

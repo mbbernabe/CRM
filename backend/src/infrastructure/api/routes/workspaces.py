@@ -4,6 +4,8 @@ from src.infrastructure.database.db import get_db
 from src.infrastructure.repositories.sqlalchemy_workspace_repository import SqlAlchemyWorkspaceRepository
 from src.application.use_cases.workspace_use_cases import GetWorkspaceUseCase, UpdateWorkspaceUseCase
 from src.application.dtos.workspace_dto import WorkspaceReadDTO, WorkspaceUpdateDTO
+from src.domain.entities.workspace import Workspace
+from src.infrastructure.api.dependencies import get_workspace_id, get_user_id_optional
 from src.domain.exceptions.base_exceptions import DomainException
 from src.infrastructure.utils.logger import get_logger, log_exception
 
@@ -12,18 +14,75 @@ router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
 @router.get("/{workspace_id}/users")
 def list_workspace_users(workspace_id: int, db: Session = Depends(get_db)):
-    from src.infrastructure.database.models import UserModel, TeamModel
-    users = db.query(UserModel).outerjoin(TeamModel).filter(UserModel.workspace_id == workspace_id).all()
+    from src.infrastructure.database.models import UserModel, MembershipModel, TeamModel
+    # Query users that have a membership in this workspace
+    results = db.query(UserModel, MembershipModel).join(
+        MembershipModel, UserModel.id == MembershipModel.user_id
+    ).outerjoin(
+        TeamModel, MembershipModel.team_id == TeamModel.id
+    ).filter(
+        MembershipModel.workspace_id == workspace_id
+    ).all()
+    
     return [
         {
             "id": u.id, 
             "name": u.name, 
             "email": u.email, 
-            "role": u.role, 
-            "team_id": u.team_id,
-            "team_name": u.team.name if u.team else None
-        } for u in users
+            "role": m.role, 
+            "team_id": m.team_id,
+            "team_name": m.team.name if m.team else None
+        } for u, m in results
     ]
+
+@router.post("/", response_model=WorkspaceReadDTO, status_code=status.HTTP_201_CREATED)
+def create_workspace(
+    data: WorkspaceUpdateDTO, 
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_user_id_optional)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Usuário não autenticado.")
+        
+    workspace_repo = SqlAlchemyWorkspaceRepository(db)
+    from src.infrastructure.repositories.sqlalchemy_team_repository import SqlAlchemyTeamRepository
+    from src.infrastructure.repositories.sqlalchemy_membership_repository import SqlAlchemyMembershipRepository
+    from src.infrastructure.repositories.sqlalchemy_user_repository import SqlAlchemyUserRepository
+    from src.domain.entities.team import Team
+    from src.domain.entities.user import Membership
+    
+    team_repo = SqlAlchemyTeamRepository(db)
+    membership_repo = SqlAlchemyMembershipRepository(db)
+    user_repo = SqlAlchemyUserRepository(db)
+
+    try:
+        # 1. Create Workspace
+        new_workspace = Workspace(name=data.name or "Minha Nova Empresa")
+        new_workspace = workspace_repo.save(new_workspace)
+        
+        # 2. Create Default Team
+        new_team = Team(name="Geral", workspace_id=new_workspace.id)
+        new_team = team_repo.save(new_team)
+        
+        # 3. Create Membership for the user
+        membership = Membership(
+            user_id=user_id,
+            workspace_id=new_workspace.id,
+            team_id=new_team.id,
+            role="admin"
+        )
+        membership_repo.create(membership)
+        
+        # 4. Update user's last_active_workspace_id
+        user = user_repo.get_by_id(user_id)
+        if user:
+            user.last_active_workspace_id = new_workspace.id
+            user_repo.save(user)
+            
+        return new_workspace
+    except Exception as e:
+        log_exception(logger, e, "create_workspace")
+        raise HTTPException(status_code=500, detail="Erro ao criar nova área de trabalho.")
 
 @router.get("/{workspace_id}", response_model=WorkspaceReadDTO)
 def get_workspace(workspace_id: int, db: Session = Depends(get_db)):
