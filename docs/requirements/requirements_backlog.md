@@ -18,7 +18,7 @@
 - [x] **Configuração de Workspace**: Personalização de nome, logo, cores (primária/acento), dias de expiração e mensagem de convite. *(Backend: `WorkspaceModel`, Frontend: `WorkspaceSettings.jsx`)*
 - [x] **Biblioteca de Modelos (Super Admin)**: CRUD completo de Templates globais + importação massiva de campos. *(Backend: `admin.py` routes, Frontend: `AdminTemplates.jsx`)*
 - [x] **Pool de Campos Sugeridos**: Campos com `is_default=False` no modelo global ficam disponíveis para importação sob demanda pelo Admin do Workspace. Inclui verificação de atualizações e sincronização. *(Backend: `list_suggested_fields`, `import_global_field`, `check_for_updates`, `sync_from_global`)*
-- [ ] **Configuração de SMTP por Workspace**: Deve existir uma configuração de SMTP **isolada por Workspace**. Atualmente, SMTP é configurado globalmente em `system_settings`. Necessário migrar para modelo por workspace.
+- [x] **Configuração de SMTP por Workspace (RF017)**: Deve existir uma configuração de SMTP **isolada por Workspace**. Atualmente, SMTP é configurado globalmente em `system_settings`. Necessário migrar para modelo por workspace. *(Implementado: WorkspaceModel, WorkspaceSettings.jsx, EmailService)*
 - [ ] **Validação & Máscaras de Input (Frontend)**: Os tipos `cpf`, `cep`, `phone` já existem no backend (`FieldType` enum). Falta implementar as input masks e formatação automática nos inputs do frontend.
 - [ ] **Lógica Inter-propriedades**: Autopreenchimento (ex: CEP preenche Logradouro/Cidade/UF) e cálculos entre campos.
 - [ ] **Responsividade Premium**: ~~Implementar e validar adaptabilidade em todas as telas existentes e futuras (Mobile/Tablet/Desktop).~~ ✅ Implementado — Sidebar colapsável, mobile header com hamburger, overlay.
@@ -31,7 +31,7 @@
 - [ ] **Painel Administrativo de Templates (Super Admin)**: Criar interface para que o dono do SaaS possa configurar os modelos globais com metadados de marketing (descrição, categorias, ícones premium).
 
 ## 🎯 Produtividade & Tarefas (My Tasks Center)
-- [ ] **Provisionamento Mandatório de Tarefas (RF026)**: Ao criar um novo Workspace, o sistema deve injetar automaticamente o `WorkItemType` "Tarefa" e uma pipeline de 3 estágios (A fazer, Fazendo, Feito).
+- [x] **Provisionamento Mandatório de Tarefas (RF026)**: Ao criar um novo Workspace, o sistema deve injetar automaticamente o `WorkItemType` "Tarefa" e uma pipeline de 3 estágios (A fazer, Fazendo, Feito).
 - [ ] **Central "Minhas Tarefas" (Dashboard)**: Uma visão consolidada onde o usuário vê apenas suas tarefas, agrupadas por:
     - **🚨 Vencidas**: Destaque visual crítico para o que passou do prazo.
     - **📅 Para Hoje**: Foco no trabalho imediato.
@@ -80,9 +80,9 @@
 - **Conquistas Recentes**: Pipelines genéricas, Biblioteca de Modelos com Campos Sugeridos, Fluxo de Convites completo, Quadro Kanban dinâmico com atribuição de dono, histórico de atividades e **Vinculação bidirecional entre WorkItems**.
 - **Próximos Passos Sugeridos**:
     1.  **Input Masks no Frontend (RF007)**: Implementar formatação automática nos inputs de CPF, CNPJ, Telefone e CEP.
-    2.  **SMTP por Workspace (RF017)**: Migrar configuração de SMTP de global para por workspace.
+    2.  ~~**SMTP por Workspace (RF017)**: Migrar configuração de SMTP de global para por workspace.~~ ✅
     3.  **Visibilidade por Time (RF010)**: Implementar filtro automático de registros por `team_id`.
-    4.  **API Pública para Leads (RF019)**: Criar endpoints configuráveis e seguros para ingestão de leads externos.
+    4.  ~~**API Pública para Leads (RF019)**: Criar endpoints configuráveis e seguros para ingestão de leads externos.~~ ✅
 
 ---
 

@@ -159,3 +159,32 @@
     font-size: 14px;
     font-style: italic;
 }
+
+.important-toggle-modal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fffcfb;
+  border: 1px solid #ff7a5933;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.important-toggle-modal:hover {
+  background: #fff5f2;
+  border-color: #ff7a5966;
+}
+
+.important-toggle-modal.active {
+  background: #fff5f2;
+  border-color: #ff7a59;
+}
+
+.important-toggle-modal span {
+  font-weight: 600;
+  color: #2d3e50;
+  font-size: 14px;
+}

@@ -15,7 +15,8 @@ import {
   Palette,
   ChevronDown,
   ChevronRight,
-  GitBranch
+  GitBranch,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
@@ -37,6 +38,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
   // ... (menuItems definition)
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', id: 'dashboard' },
+    { icon: <CheckCircle2 size={20} />, label: 'Minhas Tarefas', id: 'tasks' },
     { icon: <GitBranch size={20} />, label: 'Processos', id: 'pipeline-board' },
     { icon: <Users size={20} />, label: 'Contatos', id: 'contacts' },
     { icon: <Building2 size={20} />, label: 'Empresas', id: 'companies' },

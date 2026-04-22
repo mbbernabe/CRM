@@ -264,6 +264,61 @@
     100% { box-shadow: 0 0 0 0 rgba(0, 145, 174, 0); }
 }
 
+.memberships-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.membership-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--hs-text-primary);
+    white-space: nowrap;
+}
+
+.ws-name {
+    font-weight: 500;
+    color: var(--hs-text-primary);
+}
+
+.tag-team {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 145, 174, 0.05);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--hs-blue);
+    border: 1px dashed var(--hs-blue);
+}
+
+.tag-role {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin-left: auto;
+}
+
+.tag-role.superadmin, .tag-role.admin {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+
+.tag-role.user {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
 .actions-header { text-align: right; }
 .actions-cell { text-align: right; position: relative; }
 .actions-wrapper { display: flex; justify-content: flex-end; position: relative; }

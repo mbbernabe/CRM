@@ -25,6 +25,8 @@ class UserReadDTO(BaseModel):
     deactivated_at: Optional[datetime] = None
     last_activity: Optional[datetime] = None
     memberships: Optional[List[MembershipReadDTO]] = []
+    role: Optional[str] = None
+    team_name: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 

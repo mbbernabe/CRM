@@ -180,32 +180,36 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
         return [self._map_to_domain(p) for p in db_pipelines]
 
     def clone_from_template(self, template_id: int, workspace_id: int, target_type_id: int) -> Pipeline:
-        db_template = self.db.query(PipelineModel).options(
-            joinedload(PipelineModel.stages)
-        ).filter(PipelineModel.id == template_id).first()
+        try:
+            db_template = self.db.query(PipelineModel).options(
+                joinedload(PipelineModel.stages)
+            ).filter(PipelineModel.id == template_id).first()
 
-        if not db_template:
-            raise Exception("Template de pipeline não encontrado")
+            if not db_template:
+                raise Exception("Template de pipeline não encontrado")
 
-        new_pipeline = PipelineModel(
-            name=db_template.name,
-            type_id=target_type_id,
-            workspace_id=workspace_id
-        )
-        self.db.add(new_pipeline)
-        self.db.flush()
-
-        for s in db_template.stages:
-            new_stage = PipelineStageModel(
-                pipeline_id=new_pipeline.id,
-                name=s.name,
-                order=s.order,
-                color=s.color,
-                is_final=s.is_final,
-                metadata_json=s.metadata_json
+            new_pipeline = PipelineModel(
+                name=db_template.name,
+                type_id=target_type_id,
+                workspace_id=workspace_id
             )
-            self.db.add(new_stage)
+            self.db.add(new_pipeline)
+            self.db.flush()
 
-        self.db.commit()
-        self.db.refresh(new_pipeline)
-        return self._map_to_domain(new_pipeline)
+            for s in db_template.stages:
+                new_stage = PipelineStageModel(
+                    pipeline_id=new_pipeline.id,
+                    name=s.name,
+                    order=s.order,
+                    color=s.color,
+                    is_final=s.is_final,
+                    metadata_json=s.metadata_json
+                )
+                self.db.add(new_stage)
+
+            self.db.commit()
+            self.db.refresh(new_pipeline)
+            return self._map_to_domain(new_pipeline)
+        except Exception as e:
+            self.db.rollback()
+            raise e

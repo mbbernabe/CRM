@@ -5,7 +5,7 @@ import { useToast } from '../common/Toast';
 import './WorkspaceSwitcher.css';
 
 const WorkspaceSwitcher = () => {
-  const { user, workspace, activeMembershipId, switchMembership, fetchWithAuth, refreshUser } = useAuth();
+  const { user, workspace, activeMembershipId, switchMembership, switchWorkspace, fetchWithAuth, refreshUser } = useAuth();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -33,12 +33,15 @@ const WorkspaceSwitcher = () => {
       
       if (res.ok) {
         const newWs = await res.json();
-        await refreshUser();
-        await switchWorkspace(newWs.id);
         
-        addToast("Nova área de trabalho criada com sucesso!", "success");
+        // Limpa a modal imediatamente
         setNewWsName('');
         setIsCreating(false);
+        
+        addToast("Nova área de trabalho criada com sucesso!", "success");
+        
+        await refreshUser();
+        await switchWorkspace(newWs.id);
       } else {
         const errData = await res.json();
         addToast(errData.detail || "Erro ao criar área de trabalho", "error");

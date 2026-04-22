@@ -15,6 +15,7 @@ from src.application.use_cases.work_item.update_work_item import UpdateWorkItemU
 from src.application.use_cases.work_item.delete_work_item import DeleteWorkItemUseCase
 from src.application.use_cases.work_item.manage_work_item_history import ManageWorkItemHistoryUseCase
 from src.application.use_cases.work_item.manage_work_item_links import ManageWorkItemLinksUseCase
+from src.application.use_cases.work_item.task_center_use_case import GetMyTasksUseCase
 from src.application.dtos.work_item_dto import (
     WorkItemTypeReadDTO, WorkItemTypeCreateDTO, WorkItemTypeUpdateDTO, 
     WorkItemHistoryReadDTO, WorkItemNoteCreateDTO, CustomFieldDefinitionDTO,
@@ -50,6 +51,9 @@ def get_links_use_case(db: Session = Depends(get_db)):
         WorkItemHistoryRepository(db)
     )
 
+def get_my_tasks_use_case(db: Session = Depends(get_db)):
+    return GetMyTasksUseCase(WorkItemRepository(db))
+
 @router.post("")
 def create_work_item(
     payload: Dict[str, Any] = Body(...),
@@ -81,6 +85,21 @@ def create_work_item(
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Campo obrigatório ausente: {str(e)}")
     except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/my-tasks")
+def get_my_tasks(
+    workspace_id: int = Depends(get_workspace_id),
+    user_id: int = Depends(get_user_id_optional),
+    use_case: GetMyTasksUseCase = Depends(get_my_tasks_use_case)
+):
+    try:
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+        return use_case.execute(user_id, workspace_id)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/board/{pipeline_id}")

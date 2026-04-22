@@ -15,6 +15,7 @@
   --hs-text-secondary: #516f90;
   --hs-blue: #0091ae;
   --hs-blue-hover: #007a90;
+  --hs-blue-rgb: 0, 145, 174;
   --hs-orange: #ff7a59;
   --hs-warning: #ff4d4f;
   --hs-warning-hover: #e63e40;
@@ -55,6 +56,35 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Context Meta & Badges */
+.context-meta {
+  font-size: 14px;
+  color: var(--hs-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.separator {
+  color: var(--hs-border-light);
+  margin: 0 4px;
+}
+
+.team-badge-inline {
+  background: rgba(var(--hs-blue-rgb, 0, 145, 174), 0.1);
+  color: var(--hs-blue);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.header-title-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Responsive Utilities */

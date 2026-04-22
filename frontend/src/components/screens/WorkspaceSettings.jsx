@@ -126,9 +126,21 @@ const WorkspaceSettings = () => {
         setSuccess(false);
 
         try {
+            // Sanitização de campos inteiros: converter "" para null
+            const cleanedData = { ...formData };
+            const intFields = ['lead_pipeline_id', 'lead_stage_id', 'lead_type_id', 'smtp_port', 'invitation_expiry_days'];
+            
+            intFields.forEach(field => {
+                if (cleanedData[field] === '' || cleanedData[field] === undefined) {
+                    cleanedData[field] = null;
+                } else {
+                    cleanedData[field] = Number(cleanedData[field]);
+                }
+            });
+
             const res = await fetchWithAuth(`http://localhost:8000/workspaces/${workspace.id}`, {
                 method: 'PATCH',
-                body: JSON.stringify(formData)
+                body: JSON.stringify(cleanedData)
             });
 
             if (!res.ok) {

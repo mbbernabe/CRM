@@ -63,7 +63,7 @@ class UserModel(BaseModel):
     last_activity = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    memberships = relationship("MembershipModel", back_populates="user", cascade="all, delete-orphan")
+    memberships = relationship("MembershipModel", back_populates="user", cascade="all, delete-orphan", foreign_keys="[MembershipModel.user_id]")
 
 class MembershipModel(BaseModel):
     __tablename__ = "memberships"
@@ -79,7 +79,7 @@ class MembershipModel(BaseModel):
     is_active = Column(Boolean, default=True)
     joined_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("UserModel", back_populates="memberships")
+    user = relationship("UserModel", back_populates="memberships", foreign_keys=[user_id])
     workspace = relationship("WorkspaceModel", back_populates="memberships")
     team = relationship("TeamModel", back_populates="memberships")
 
@@ -204,6 +204,7 @@ class WorkItemModel(BaseModel):
     work_item_type = relationship("WorkItemTypeModel")
     owner = relationship("UserModel")
     team = relationship("TeamModel")
+    workspace = relationship("WorkspaceModel")
 
 class WorkItemHistoryModel(BaseModel):
     __tablename__ = "work_item_history"

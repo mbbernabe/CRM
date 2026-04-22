@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useAuth } from '../../context/AuthContext';
-import { Save, AlertCircle, ChevronDown, Check, X } from 'lucide-react';
+import { Save, AlertCircle, ChevronDown, Check, X, Star } from 'lucide-react';
 import WorkItemHistoryPanel from './WorkItemHistoryPanel';
 import WorkItemLinksPanel from './WorkItemLinksPanel';
 import { validateEmail, validateCPF, maskCPF, maskPhone, maskCEP, validateCEP } from '../../utils/validation';
@@ -276,6 +276,14 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
               onChange={e => handleFieldChange(field.name, maskPhone(e.target.value))}
               placeholder="(00) 00000-0000"
             />
+          ) : field.name === 'is_important' ? (
+            <div 
+              className={`important-toggle-modal ${val ? 'active' : ''}`}
+              onClick={() => handleFieldChange(field.name, !val)}
+            >
+              <Star size={24} fill={val ? '#ff7a59' : 'none'} color={val ? '#ff7a59' : '#cbd5e0'} />
+              <span>Marcar como Importante</span>
+            </div>
           ) : (
             <input 
               type={field.field_type === 'number' ? 'number' : field.field_type === 'email' ? 'email' : 'text'}

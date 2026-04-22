@@ -26,6 +26,31 @@ class User:
     # Relacionamentos
     memberships: Optional[list] = None
 
+    @property
+    def role(self) -> str:
+        if not self.memberships:
+            return "user"
+        # Tenta encontrar a membership do workspace ativo, senão pega a primeira
+        target_ws = self.last_active_workspace_id
+        membership = next((m for m in self.memberships if m.workspace_id == target_ws), self.memberships[0])
+        return membership.role
+
+    @property
+    def team_id(self) -> Optional[int]:
+        if not self.memberships:
+            return None
+        target_ws = self.last_active_workspace_id
+        membership = next((m for m in self.memberships if m.workspace_id == target_ws), self.memberships[0])
+        return membership.team_id
+
+    @property
+    def team_name(self) -> Optional[str]:
+        if not self.memberships:
+            return None
+        target_ws = self.last_active_workspace_id
+        membership = next((m for m in self.memberships if m.workspace_id == target_ws), self.memberships[0])
+        return membership.team_name
+
 @dataclass
 class Membership:
     id: Optional[int] = None

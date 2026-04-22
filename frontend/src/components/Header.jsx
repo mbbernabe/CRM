@@ -1,12 +1,26 @@
 import React from 'react';
 import { ChevronDown, Plus, Search, Bell } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './Header.css';
 
 const Header = ({ pipelines, activePipeline, onPipelineChange }) => {
+  const { user, workspace } = useAuth();
+  const currentMembership = user?.memberships?.find(m => m.workspace_id === workspace?.id);
+  const teamName = currentMembership?.team_name || 'Geral';
+
   return (
     <header className="header">
       <div className="header-left">
-        <h1 className="header-title">Negócios</h1>
+        <div className="header-title-container">
+          <h1 className="header-title">Negócios</h1>
+          {workspace && (
+            <p className="context-meta">
+              <strong>{workspace.name}</strong> 
+              <span className="separator">•</span> 
+              Equipe: <span className="team-badge-inline">{teamName}</span>
+            </p>
+          )}
+        </div>
         
         <div className="pipeline-selector">
           <select 

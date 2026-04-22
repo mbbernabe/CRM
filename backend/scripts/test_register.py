@@ -1,16 +1,18 @@
 import requests
 import json
+import time
 
 def test_register():
     url = "http://localhost:8000/auth/register"
+    timestamp = int(time.time())
     data = {
-        "name": "Super Admin",
-        "email": "admin@crm.com",
+        "name": "User Test",
+        "email": f"test_{timestamp}@crm.com",
         "password": "admin",
-        "workspace_name": "Antigravity Workspace"
+        "workspace_name": f"Workspace {timestamp}"
     }
     
-    print(f"Tentando registrar em {url}...")
+    print(f"Tentando registrar em {url} com email: {data['email']}...")
     try:
         response = requests.post(url, json=data)
         print(f"Status: {response.status_code}")

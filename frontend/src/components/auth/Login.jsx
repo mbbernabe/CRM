@@ -41,8 +41,7 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
 
     // Credenciais do dev (usado após reset ou fluxo normal)
     const devCredentials = [
-      { email: 'admin@crm.com', password: 'admin' },
-      { email: 'mbbernabe@gmail.com', password: 'admin1234' },
+      { email: 'mbbernabe@gmail.com', password: 'adm123' },
     ];
 
     // Tentar logar com cada conjunto de credenciais existentes
@@ -65,15 +64,15 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: 'Marcelo Bernabe (Dev)',
+          name: 'Marcelo Bernabe (Super Admin)',
           email: 'mbbernabe@gmail.com',
-          password: 'admin1234',
-          workspace_name: 'Minha Empresa Dev'
+          password: 'adm123',
+          workspace_name: 'CRM Principal'
         })
       });
 
       if (registerRes.ok) {
-        await login('mbbernabe@gmail.com', 'admin1234');
+        await login('mbbernabe@gmail.com', 'adm123');
       } else {
         const data = await registerRes.json();
         setError('Falha ao criar superadmin: ' + (data.detail || 'Erro desconhecido'));
@@ -115,7 +114,7 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
           </div>
 
           <div className="form-group">
-
+            <label>Senha <span className="required-indicator">*</span></label>
             <input
               type="password"
               className="hs-input"
@@ -146,11 +145,9 @@ const Login = ({ onSwitchToRegister, onForgotPassword, onDeactivated }) => {
 
         <div className="auth-footer">
           <p>Não tem uma conta? <button onClick={onSwitchToRegister} className="hs-link">Cadastre-se</button></p>
+          <p><button type="button" onClick={onForgotPassword} className="hs-link-small">Esqueci minha senha</button></p>
         </div>
-        <div className="label-row">
-          <label>Senha <span className="required-indicator">*</span></label>
-          <button type="button" onClick={onForgotPassword} className="hs-link-small">Esqueci minha senha</button>
-        </div>
+
       </div>
 
       {/* Modal removido em favor da DeactivatedScreen dedicada em App.jsx */}

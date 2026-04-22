@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
 from src.domain.entities.invitation import WorkspaceInvitation
+from src.domain.entities.workspace import Workspace
+from src.domain.entities.team import Team
 from src.infrastructure.repositories.invitation_repository import InvitationRepository
 from src.infrastructure.repositories.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from src.infrastructure.repositories.sqlalchemy_workspace_repository import SqlAlchemyWorkspaceRepository
@@ -112,11 +114,15 @@ class AcceptInvitationUseCase:
         self,
         invitation_repo: InvitationRepository,
         user_repo: SqlAlchemyUserRepository,
-        membership_repo: SqlAlchemyMembershipRepository
+        membership_repo: SqlAlchemyMembershipRepository,
+        workspace_repo: SqlAlchemyWorkspaceRepository,
+        team_repo: SqlAlchemyTeamRepository
     ):
         self.invitation_repo = invitation_repo
         self.user_repo = user_repo
         self.membership_repo = membership_repo
+        self.workspace_repo = workspace_repo
+        self.team_repo = team_repo
 
     def execute(self, token: str, name: str, password: str) -> User:
         # 1. Validate invitation
@@ -152,7 +158,7 @@ class AcceptInvitationUseCase:
         )
         saved_user = self.user_repo.save(user)
 
-        # 4. Create membership
+        # 4. Create membership (The invited one)
         membership = Membership(
             user_id=saved_user.id,
             workspace_id=invitation.workspace_id,
@@ -160,6 +166,22 @@ class AcceptInvitationUseCase:
             role=invitation.role
         )
         self.membership_repo.create(membership)
+
+        # 5. Create AUTOMATIC PERSONAL WORKSPACE
+        personal_ws_name = f"Área de {name.split(' ')[0]}"
+        personal_ws = Workspace(name=personal_ws_name)
+        personal_ws = self.workspace_repo.save(personal_ws)
+        
+        personal_team = Team(name="Geral", workspace_id=personal_ws.id)
+        personal_team = self.team_repo.save(personal_team)
+        
+        personal_membership = Membership(
+            user_id=saved_user.id,
+            workspace_id=personal_ws.id,
+            team_id=personal_team.id,
+            role="admin"
+        )
+        self.membership_repo.create(personal_membership)
 
         # 5. Mark invitation as accepted
         self.invitation_repo.mark_accepted(token)

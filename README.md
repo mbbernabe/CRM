@@ -1,16 +1,32 @@
-# React + Vite
+# CRM Project
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A premium CRM system built with Python (Backend) and React + Vite (Frontend).
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The project is organized into two main components:
 
-## React Compiler
+- **`backend/`**: Python FastAPI backend following Clean Architecture principles.
+  - `src/`: Core logic, use cases, and entities.
+  - `scripts/`: Initialization and maintenance scripts.
+  - `tests/`: Integration and unit tests for the backend.
+- **`frontend/`**: React + Vite frontend with modern UI/UX.
+  - `src/`: React components, hooks, and application state.
+  - `public/`: Static assets.
+- **`docs/`**: Project documentation, including PRDs and technical requirements.
+- **`tests/`**: End-to-end (E2E) tests for the entire system.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the ESLint configuration
+### Backend
+1. Navigate to the `backend/` directory.
+2. Install dependencies: `pip install -r requirements.txt`.
+3. Run the application: `python main.py`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Frontend
+1. Navigate to the `frontend/` directory.
+2. Install dependencies: `npm install`.
+3. Start the dev server: `npm run dev`.
+
+## Documentation
+Refer to the `docs/` folder for detailed requirements and implementation plans.

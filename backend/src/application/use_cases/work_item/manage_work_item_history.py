@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from src.domain.entities.work_item_history import WorkItemHistory, IWorkItemHistoryRepository
 from src.domain.entities.work_item import IWorkItemRepository
 from src.application.dtos.work_item_dto import WorkItemHistoryReadDTO

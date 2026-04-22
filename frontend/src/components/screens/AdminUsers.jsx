@@ -88,11 +88,11 @@ const AdminUsers = () => {
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             result = result.filter(u => {
-                const workspaceName = (u.workspace_name || `Workspace #${u.workspace_id}`).toLowerCase();
+                const workspaceNames = (u.memberships || []).map(m => m.workspace_name || `Workspace #${m.workspace_id}`).join(' ').toLowerCase();
                 return (
                     u.name.toLowerCase().includes(searchLower) || 
                     u.email.toLowerCase().includes(searchLower) ||
-                    workspaceName.includes(searchLower)
+                    workspaceNames.includes(searchLower)
                 );
             });
         }
@@ -105,7 +105,10 @@ const AdminUsers = () => {
             
             // Tratamento especial para colunas complexas
             if (key === 'user') { valA = a.name; valB = b.name; }
-            if (key === 'workspace') { valA = a.workspace_name || ''; valB = b.workspace_name || ''; }
+            if (key === 'workspace') { 
+                valA = a.memberships?.[0]?.workspace_name || ''; 
+                valB = b.memberships?.[0]?.workspace_name || ''; 
+            }
 
             if (valA < valB) return direction === 'asc' ? -1 : 1;
             if (valA > valB) return direction === 'asc' ? 1 : -1;
@@ -499,9 +502,23 @@ const AdminUsers = () => {
                                 )}
                                 {visibleColumns.includes('workspace') && (
                                     <td>
-                                        <div className="workspace-indicator">
-                                            <Building2 size={14} />
-                                            <span>{u.workspace_name || `Workspace #${u.workspace_id}`}</span>
+                                        <div className="memberships-list">
+                                            {(u.memberships || []).map(m => (
+                                                <div key={m.id} className="membership-tag">
+                                                    <Building2 size={12} title="Workspace" />
+                                                    <span className="ws-name">{m.workspace_name || `WS #${m.workspace_id}`}</span>
+                                                    
+                                                    {m.team_name && (
+                                                        <div className="tag-team">
+                                                            <Users size={10} />
+                                                            <span>{m.team_name}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {(!u.memberships || u.memberships.length === 0) && (
+                                                <span className="no-memberships text-muted">Sem área de trabalho</span>
+                                            )}
                                         </div>
                                     </td>
                                 )}

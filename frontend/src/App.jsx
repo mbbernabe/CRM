@@ -23,6 +23,7 @@ import { ToastProvider } from './components/common/Toast';
 import WorkspaceMembers from './components/screens/WorkspaceMembers';
 import AdminTemplates from './components/screens/AdminTemplates';
 import DeactivatedScreen from './components/auth/DeactivatedScreen';
+import MyTasksCenter from './components/screens/MyTasksCenter';
 
 
 
@@ -80,7 +81,7 @@ function App() {
 }
 
 function AppInner() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user, workspace } = useAuth();
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activePipelineId, setActivePipelineId] = useState('retail');
@@ -95,6 +96,9 @@ function AppInner() {
   });
   const [isDeactivated, setIsDeactivated] = useState(false);
   const [inactiveInfo, setInactiveInfo] = useState(null);
+
+  const currentMembership = user?.memberships?.find(m => m.workspace_id === workspace?.id);
+  const teamName = currentMembership?.team_name || 'Geral';
 
 
   // O loading global do AuthContext não deve desmontar a aplicação inteira, 
@@ -176,6 +180,7 @@ function AppInner() {
   const getScreenTitle = () => {
     switch (activeScreen) {
       case 'dashboard': return 'Dashboard';
+      case 'tasks': return 'Minhas Tarefas';
       case 'contacts': return 'Contatos';
       case 'companies': return 'Empresas';
       case 'deals': return 'Negócios';
@@ -196,6 +201,7 @@ function AppInner() {
   const renderScreen = () => {
     switch (activeScreen) {
       case 'dashboard': return <Dashboard />;
+      case 'tasks': return <MyTasksCenter />;
       case 'contacts': return <GenericEntityScreen typeName="contact" />;
       case 'companies': return <GenericEntityScreen typeName="company" />;
       case 'deals': return (
@@ -256,7 +262,16 @@ function AppInner() {
         <div className="content-area">
           {activeScreen !== 'deals' && (
             <header className="simple-header hide-on-mobile">
-              <h1>{getScreenTitle()}</h1>
+              <div className="header-title-container">
+                <h1>{getScreenTitle()}</h1>
+                {workspace && (
+                  <p className="context-meta">
+                    <strong>{workspace.name}</strong> 
+                    <span className="separator">•</span> 
+                    Equipe: <span className="team-badge-inline">{teamName}</span>
+                  </p>
+                )}
+              </div>
               <div className="header-actions">
               </div>
             </header>
