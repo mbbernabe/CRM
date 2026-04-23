@@ -25,7 +25,8 @@ class WorkItemRepository(IWorkItemRepository):
             team_id=model.team_id,
             owner_id=model.owner_id,
             created_at=model.created_at,
-            updated_at=model.updated_at
+            updated_at=model.updated_at,
+            recurrence_config=model.recurrence_config
         )
         
         # Hydrate owner info if available (e.g. from joinedload)
@@ -50,7 +51,8 @@ class WorkItemRepository(IWorkItemRepository):
             custom_fields=work_item.custom_fields,
             workspace_id=work_item.workspace_id,
             team_id=work_item.team_id,
-            owner_id=work_item.owner_id
+            owner_id=work_item.owner_id,
+            recurrence_config=work_item.recurrence_config
         )
         self.db.add(model)
         self.db.commit()
@@ -82,6 +84,7 @@ class WorkItemRepository(IWorkItemRepository):
             model.custom_fields = work_item.custom_fields
             model.team_id = work_item.team_id
             model.owner_id = work_item.owner_id
+            model.recurrence_config = work_item.recurrence_config
             self.db.commit()
             self.db.refresh(model)
             return self._to_entity(model)

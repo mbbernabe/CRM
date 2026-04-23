@@ -198,6 +198,7 @@ class WorkItemModel(BaseModel):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Responsibility owner
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    recurrence_config = Column(JSON, nullable=True) # Ex: { "frequency": "weekly", "interval": 1, ... }
 
     pipeline = relationship("PipelineModel")
     stage = relationship("PipelineStageModel")

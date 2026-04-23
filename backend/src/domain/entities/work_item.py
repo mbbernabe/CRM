@@ -68,6 +68,7 @@ class WorkItem:
     owner_id: Optional[int] = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
+    recurrence_config: Optional[Dict[str, Any]] = None
 
     # Optional metadata to store friendly names for UI (computed at application layer)
     type_label: Optional[str] = None

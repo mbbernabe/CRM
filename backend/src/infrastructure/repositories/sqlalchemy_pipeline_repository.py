@@ -32,13 +32,18 @@ class SqlAlchemyPipelineRepository(IPipelineRepository):
     def list_all(self, workspace_id: int) -> List[Pipeline]:
         db_pipelines = self.db.query(PipelineModel).options(
             joinedload(PipelineModel.stages)
-        ).filter(PipelineModel.workspace_id == workspace_id).all()
+        ).filter(
+            (PipelineModel.workspace_id == workspace_id) | (PipelineModel.workspace_id == None)
+        ).all()
         return [self._map_to_domain(p) for p in db_pipelines]
 
     def get_by_id(self, pipeline_id: int, workspace_id: int) -> Optional[Pipeline]:
         db_pipeline = self.db.query(PipelineModel).options(
             joinedload(PipelineModel.stages)
-        ).filter(PipelineModel.id == pipeline_id, PipelineModel.workspace_id == workspace_id).first()
+        ).filter(
+            PipelineModel.id == pipeline_id, 
+            (PipelineModel.workspace_id == workspace_id) | (PipelineModel.workspace_id == None)
+        ).first()
         
         if not db_pipeline:
             return None

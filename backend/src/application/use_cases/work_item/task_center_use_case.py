@@ -73,21 +73,28 @@ class GetMyTasksUseCase:
                     result["concluidas"].append(task_dict)
                 continue # Não aparece nas outras listas se concluída
 
-            # Filtro por Responsável para as listas inteligentes
+            # Categorização por listas inteligentes
+            
+            # 1. Atribuído a mim (Somente o que é meu de fato)
             if task.owner_id == current_user_id:
                 result["atribuido"].append(task_dict)
-                
+            
+            # 2. Listas Inteligentes: Podem incluir o que é meu OU o que não tem dono (atribuível)
+            is_my_task_or_unassigned = (task.owner_id == current_user_id or task.owner_id is None)
+            
+            if is_my_task_or_unassigned:
                 # Importante
                 if custom.get('is_important') is True:
                     result["importante"].append(task_dict)
                 
-                # Meu Dia
-                due_date = custom.get('due_date')
-                start_date = custom.get('start_date')
+                # Meu Dia (Hoje)
+                due_date = self._normalize_date(custom.get('due_date'))
+                start_date = self._normalize_date(custom.get('start_date'))
+                
                 if due_date == today_str or start_date == today_str:
                     result["meu_dia"].append(task_dict)
                     
-                # Planejado
+                # Planejado (Qualquer data futura ou passada)
                 if start_date or due_date:
                     result["planejado"].append(task_dict)
                 
@@ -111,3 +118,21 @@ class GetMyTasksUseCase:
             "created_at": task.created_at.isoformat() if task.created_at else None,
             "updated_at": task.updated_at.isoformat() if task.updated_at else None
         }
+
+    def _normalize_date(self, date_val):
+        if not date_val:
+            return None
+        if isinstance(date_val, datetime):
+            return date_val.strftime('%Y-%m-%d')
+        
+        # Tenta converter strings em diversos formatos para YYYY-MM-DD
+        date_str = str(date_val).split('T')[0] # Remove time se houver
+        
+        # Formatos comuns
+        formats = ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y']
+        for fmt in formats:
+            try:
+                return datetime.strptime(date_str, fmt).strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        return date_str # Retorna o original se falhar em tudo

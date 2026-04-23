@@ -80,7 +80,8 @@ def create_work_item(
             description=payload.get("description"),
             custom_fields=payload.get("custom_fields"),
             user_id=payload.get("owner_id") or user_id,
-            team_id=target_team_id
+            team_id=target_team_id,
+            recurrence_config=payload.get("recurrence_config")
         )
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Campo obrigatório ausente: {str(e)}")
@@ -177,7 +178,8 @@ def update_item(
             owner_id=final_owner,
             user_id=user_id,
             user_role=role,
-            user_team_id=team_id
+            user_team_id=team_id,
+            recurrence_config=payload.get("recurrence_config")
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

@@ -72,20 +72,48 @@ const MyTasksCenter = () => {
       setQuickTitle('');
       
       const tempId = Date.now();
+      
+      // Prepara custom fields com base na lista ativa para o update otimista
+      const customFields = {};
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      
+      if (activeList === 'meu_dia') {
+        customFields.start_date = localDate;
+        customFields.due_date = localDate;
+      }
+      if (activeList === 'importante') {
+        customFields.is_important = true;
+      }
+      if (activeList === 'planejado') {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+        customFields.start_date = tomorrowDate;
+      }
+
       const newTask = {
         id: tempId,
         title: title,
         owner_id: user.id,
-        custom_fields: {},
+        custom_fields: customFields,
         is_temp: true,
         workspace_name: workspace?.name || 'Geral'
       };
       
-      setTasks(prev => ({
-        ...prev,
-        atribuido: [newTask, ...prev.atribuido],
-        todas: [newTask, ...prev.todas]
-      }));
+      // Update Otimista: Adiciona na lista atual e nas listas globais
+      setTasks(prev => {
+        const update = {
+          ...prev,
+          atribuido: [newTask, ...prev.atribuido],
+          todas: [newTask, ...prev.todas]
+        };
+        // Se estiver em uma lista específica que não seja as globais, adiciona nela também
+        if (!['atribuido', 'todas', 'concluidas'].includes(activeList)) {
+          update[activeList] = [newTask, ...(prev[activeList] || [])];
+        }
+        return update;
+      });
 
       try {
         const typesRes = await fetchWithAuth('/workitems/types');
@@ -104,24 +132,6 @@ const MyTasksCenter = () => {
           throw new Error('Configuração de Tarefas incompleta no workspace');
         }
 
-        const customFields = {};
-        const now = new Date();
-        const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        
-        if (activeList === 'meu_dia') {
-          customFields.start_date = localDate;
-          customFields.due_date = localDate;
-        }
-        if (activeList === 'importante') {
-          customFields.is_important = true;
-        }
-        if (activeList === 'planejado') {
-          const tomorrow = new Date(now);
-          tomorrow.setDate(now.getDate() + 1);
-          const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-          customFields.start_date = tomorrowDate;
-        }
-
         const res = await fetchWithAuth('/workitems', {
           method: 'POST',
           body: JSON.stringify({
@@ -138,8 +148,9 @@ const MyTasksCenter = () => {
         const resData = await res.json();
         const realTask = resData.data || resData;
 
+        // Ao receber a tarefa real, atualizamos o estado e garantimos que ela tenha o pipeline_id correto
         setTasks(prev => {
-          const update = (list) => (list || []).map(t => t.id === tempId ? { ...realTask, workspace_name: workspace?.name } : t);
+          const update = (list) => (list || []).map(t => t.id === tempId ? { ...realTask, pipeline_id: taskPipeline.id, workspace_name: workspace?.name } : t);
           return {
             meu_dia: update(prev.meu_dia),
             importante: update(prev.importante),
@@ -152,16 +163,26 @@ const MyTasksCenter = () => {
       } catch (error) {
         console.error('Erro no Quick Add:', error);
         addToast('Erro ao criar tarefa: ' + error.message, 'error');
-        setTasks(prev => ({
-          ...prev,
-          atribuido: (prev.atribuido || []).filter(t => t.id !== tempId),
-          todas: (prev.todas || []).filter(t => t.id !== tempId)
-        }));
+        setTasks(prev => {
+          const filterOut = (list) => (list || []).filter(t => t.id !== tempId);
+          return {
+            meu_dia: filterOut(prev.meu_dia),
+            importante: filterOut(prev.importante),
+            planejado: filterOut(prev.planejado),
+            atribuido: filterOut(prev.atribuido),
+            concluidas: filterOut(prev.concluidas),
+            todas: filterOut(prev.todas)
+          };
+        });
       }
     }
   };
 
   const handleTaskClick = async (task) => {
+    if (task.is_temp) {
+      addToast('Aguarde a criação da tarefa terminar...', 'info');
+      return;
+    }
     try {
       // Para abrir o modal, precisamos do objeto pipeline da tarefa
       const res = await fetchWithAuth(`/pipelines/${task.pipeline_id}`);
@@ -284,22 +305,24 @@ const MyTasksCenter = () => {
       </div>
 
       <div className="tasks-content">
-        <div className="tasks-header">
-          <h2 style={{ color: listConfig[activeList].color }}>
-            {listConfig[activeList].label}
-          </h2>
-          <p>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        </div>
+        <div className="tasks-content-header">
+          <div className="tasks-header">
+            <h2 style={{ color: listConfig[activeList].color }}>
+              {listConfig[activeList].label}
+            </h2>
+            <p>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          </div>
 
-        <div className="quick-add-container">
-          <input 
-            type="text" 
-            className="quick-add-input" 
-            placeholder="Adicionar uma tarefa..."
-            value={quickTitle}
-            onChange={(e) => setQuickTitle(e.target.value)}
-            onKeyDown={handleQuickAdd}
-          />
+          <div className="quick-add-container">
+            <input 
+              type="text" 
+              className="quick-add-input" 
+              placeholder="Adicionar uma tarefa..."
+              value={quickTitle}
+              onChange={(e) => setQuickTitle(e.target.value)}
+              onKeyDown={handleQuickAdd}
+            />
+          </div>
         </div>
 
         <div className="task-list-rows">

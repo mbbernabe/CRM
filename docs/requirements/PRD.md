@@ -48,7 +48,7 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF027 | **Central de Tarefas (My Tasks Center)**: Painel consolidado do usuário para gerir suas tarefas diárias, vencidas e sem data, focado em produtividade operacional. | **P1 (Alta)** | **Pendente** |
 | RF028 | **Perfil do Usuário & Ativação (Onboarding)**: Interface para o usuário complementar informações pessoais (avatar, WhatsApp, cargo) e ativar seu perfil, personalizando sua identidade no Workspace. | **P1 (Alta)** | **Pendente** |
 | RF029 | **Alteração de Senha (Logado)**: Funcionalidade no perfil do usuário permitindo a troca de senha mediante validação da senha atual. | **P2 (Média)** | **Pendente** |
-
+| RF030 | **Tarefas Recorrentes**: Permitir que tarefas sejam configuradas para repetição automática (Diário, Semanal, Mensal, Anual). Geração da próxima ocorrência ao concluir a atual. | **P1 (Alta)** | **Em Definição** |
 
 ---
 

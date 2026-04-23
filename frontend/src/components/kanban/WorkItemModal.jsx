@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { useAuth } from '../../context/AuthContext';
-import { Save, AlertCircle, ChevronDown, Check, X, Star } from 'lucide-react';
+import { Save, AlertCircle, ChevronDown, Check, X, Star, Calendar } from 'lucide-react';
 import WorkItemHistoryPanel from './WorkItemHistoryPanel';
 import WorkItemLinksPanel from './WorkItemLinksPanel';
 import { validateEmail, validateCPF, maskCPF, maskPhone, maskCEP, validateCEP } from '../../utils/validation';
@@ -66,6 +66,12 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
     custom_fields: {}
   });
 
+  const [recurrence, setRecurrence] = useState({
+    enabled: false,
+    frequency: 'daily',
+    interval: 1
+  });
+
   useEffect(() => {
     if (isOpen) {
       if (!types.length) fetchTypes();
@@ -81,9 +87,6 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
           owner_id: initialData.owner_id || '',
           custom_fields: initialData.custom_fields || {}
         });
-        if (initialData.type_id && types.length) {
-           setSelectedType(types.find(t => t.id === initialData.type_id) || null);
-        }
       } else {
         const defaultTypeId = pipeline?.type_id || (types.length ? types[0].id : '');
         setFormData({
@@ -94,9 +97,29 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
           owner_id: '',
           custom_fields: {}
         });
-        if (defaultTypeId && types.length) {
-            setSelectedType(types.find(t => t.id === defaultTypeId) || types[0]);
+      }
+
+      // Sincronizar selectedType com initialData ou default quando types carregar
+      if (initialData?.type_id && types.length > 0) {
+        const found = types.find(t => t.id === Number(initialData.type_id));
+        if (found) setSelectedType(found);
+      } else if (!initialData && types.length > 0) {
+        const defaultTypeId = pipeline?.type_id || types[0].id;
+        const found = types.find(t => t.id === defaultTypeId) || types[0];
+        if (!selectedType || selectedType.id !== found.id) {
+            setSelectedType(found);
+            setFormData(prev => ({ ...prev, type_id: found.id }));
         }
+      }
+
+      // Carregar recorrência
+      if (initialData?.recurrence_config) {
+        setRecurrence({
+          enabled: true,
+          ...initialData.recurrence_config
+        });
+      } else {
+        setRecurrence({ enabled: false, frequency: 'daily', interval: 1 });
       }
     }
   }, [isOpen, pipeline, initialData, types]);
@@ -104,13 +127,9 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
   const fetchTypes = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('http://localhost:8000/workitems/types');
+      const res = await fetchWithAuth('/workitems/types');
       const data = await res.json();
       setTypes(data);
-      if (data.length > 0) {
-        setSelectedType(data[0]);
-        setFormData(prev => ({ ...prev, type_id: data[0].id }));
-      }
     } catch (err) {
       addToast("Erro ao carregar tipos de itens", "error");
     } finally {
@@ -121,7 +140,7 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
   const fetchUsers = async () => {
     if (!user?.workspace_id) return;
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/workspaces/${user.workspace_id}/users`);
+      const res = await fetchWithAuth(`/workspaces/${user.workspace_id}/users`);
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
@@ -150,7 +169,11 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
     try {
       const payload = {
         ...formData,
-        pipeline_id: pipeline.id || pipeline.pipeline_id
+        pipeline_id: pipeline.id || pipeline.pipeline_id,
+        recurrence_config: recurrence.enabled ? { 
+          frequency: recurrence.frequency, 
+          interval: parseInt(recurrence.interval) 
+        } : null
       };
       
       // Validações Especiais
@@ -173,8 +196,8 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
 
       const method = formData.id ? 'PUT' : 'POST';
       const url = formData.id 
-        ? `http://localhost:8000/workitems/${formData.id}` 
-        : 'http://localhost:8000/workitems';
+        ? `/workitems/${formData.id}` 
+        : '/workitems';
 
       const res = await fetchWithAuth(url, {
         method,
@@ -194,9 +217,59 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
   };
 
   const renderDynamicFields = () => {
-    if (!selectedType || !selectedType.field_definitions) return null;
+    if (!selectedType) return null;
+    const definitions = selectedType.field_definitions || [];
+    const processedFields = new Set();
     
-    return selectedType.field_definitions.map(field => {
+    // Identificar pares de datas para renderizar como Range (Início e Entrega/Fim)
+    // Usamos aliases comuns para garantir que funcione em diferentes versões de tipos de tarefas
+    const startField = definitions.find(f => 
+      ['start_date', 'data_inicio', 'inicio', 'data_de_inicio'].includes(f.name.toLowerCase())
+    );
+    const dueField = definitions.find(f => 
+      ['due_date', 'data_entrega', 'entrega', 'prazo_final', 'data_de_entrega'].includes(f.name.toLowerCase())
+    );
+
+    const fieldsToRender = [];
+
+    // Se ambos existirem, criamos um bloco de range
+    if (startField && dueField) {
+      const startVal = formData.custom_fields[startField.name] || '';
+      const dueVal = formData.custom_fields[dueField.name] || '';
+
+      fieldsToRender.push(
+        <div key="smart-date-range" className="form-group">
+          <label>Prazo (Início e Entrega)</label>
+          <div className="date-range-picker">
+            <div className="range-input">
+              <label className="sub-label">Início</label>
+              <input 
+                type="date" 
+                className="hs-input"
+                value={startVal}
+                onChange={e => handleFieldChange(startField.name, e.target.value)}
+              />
+            </div>
+            <div className="range-separator">até</div>
+            <div className="range-input">
+              <label className="sub-label">Entrega</label>
+              <input 
+                type="date" 
+                className="hs-input"
+                value={dueVal}
+                onChange={e => handleFieldChange(dueField.name, e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      );
+      processedFields.add(startField.name);
+      processedFields.add(dueField.name);
+    }
+
+    const dynamicFields = definitions.map(field => {
+      if (processedFields.has(field.name)) return null;
+
       const val = formData.custom_fields[field.name] || '';
       const options = Array.isArray(field.options) ? field.options : 
                      (typeof field.options === 'string' ? field.options.split(';') : []);
@@ -284,6 +357,45 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
               <Star size={24} fill={val ? '#ff7a59' : 'none'} color={val ? '#ff7a59' : '#cbd5e0'} />
               <span>Marcar como Importante</span>
             </div>
+          ) : field.field_type === 'date' ? (
+            <div className="input-with-icon">
+              <Calendar size={16} className="field-icon" />
+              <input 
+                type="date"
+                className="hs-input"
+                required={field.required}
+                value={val}
+                onChange={e => handleFieldChange(field.name, e.target.value)}
+              />
+            </div>
+          ) : field.field_type === 'date_range' ? (
+            <div className="date-range-picker">
+              <div className="range-input">
+                <label className="sub-label">Início</label>
+                <input 
+                  type="date" 
+                  className="hs-input"
+                  value={val.split(';')[0] || ''}
+                  onChange={e => {
+                    const parts = val.split(';');
+                    handleFieldChange(field.name, `${e.target.value};${parts[1] || ''}`);
+                  }}
+                />
+              </div>
+              <div className="range-separator">até</div>
+              <div className="range-input">
+                <label className="sub-label">Fim</label>
+                <input 
+                  type="date" 
+                  className="hs-input"
+                  value={val.split(';')[1] || ''}
+                  onChange={e => {
+                    const parts = val.split(';');
+                    handleFieldChange(field.name, `${parts[0] || ''};${e.target.value}`);
+                  }}
+                />
+              </div>
+            </div>
           ) : (
             <input 
               type={field.field_type === 'number' ? 'number' : field.field_type === 'email' ? 'email' : 'text'}
@@ -296,6 +408,13 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
         </div>
       );
     });
+
+    return (
+      <>
+        {fieldsToRender}
+        {dynamicFields}
+      </>
+    );
   };
 
   return (
@@ -370,6 +489,44 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
             value={formData.description}
             onChange={e => setFormData({ ...formData, description: e.target.value })}
           />
+        </div>
+
+        <div className="recurrence-section">
+           <label className="recurrence-toggle hs-checkbox">
+              <input 
+                type="checkbox" 
+                checked={recurrence.enabled} 
+                onChange={e => setRecurrence(r => ({ ...r, enabled: e.target.checked }))} 
+              />
+              <span>Tarefa Recorrente</span>
+           </label>
+           
+           {recurrence.enabled && (
+             <div className="recurrence-options">
+                <span className="recurrence-label">Repetir a cada</span>
+                <input 
+                  type="number" 
+                  className="hs-input recurrence-interval"
+                  min="1" 
+                  value={recurrence.interval} 
+                  onChange={e => setRecurrence(r => ({ ...r, interval: e.target.value }))}
+                />
+                <select 
+                  className="hs-input recurrence-freq"
+                  value={recurrence.frequency}
+                  onChange={e => setRecurrence(r => ({ ...r, frequency: e.target.value }))}
+                >
+                  <option value="daily">Dia(s)</option>
+                  <option value="weekly">Semana(s)</option>
+                  <option value="monthly">Mês(es)</option>
+                  <option value="yearly">Ano(s)</option>
+                </select>
+                <div className="recurrence-help">
+                  <AlertCircle size={14} />
+                  <span>Uma nova tarefa será criada automaticamente ao concluir esta.</span>
+                </div>
+             </div>
+           )}
         </div>
 
         <div className="dynamic-fields-section">

@@ -3,16 +3,20 @@ from src.domain.entities.work_item_history import WorkItemHistory, IWorkItemHist
 from src.domain.repositories.user_repository import IUserRepository
 from typing import Dict, Any, Optional
 
+from src.application.services.recurrence_service import RecurrenceService
+
 class UpdateWorkItemUseCase:
     def __init__(
         self, 
         work_item_repo: IWorkItemRepository,
         history_repo: IWorkItemHistoryRepository,
-        user_repo: Optional[IUserRepository] = None
+        user_repo: Optional[IUserRepository] = None,
+        recurrence_service: Optional[RecurrenceService] = None
     ):
         self.work_item_repo = work_item_repo
         self.history_repo = history_repo
         self.user_repo = user_repo
+        self.recurrence_service = recurrence_service or RecurrenceService(work_item_repo)
 
     def execute(
         self, 
@@ -25,7 +29,8 @@ class UpdateWorkItemUseCase:
         owner_id: Optional[int] = None,
         user_id: Optional[int] = None,
         user_role: str = "admin",
-        user_team_id: Optional[int] = None
+        user_team_id: Optional[int] = None,
+        recurrence_config: Optional[Dict[str, Any]] = None
     ) -> WorkItem:
         team_filter = user_team_id if user_role not in ["admin", "super_admin"] else None
         work_item = self.work_item_repo.get_by_id(work_item_id, workspace_id, team_id=team_filter)
@@ -34,6 +39,10 @@ class UpdateWorkItemUseCase:
             
         # Modificar as propriedades apenas se passadas
         changes = []
+        
+        if recurrence_config is not None:
+            work_item.recurrence_config = recurrence_config
+            changes.append("Configuração de recorrência alterada")
         if title is not None and title != work_item.title:
             changes.append(f"Título alterado de '{work_item.title}' para '{title}'")
             work_item.title = title
@@ -46,9 +55,15 @@ class UpdateWorkItemUseCase:
             changes.append("Tipo do item alterado")
             work_item.type_id = type_id
 
+        # Capture completion state before update
+        was_completed = (work_item.custom_fields or {}).get("is_completed") is True
+
         if custom_fields is not None:
             work_item.custom_fields = custom_fields
             
+        # Check if it's being completed now
+        is_now_completed = (work_item.custom_fields or {}).get("is_completed") is True
+
         # Normalize owner_id (convert empty 0 or string to None)
         normalized_owner = owner_id
         if normalized_owner == "" or normalized_owner == 0:
@@ -66,8 +81,16 @@ class UpdateWorkItemUseCase:
                 changes.append(f"Atribuído para {owner_name}")
             
             work_item.owner_id = normalized_owner
-            
+
         updated_item = self.work_item_repo.update(work_item)
+
+        if not was_completed and is_now_completed:
+            # Trigger recurrence logic
+            try:
+                self.recurrence_service.process_completion(updated_item)
+            except Exception as e:
+                # Log error but don't block the main update
+                print(f"Erro ao processar recorrência: {e}")
         
         # Só cria registro se houver notas explicativas de mudança
         if changes:

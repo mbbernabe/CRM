@@ -21,7 +21,8 @@ class CreateWorkItemUseCase:
         description: Optional[str] = None,
         custom_fields: Dict[str, Any] = None,
         user_id: Optional[int] = None,
-        team_id: Optional[int] = None
+        team_id: Optional[int] = None,
+        recurrence_config: Optional[Dict[str, Any]] = None
     ) -> WorkItem:
         # Create the work item
         work_item = WorkItem(
@@ -33,7 +34,8 @@ class CreateWorkItemUseCase:
             custom_fields=custom_fields or {},
             workspace_id=workspace_id,
             team_id=team_id,
-            owner_id=user_id # Default owner is the creator
+            owner_id=user_id, # Default owner is the creator
+            recurrence_config=recurrence_config
         )
         
         created_item = self.work_item_repo.create(work_item)

@@ -84,6 +84,31 @@ const DynamicFormField = ({ prop, value, onChange }) => {
             />
           </div>
         );
+      case 'date_range':
+        const [start, end] = (value || '').split(';');
+        return (
+          <div className="date-range-picker-dynamic flex items-end gap-3 bg-gray-50/50 p-3 rounded-lg border border-gray-200">
+            <div className="flex-1 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Início</span>
+              <input 
+                type="date" 
+                className="hs-input w-full text-sm"
+                value={start || ''}
+                onChange={e => onChange(prop.name, `${e.target.value};${end || ''}`)}
+              />
+            </div>
+            <span className="mb-2 text-gray-300 font-bold">→</span>
+            <div className="flex-1 flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Fim</span>
+              <input 
+                type="date" 
+                className="hs-input w-full text-sm"
+                value={end || ''}
+                onChange={e => onChange(prop.name, `${start || ''};${e.target.value}`)}
+              />
+            </div>
+          </div>
+        );
       case 'email':
         return (
           <div className="input-with-icon">
