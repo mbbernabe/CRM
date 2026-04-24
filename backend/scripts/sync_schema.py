@@ -1,61 +1,48 @@
-import sqlite3
-import os
-import sys
-
-# Garantir que o root do backend esteja no path para importar src
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
+from sqlalchemy import create_engine, inspect, text
 from src.infrastructure.database.models import BaseModel
-from src.infrastructure.database.db import DATABASE_PATH
+from src.infrastructure.database.db import SQLALCHEMY_DATABASE_URL
 
 def sync_schema():
-    print(f"Syncing schema for database at {DATABASE_PATH}...")
+    print(f"Syncing schema for database at {SQLALCHEMY_DATABASE_URL}...")
     
-    if not os.path.exists(DATABASE_PATH):
-        print("Database file not found!")
-        return
-
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    inspector = inspect(engine)
+    
     type_map = {
         "INTEGER": "INTEGER",
-        "String": "VARCHAR",
         "VARCHAR": "VARCHAR",
-        "DATETIME": "DATETIME",
-        "DateTime": "DATETIME",
+        "DATETIME": "TIMESTAMP",
         "BOOLEAN": "BOOLEAN",
-        "Boolean": "BOOLEAN",
         "TEXT": "TEXT",
-        "Text": "TEXT",
-        "JSON": "JSON"
+        "JSON": "JSONB" # Postgres uses JSONB for efficiency
     }
 
-    for table_name, table in BaseModel.metadata.tables.items():
-        print(f"Checking table '{table_name}'...")
-        # Get existing columns
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        existing_cols = {row[1]: row[2] for row in cursor.fetchall()}
-        
-        if not existing_cols:
-            print(f"Table '{table_name}' does not exist in DB yet. create_all will handle it.")
-            continue
+    with engine.connect() as conn:
+        for table_name, table in BaseModel.metadata.tables.items():
+            print(f"Checking table '{table_name}'...")
+            
+            # Check if table exists
+            if not inspector.has_table(table_name):
+                print(f"Table '{table_name}' does not exist in DB yet. create_all will handle it.")
+                continue
 
-        for col_name, column in table.columns.items():
-            if col_name not in existing_cols:
-                # Determine type
-                col_type = str(column.type).split('(')[0].upper()
-                sqlite_type = type_map.get(col_type, "TEXT")
-                
-                print(f"Missing column: {table_name}.{col_name} ({sqlite_type})")
-                try:
-                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {sqlite_type}")
-                    print(f"Column '{col_name}' added.")
-                except Exception as e:
-                    print(f"Error adding {col_name}: {e}")
+            # Get existing columns
+            existing_cols = {col['name']: str(col['type']).split('(')[0].upper() for col in inspector.get_columns(table_name)}
+            
+            for col_name, column in table.columns.items():
+                if col_name not in existing_cols:
+                    # Determine type
+                    col_type = str(column.type).split('(')[0].upper()
+                    db_type = type_map.get(col_type, "TEXT")
+                    
+                    print(f"Missing column: {table_name}.{col_name} ({db_type})")
+                    try:
+                        conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {db_type}"))
+                        conn.commit()
+                        print(f"Column '{col_name}' added.")
+                    except Exception as e:
+                        print(f"Error adding {col_name}: {e}")
 
-    conn.commit()
-    conn.close()
     print("Schema sync completed.")
 
 if __name__ == "__main__":

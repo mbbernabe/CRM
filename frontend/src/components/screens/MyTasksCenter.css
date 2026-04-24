@@ -66,6 +66,44 @@
   margin-bottom: 24px;
 }
 
+.tasks-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.view-mode-toggle {
+  display: flex;
+  background: #f5f8fa;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #cbd6e2;
+  height: fit-content;
+}
+
+.toggle-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: #516f90;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: white;
+  color: #2e3f50;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.toggle-btn:hover:not(.active) {
+  background: #eaf0f6;
+}
+
 .tasks-header h2 {
   font-size: 28px;
   color: #2d3e50;
@@ -82,9 +120,10 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  margin-bottom: 16px;
+  margin-bottom: 0px;
   border: 1px solid #e1e4e8;
   overflow: hidden;
+  flex: 1;
 }
 
 .quick-add-input {
@@ -161,6 +200,13 @@
 .task-title.completed {
   text-decoration: line-through;
   color: #7c98b6;
+}
+
+.calendar-view-wrapper {
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .task-meta {

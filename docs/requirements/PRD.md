@@ -48,7 +48,8 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF027 | **Central de Tarefas (My Tasks Center)**: Painel consolidado do usuário para gerir suas tarefas diárias, vencidas e sem data, focado em produtividade operacional. | **P1 (Alta)** | **Pendente** |
 | RF028 | **Perfil do Usuário & Ativação (Onboarding)**: Interface para o usuário complementar informações pessoais (avatar, WhatsApp, cargo) e ativar seu perfil, personalizando sua identidade no Workspace. | **P1 (Alta)** | **Pendente** |
 | RF029 | **Alteração de Senha (Logado)**: Funcionalidade no perfil do usuário permitindo a troca de senha mediante validação da senha atual. | **P2 (Média)** | **Pendente** |
-| RF030 | **Tarefas Recorrentes**: Permitir que tarefas sejam configuradas para repetição automática (Diário, Semanal, Mensal, Anual). Geração da próxima ocorrência ao concluir a atual. | **P1 (Alta)** | **Em Definição** |
+| RF030 | **Tarefas Recorrentes**: Permitir que tarefas sejam configuradas para repetição automática (Diário, Semanal, Mensal, Anual). Geração da próxima ocorrência ao concluir a atual. | **P1 (Alta)** | **✅ Concluído** |
+| RF031 | **Visualização em Calendário**: Interface visual de calendário (mês/semana) para visualização de prazos e agendamentos de tarefas e compromissos. | **P1 (Alta)** | **Em Definição** |
 
 ---
 
@@ -167,6 +168,8 @@ frontend/src/
 - **Como** membro de um time, **eu quero** vincular um WorkItem a outros WorkItems relacionados **para que** eu possa enxergar, em um único painel organizado por tipo, todas as relações do objeto — como um Ticket originado de um Contato ou um Negócio ligado a uma Empresa.
 - **Como** usuário do sistema, **eu quero** poder configurar meu perfil adicionando minha foto (avatar), WhatsApp e outras informações **para que** meus colegas de time possam me identificar facilmente nas tarefas e históricos do CRM.
 - **Como** usuário autenticado, **eu quero** poder alterar minha senha nas configurações do meu perfil **para que** eu possa manter a segurança da minha conta atualizada.
+- **Como** gestor ou colaborador, **eu quero** visualizar minhas tarefas em uma visão de calendário **para que** eu possa planejar minha semana e identificar gargalos de prazos visualmente.
+- **Como** usuário, **eu quero** clicar em uma tarefa no calendário para ver seus detalhes e editá-la **para que** eu possa gerenciar meus compromissos sem trocar de tela.
 
 ---
 
@@ -175,6 +178,7 @@ frontend/src/
 - Redução no tempo de entrada de leads via automação.
 - Satisfação do usuário com a experiência responsiva (Mobile/Tablet/Desktop).
 - Taxa de conversão de convites enviados vs. aceitos.
+- Frequência de uso da visão de calendário para planejamento semanal.
 
 ---
 
@@ -193,6 +197,8 @@ frontend/src/
 
 | Data | Mudança |
 |------|---------|
+| 23/04/2026 | Inclusão do **RF031 (Visualização em Calendário)**. O objetivo é permitir o planejamento temporal de tarefas em grade mensal/semanal. |
+| 23/04/2026 | Conclusão do **RF030 (Tarefas Recorrentes)**. Implementada lógica de clonagem automática e interface de configuração no modal. |
 | 20/04/2026 | Inclusão do **RF029 (Alteração de Senha)**, permitindo que usuários já autenticados alterem sua credencial nas configurações de perfil. |
 | 20/04/2026 | Inclusão do **RF028 (Perfil do Usuário & Ativação)**, permitindo personalização de avatar e adição de contatos como WhatsApp e telefone. |
 | 20/04/2026 | Expansão da visão de Produtividade. Adicionados requisitos **RF026 (Tarefas Mandatórias)** e **RF027 (Central de Tarefas)**. O sistema passará a provisionar tarefas automaticamente para facilitar o fluxo de trabalho diário. |

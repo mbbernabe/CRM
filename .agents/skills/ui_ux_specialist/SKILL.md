@@ -60,6 +60,11 @@ Ao revisar uma tela:
     - NUNCA aplicar `overflow-y: auto` ou `height: 100%` em contêineres de novas telas, a menos que seja um componente com scroll interno funcional (ex: Colunas de Kanban ou Modais). 
     - Garanta que a barra de rolagem seja única e esteja sempre na extremidade direita da janela.
 
+### 4. Campos de Data e Prazos (Calendários)
+- **Seletores de Data (Date Pickers)**: Todo campo do tipo "Data" DEVE utilizar o componente visual de calendário (Date Picker) para facilitar a entrada, evitando digitação manual e erros de formatação.
+- **Campos de Prazo (Range)**: Sempre que houver um intervalo (ex: Data Início e Data Fim), utilize o componente `date_range` que agrupa os seletores em uma única interface visual de "Prazo", melhorando a percepção de continuidade temporal.
+- **Ícones**: Utilize ícones semânticos (Lucide `Calendar`) para identificar visualmente campos de data.
+
 ## ⚡ Performance & Velocidade Percebida (OBRIGATÓRIO)
 
 > **Contexto:** Com o backend em Supabase (remoto), cada chamada de API leva ~100-300ms. A interface DEVE parecer instantânea usando as técnicas abaixo.

@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
 import WorkItemModal from '../kanban/WorkItemModal';
+import CalendarView from './CalendarView';
 import './MyTasksCenter.css';
 
 const MyTasksCenter = () => {
@@ -33,6 +34,7 @@ const MyTasksCenter = () => {
   });
   const [loading, setLoading] = useState(true);
   const [quickTitle, setQuickTitle] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
 
   const listConfig = {
     meu_dia: { label: 'Meu Dia', icon: <Sun size={20} />, color: '#ffaa47' },
@@ -313,71 +315,96 @@ const MyTasksCenter = () => {
             <p>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
           </div>
 
-          <div className="quick-add-container">
-            <input 
-              type="text" 
-              className="quick-add-input" 
-              placeholder="Adicionar uma tarefa..."
-              value={quickTitle}
-              onChange={(e) => setQuickTitle(e.target.value)}
-              onKeyDown={handleQuickAdd}
-            />
+          <div className="tasks-header-actions">
+            <div className="view-mode-toggle">
+              <button 
+                className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                Lista
+              </button>
+              <button 
+                className={`toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+                onClick={() => setViewMode('calendar')}
+              >
+                Calendário
+              </button>
+            </div>
+
+            <div className="quick-add-container">
+              <input 
+                type="text" 
+                className="quick-add-input" 
+                placeholder="Adicionar uma tarefa..."
+                value={quickTitle}
+                onChange={(e) => setQuickTitle(e.target.value)}
+                onKeyDown={handleQuickAdd}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="task-list-rows">
-          {currentTasks.length === 0 && !loading && (
-            <div className="empty-tasks">
-              <CheckCircle2 size={48} />
-              <h3>Tudo limpo por aqui!</h3>
-              <p>Você não tem tarefas nesta lista.</p>
-            </div>
-          )}
+        {viewMode === 'list' ? (
+          <div className="task-list-rows">
+            {currentTasks.length === 0 && !loading && (
+              <div className="empty-tasks">
+                <CheckCircle2 size={48} />
+                <h3>Tudo limpo por aqui!</h3>
+                <p>Você não tem tarefas nesta lista.</p>
+              </div>
+            )}
 
-          {currentTasks.map(task => {
-            const priority = task.custom_fields?.priority;
-            const dueDate = task.custom_fields?.due_date;
-            const isImp = task.custom_fields?.is_important;
+            {currentTasks.map(task => {
+              const priority = task.custom_fields?.priority;
+              const dueDate = task.custom_fields?.due_date;
+              const isImp = task.custom_fields?.is_important;
+              const isCompleted = task.custom_fields?.is_completed;
 
-            const isCompleted = task.custom_fields?.is_completed;
-
-            return (
-              <div 
-                key={task.id} 
-                className={`task-row ${isCompleted ? 'completed' : ''}`}
-                onClick={() => handleTaskClick(task)}
-                title="Clique para editar detalhes"
-              >
-                <div className={`priority-indicator ${getPriorityClass(priority)}`}></div>
+              return (
                 <div 
-                  className={`task-check ${isCompleted ? 'completed' : ''}`} 
-                  onClick={(e) => handleToggleComplete(e, task)}
+                  key={task.id} 
+                  className={`task-row ${isCompleted ? 'completed' : ''}`}
+                  onClick={() => handleTaskClick(task)}
+                  title="Clique para editar detalhes"
                 >
-                  {isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-                </div>
-                <div className="task-info">
-                  <div className="task-title">{task.title}</div>
-                  <div className="task-meta">
-                    <div className="task-meta-item">
-                      <Layout size={12} /> <span>{task.workspace_name || 'Geral'}</span>
-                    </div>
-                    {dueDate && (
-                      <div className={`task-meta-item ${isOverdue(dueDate) ? 'overdue' : ''}`}>
-                        <Calendar size={12} /> <span>{formatDate(dueDate)}</span>
+                  <div className={`priority-indicator ${getPriorityClass(priority)}`}></div>
+                  <div 
+                    className={`task-check ${isCompleted ? 'completed' : ''}`} 
+                    onClick={(e) => handleToggleComplete(e, task)}
+                  >
+                    {isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                  </div>
+                  <div className="task-info">
+                    <div className="task-title">{task.title}</div>
+                    <div className="task-meta">
+                      <div className="task-meta-item">
+                        <Layout size={12} /> <span>{task.workspace_name || 'Geral'}</span>
                       </div>
-                    )}
+                      {dueDate && (
+                        <div className={`task-meta-item ${isOverdue(dueDate) ? 'overdue' : ''}`}>
+                          <Calendar size={12} /> <span>{formatDate(dueDate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div 
+                    className={`task-important ${isImp ? 'active' : ''}`}
+                    onClick={(e) => toggleImportant(e, task)}
+                  >
+                    <Star size={18} fill={isImp ? 'currentColor' : 'none'} />
                   </div>
                 </div>
-                <div 
-                  className={`task-important ${isImp ? 'active' : ''}`}
-                  onClick={(e) => toggleImportant(e, task)}
-                >
-                  <Star size={18} fill={isImp ? 'currentColor' : 'none'} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="calendar-view-wrapper">
+             <CalendarView 
+               tasks={tasks.todas} 
+               onTaskClick={handleTaskClick} 
+             />
+          </div>
+        )}
       </div>
 
       {isModalOpen && (

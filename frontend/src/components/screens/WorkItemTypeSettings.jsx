@@ -87,7 +87,8 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
             <option value="textarea">Texto Longo</option>
             <option value="number">Número</option>
             <option value="currency">Moeda</option>
-            <option value="date">Data</option>
+            <option value="date">Data Simples</option>
+            <option value="date_range">Prazo (Início e Fim)</option>
             <option value="select">Seleção Única</option>
             <option value="multiselect">Seleção Múltipla</option>
             <option value="email">E-mail</option>
