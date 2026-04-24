@@ -30,12 +30,33 @@
 - [ ] **Progressive Disclosure**: Reorganizar as telas de configuração para ocultar complexidade técnica (IDs internos, grupos complexos) em seções "Avançadas".
 - [ ] **Painel Administrativo de Templates (Super Admin)**: Criar interface para que o dono do SaaS possa configurar os modelos globais com metadados de marketing (descrição, categorias, ícones premium).
 
+## 🏠 Página Inicial Personalizável (Home - RF032/RF033)
+- [ ] **Novo Dashboard Operacional (Home)**: Criar a tela `Home.jsx` como novo entrypoint do sistema.
+- [ ] **Sistema de Widgets (Grid)**: Implementar layout de grid para os cards de atalho.
+- [ ] **Widgets Iniciais (MVP)**:
+    - **Ações Rápidas**: "Nova Tarefa", "Novo Contato", "Novo Negócio".
+    - **Resumo do Dia**: Contador de tarefas vencidas e hoje.
+    - **Itens Recentes**: Carrossel ou lista dos últimos 5 itens acessados.
+    - **Atalhos de Pipeline**: Links diretos para os quadros Kanban mais usados.
+- [ ] **Personalização de Layout**:
+    - Botão "Editar Home" que entra em modo de edição.
+    - Drag-and-drop para reordenar widgets.
+    - Toggle para esconder/mostrar widgets específicos.
+- [ ] **Persistência de Preferências**: Salvar o JSON de configuração no campo `preferences` do `UserModel`.
+
 ## 🎯 Produtividade & Tarefas (My Tasks Center)
 - [x] **Provisionamento Mandatório de Tarefas (RF026)**: Ao criar um novo Workspace, o sistema deve injetar automaticamente o `WorkItemType` "Tarefa" e uma pipeline de 3 estágios (A fazer, Fazendo, Feito).
-- [ ] **Central "Minhas Tarefas" (Dashboard)**: Uma visão consolidada onde o usuário vê apenas suas tarefas, agrupadas por:
+- [x] **Central "Minhas Tarefas" (Dashboard) (RF027)**: Uma visão consolidada onde o usuário vê apenas suas tarefas, agrupadas por:
     - **🚨 Vencidas**: Destaque visual crítico para o que passou do prazo.
-    - **📅 Para Hoje**: Foco no trabalho imediato.
+    - **📅 Hoje**: Foco no trabalho imediato.
     - **📝 Sem Data / Backlog**: Tarefas que ainda precisam de agendamento.
+    - **🌟 Importantes**: Tarefas marcadas com prioridade alta.
+    - **📅 Planejadas**: Tarefas com prazos futuros.
+- [x] **Visualização em Calendário (RF031)**: Interface visual para planejamento temporal.
+    - **Mês/Semana**: Alternância entre visualizações.
+    - **Drag-to-resize**: Redimensionamento de tarefas multi-dia.
+    - **Context Menu**: Criação de tarefas via clique direito no calendário.
+    - **Sincronização**: Persistência automática de datas no backend.
 - [ ] **Widget de Acesso Rápido**: Mini-lista de tarefas acessível no Header ou Sidebar para consulta rápida de qualquer tela.
 - [ ] **Vinculação Contextual**: Garantir que toda tarefa possa ser vinculada a um Contato, Negócio ou Empresa com facilidade (usando RF021).
 - [x] **Dono do WorkItem**: Todo WorkItem pode ter um usuário dono atribuído. *(Backend: `owner_id` em `WorkItemModel`, Frontend: `AssignWorkItemModal.jsx`, `WorkItemCard.jsx` com avatar)*
@@ -60,8 +81,8 @@
 - [x] **Registro**: Criação de conta com nome, e-mail, senha e nome do Workspace. Cria automaticamente o Workspace, Time "Geral" e o primeiro usuário admin. *(Backend: `RegisterUserUseCase`, Frontend: `Register.jsx`)*
 - [x] **Recuperação de Senha**: Fluxo completo — tela "Esqueci minha senha", envio de e-mail com token JWT, tela de redefinição. *(Backend: `password_reset_use_case.py`, Frontend: `ForgotPassword.jsx`, `ResetPassword.jsx`)*
 - [x] **Configurações Globais (SMTP)**: Tela de SuperAdmin para configurar servidor SMTP, credenciais, URL base de reset. *(Backend: `admin_settings.py`, Frontend: `SystemSettings.jsx`)*
-- [ ] **Perfil do Usuário & Ativação (Onboarding)**: Interface dedicada para o usuário ativar seu perfil, fazer upload de uma imagem (Avatar) com redimensionamento, e complementar informações como telefone, WhatsApp e cargo para identificação no sistema.
-- [ ] **Alteração de Senha (Logado)**: Funcionalidade nas configurações de perfil para o usuário autenticado redefinir sua senha. Deve exigir a confirmação da senha atual por questões de segurança.
+- [x] **Perfil do Usuário & Ativação (Onboarding)**: Interface dedicada para o usuário ativar seu perfil, fazer upload de uma imagem (Avatar), e complementar informações como telefone, WhatsApp e cargo para identificação no sistema. *(Backend: `profile_use_cases.py`, Frontend: `Profile.jsx`)*
+- [x] **Alteração de Senha (Logado)**: Funcionalidade nas configurações de perfil para o usuário autenticado redefinir sua senha. Deve exigir a confirmação da senha atual por questões de segurança. *(Backend: `ChangePasswordUseCase`, Frontend: `Profile.jsx`)*
 
 ## 💲 Gestão de Planos & Assinaturas (SaaS)
 - [ ] **Criação de Planos (Super Admin)**: O Super Administrador poderá criar planos de assinatura personalizados aplicáveis às Áreas de Trabalho.
@@ -87,7 +108,7 @@
 ---
 
 ## 📅 Notas de Brainstorming [20/04/2026]
-- **Conquista Recente**: Implementação da **DeactivatedScreen** dedicada (tela premium para usuários suspensos) e correção do bug de unmount no `App.jsx`.
+- **Conquista Recente**: Implementação da **Central de Tarefas (RF027)**, **Calendário (RF031)** e **Módulo de Perfil e Segurança (RF028/RF029)** com suporte a avatar, cargo e alteração segura de senha.
 - **Pendência Importante**: Atualizar os dados de contato (Chat/Telefone) na `DeactivatedScreen.jsx`. Atualmente estão com placeholders ("0800 123 4567").
 
 ---

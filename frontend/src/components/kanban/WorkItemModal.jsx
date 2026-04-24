@@ -69,7 +69,8 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
   const [recurrence, setRecurrence] = useState({
     enabled: false,
     frequency: 'daily',
-    interval: 1
+    interval: 1,
+    weekdays: [] // [0,1,2,3,4,5,6] onde 0 = Domingo
   });
 
   useEffect(() => {
@@ -77,6 +78,7 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
       if (!types.length) fetchTypes();
       if (!users.length) fetchUsers();
       
+      // Inicializar formulário
       if (initialData) {
         setFormData({
           id: initialData.id,
@@ -87,6 +89,17 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
           owner_id: initialData.owner_id || '',
           custom_fields: initialData.custom_fields || {}
         });
+
+        // Carregar recorrência apenas uma vez ao abrir
+        if (initialData.recurrence_config) {
+          setRecurrence({
+            enabled: true,
+            weekdays: [],
+            ...initialData.recurrence_config
+          });
+        } else {
+          setRecurrence({ enabled: false, frequency: 'daily', interval: 1, weekdays: [] });
+        }
       } else {
         const defaultTypeId = pipeline?.type_id || (types.length ? types[0].id : '');
         setFormData({
@@ -97,32 +110,23 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
           owner_id: '',
           custom_fields: {}
         });
-      }
-
-      // Sincronizar selectedType com initialData ou default quando types carregar
-      if (initialData?.type_id && types.length > 0) {
-        const found = types.find(t => t.id === Number(initialData.type_id));
-        if (found) setSelectedType(found);
-      } else if (!initialData && types.length > 0) {
-        const defaultTypeId = pipeline?.type_id || types[0].id;
-        const found = types.find(t => t.id === defaultTypeId) || types[0];
-        if (!selectedType || selectedType.id !== found.id) {
-            setSelectedType(found);
-            setFormData(prev => ({ ...prev, type_id: found.id }));
-        }
-      }
-
-      // Carregar recorrência
-      if (initialData?.recurrence_config) {
-        setRecurrence({
-          enabled: true,
-          ...initialData.recurrence_config
-        });
-      } else {
-        setRecurrence({ enabled: false, frequency: 'daily', interval: 1 });
+        setRecurrence({ enabled: false, frequency: 'daily', interval: 1, weekdays: [] });
       }
     }
-  }, [isOpen, pipeline, initialData, types]);
+  }, [isOpen, initialData]); // Removido types e pipeline das dependências de reset de estado
+
+  // Efeito separado para sincronizar o tipo selecionado quando os tipos carregarem
+  useEffect(() => {
+    if (isOpen && types.length > 0) {
+      const typeId = formData.type_id || pipeline?.type_id;
+      if (typeId) {
+        const found = types.find(t => t.id === Number(typeId));
+        if (found) setSelectedType(found);
+      } else if (types.length > 0) {
+        setSelectedType(types[0]);
+      }
+    }
+  }, [isOpen, types, formData.type_id]);
 
   const fetchTypes = async () => {
     setLoading(true);
@@ -172,7 +176,8 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
         pipeline_id: pipeline.id || pipeline.pipeline_id,
         recurrence_config: recurrence.enabled ? { 
           frequency: recurrence.frequency, 
-          interval: parseInt(recurrence.interval) 
+          interval: parseInt(recurrence.interval),
+          weekdays: recurrence.frequency === 'weekly' ? recurrence.weekdays : []
         } : null
       };
       
@@ -384,7 +389,7 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
               </div>
               <div className="range-separator">até</div>
               <div className="range-input">
-                <label className="sub-label">Fim</label>
+                <label className="sub-label">Entrega</label>
                 <input 
                   type="date" 
                   className="hs-input"
@@ -525,6 +530,38 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
                   <AlertCircle size={14} />
                   <span>Uma nova tarefa será criada automaticamente ao concluir esta.</span>
                 </div>
+
+                {recurrence.frequency === 'weekly' && (
+                  <div className="weekday-selector">
+                    <p className="sub-label">Repetir nos dias:</p>
+                    <div className="weekday-buttons">
+                      {[
+                        { label: 'D', full: 'Domingo' },
+                        { label: 'S', full: 'Segunda-feira' },
+                        { label: 'T', full: 'Terça-feira' },
+                        { label: 'Q', full: 'Quarta-feira' },
+                        { label: 'Q', full: 'Quinta-feira' },
+                        { label: 'S', full: 'Sexta-feira' },
+                        { label: 'S', full: 'Sábado' }
+                      ].map((day, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          title={day.full}
+                          className={`weekday-btn ${recurrence.weekdays.includes(index) ? 'selected' : ''}`}
+                          onClick={() => {
+                            const newWeekdays = recurrence.weekdays.includes(index)
+                              ? recurrence.weekdays.filter(d => d !== index)
+                              : [...recurrence.weekdays, index].sort();
+                            setRecurrence(r => ({ ...r, weekdays: newWeekdays }));
+                          }}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
              </div>
            )}
         </div>

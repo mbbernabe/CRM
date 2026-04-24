@@ -20,7 +20,10 @@ class SqlAlchemyUserRepository(IUserRepository):
             is_active=model.is_active,
             deactivated_at=model.deactivated_at,
             last_activity=model.last_activity,
-            created_at=model.created_at
+            created_at=model.created_at,
+            avatar_url=model.avatar_url,
+            phone=model.phone,
+            position=model.position
         )
         
         if hasattr(model, 'memberships') and model.memberships:
@@ -71,6 +74,9 @@ class SqlAlchemyUserRepository(IUserRepository):
                 model.is_active = user.is_active
                 model.deactivated_at = user.deactivated_at
                 model.last_activity = user.last_activity
+                model.avatar_url = user.avatar_url
+                model.phone = user.phone
+                model.position = user.position
         else:
             model = UserModel(
                 name=user.name,
@@ -81,7 +87,10 @@ class SqlAlchemyUserRepository(IUserRepository):
                 preferences=user.preferences,
                 is_active=user.is_active,
                 deactivated_at=user.deactivated_at,
-                last_activity=user.last_activity
+                last_activity=user.last_activity,
+                avatar_url=user.avatar_url,
+                phone=user.phone,
+                position=user.position
             )
             self.db.add(model)
         

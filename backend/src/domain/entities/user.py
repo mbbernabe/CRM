@@ -23,6 +23,11 @@ class User:
     last_activity: Optional[datetime] = None
     created_at: datetime = datetime.utcnow()
     
+    # RF028: Perfil do Usuário
+    avatar_url: Optional[str] = None
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    
     # Relacionamentos
     memberships: Optional[list] = None
 

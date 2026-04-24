@@ -202,6 +202,14 @@
   color: #7c98b6;
 }
 
+.task-row.is-temp {
+  opacity: 0.5;
+  background-color: #f0f2f5;
+  cursor: wait;
+  pointer-events: none;
+  border-style: dashed;
+}
+
 .calendar-view-wrapper {
   padding: 24px 0;
   display: flex;

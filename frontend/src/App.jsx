@@ -24,6 +24,7 @@ import WorkspaceMembers from './components/screens/WorkspaceMembers';
 import AdminTemplates from './components/screens/AdminTemplates';
 import DeactivatedScreen from './components/auth/DeactivatedScreen';
 import MyTasksCenter from './components/screens/MyTasksCenter';
+import Profile from './components/screens/Profile';
 
 
 
@@ -194,6 +195,7 @@ function AppInner() {
       case 'admin-templates': return 'Biblioteca Global';
       case 'object-types': return 'Tipos de Objetos';
       case 'workspace-members': return 'Membros & Convites';
+      case 'profile': return 'Meu Perfil';
       default: return 'CRM';
     }
   };
@@ -230,6 +232,7 @@ function AppInner() {
       case 'admin-templates': return <AdminTemplates />;
       case 'object-types': return <WorkItemTypeSettings />;
       case 'workspace-members': return <WorkspaceMembers />;
+      case 'profile': return <Profile />;
       default: return <Dashboard />;
     }
   };

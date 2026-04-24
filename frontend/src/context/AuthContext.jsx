@@ -209,6 +209,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserData = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('crm_user', JSON.stringify(updatedUser));
+  };
+
   const logout = () => {
     setUser(null);
     setWorkspace(null);
@@ -257,7 +262,8 @@ export const AuthProvider = ({ children }) => {
         user, workspace, activeMembershipId, login, register, logout, loading, 
         forgotPassword, resetPassword, refreshWorkspace, switchWorkspace, switchMembership, refreshUser,
         isAuthenticated: !!user,
-        fetchWithAuth
+        fetchWithAuth,
+        updateUserData
     }}>
       {children}
     </AuthContext.Provider>

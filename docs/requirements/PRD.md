@@ -45,11 +45,13 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF024 | **Editor Visual com Live Preview**: Redesenho do criador de tipos de objetos com foco em *Progressive Disclosure* (campos básicos vs avançados) e pré-visualização em tempo real do formulário. | **P1 (Alta)** | **Pendente** |
 | RF025 | **Gestão Administrativa de Templates Globais**: Interface de Super Admin para gerenciar o catálogo de modelos, incluindo descrições de marketing, ícones e categorização. | **P1 (Alta)** | **Pendente** |
 | RF026 | **Template de Tarefas Mandatório**: Provisionamento automático do tipo "Tarefa" e sua pipeline padrão em todo novo Workspace. | **P0 (Crítica)** | **✅ Concluído** |
-| RF027 | **Central de Tarefas (My Tasks Center)**: Painel consolidado do usuário para gerir suas tarefas diárias, vencidas e sem data, focado em produtividade operacional. | **P1 (Alta)** | **Pendente** |
-| RF028 | **Perfil do Usuário & Ativação (Onboarding)**: Interface para o usuário complementar informações pessoais (avatar, WhatsApp, cargo) e ativar seu perfil, personalizando sua identidade no Workspace. | **P1 (Alta)** | **Pendente** |
-| RF029 | **Alteração de Senha (Logado)**: Funcionalidade no perfil do usuário permitindo a troca de senha mediante validação da senha atual. | **P2 (Média)** | **Pendente** |
+| RF027 | **Central de Tarefas (My Tasks Center)**: Painel consolidado do usuário para gerir suas tarefas diárias, vencidas e sem data, focado em produtividade operacional. | **P1 (Alta)** | **✅ Concluído** |
+| RF028 | **Perfil do Usuário & Ativação (Onboarding)**: Interface para o usuário complementar informações pessoais (avatar, WhatsApp, cargo) e ativar seu perfil, personalizando sua identidade no Workspace. | **P1 (Alta)** | **✅ Concluído** |
+| RF029 | **Alteração de Senha (Logado)**: Funcionalidade no perfil do usuário permitindo a troca de senha mediante validação da senha atual. | **P2 (Média)** | **✅ Concluído** |
 | RF030 | **Tarefas Recorrentes**: Permitir que tarefas sejam configuradas para repetição automática (Diário, Semanal, Mensal, Anual). Geração da próxima ocorrência ao concluir a atual. | **P1 (Alta)** | **✅ Concluído** |
-| RF031 | **Visualização em Calendário**: Interface visual de calendário (mês/semana) para visualização de prazos e agendamentos de tarefas e compromissos. | **P1 (Alta)** | **Em Definição** |
+| RF031 | **Visualização em Calendário**: Interface visual de calendário (mês/semana) para visualização de prazos e agendamentos de tarefas e compromissos. | **P1 (Alta)** | **✅ Concluído** |
+| RF032 | **Página Inicial Personalizável (Home)**: Criar uma tela de entrada rápida (Quartel General) com "cards" de atalho para funcionalidades frequentes, substituindo o Dashboard como página inicial padrão. | **P1 (Alta)** | **Pendente** |
+| RF033 | **Gestão de Widgets da Home**: Permitir que o usuário adicione, remova e reordene os cards/atonalhos da sua página inicial através de um painel de configuração, salvando as preferências no perfil. | **P2 (Média)** | **Pendente** |
 
 ---
 
@@ -58,6 +60,7 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 - **Segurança**: Criptografia de dados sensíveis e isolamento estrito: `Workspace` isola a base e `Team` isola a visibilidade dos registros.
 - **Usabilidade**: Interface intuitiva para configuração de fluxos complexos.
 - **Padrão Visual**: Todas as telas e componentes devem seguir um padrão de alta fidelidade (Premium UI), garantindo fluidez em qualquer resolução.
+- **Performance de Entrada (NFR-P003)**: A página Home deve carregar em ≤ 300ms, utilizando cache local para atalhos e skeleton loading para dados dinâmicos.
 - **Logging Centralizado**: Logger estruturado com níveis (INFO, ERROR, EXCEPTION) e tratamento padronizado de exceções de domínio.
 - **Clean Architecture**: Backend segue separação em camadas (Domain, Application, Infrastructure) com Repositórios abstratos e Injeção de Dependências.
 
@@ -133,9 +136,9 @@ frontend/src/
 └── utils/                           # Utilitários JS
 ```
 
-### 4.3 Banco de Dados (SQLite / SQLAlchemy)
+### 4.3 Banco de Dados (Supabase / PostgreSQL)
 **12 Tabelas**:
-`workspaces`, `teams`, `users`, `pipelines`, `pipeline_stages`, `work_item_types`, `work_item_field_groups`, `work_item_field_definitions`, `work_items`, `work_item_history`, `workspace_invitations`, `system_settings`
+`workspaces`, `teams`, `users`, `memberships`, `pipelines`, `pipeline_stages`, `work_item_types`, `work_item_field_groups`, `work_item_field_definitions`, `work_items`, `work_item_history`, `workspace_invitations`, `system_settings`, `work_item_links`
 
 ### 4.4 Tipos de Campo Suportados (FieldType)
 `text`, `number`, `date`, `select`, `multiselect`, `textarea`, `boolean`, `currency`, `email`, `cpf`, `cep`, `phone`
@@ -148,7 +151,7 @@ frontend/src/
 3.  ~~**Módulo de Fluxos (Pipelines)**: Estruturação de estágios e transições.~~ ✅
 4.  ~~**Módulo de Vinculação entre WorkItems**: Relações bidirecionais entre objetos.~~ ✅
 5.  **Módulo de Visibilidade por Time**: Filtro de dados por `team_id`. | ✅ Concluído
-6.  **Módulo de Modernização UI/UX (Módulos)**: Onboarding, Templates e Live Preview. | **Pendente**
+6.  **Módulo de Modernização UI/UX (Módulos)**: Onboarding, Templates, Home Personalizável e Live Preview. | **Pendente**
 7.  **Módulo de Integrações externas**: Webhooks e conectores sociais. | Pendente
 8.  **Módulo de Planos & Assinaturas**: Monetização SaaS. | Pendente
 
@@ -195,8 +198,8 @@ frontend/src/
 196: 
 197: ## 8. Changelog de Atualizações do PRD
 
-| Data | Mudança |
-|------|---------|
+| 24/04/2026 | Conclusão do **Módulo de Perfil e Segurança (RF028 e RF029)**. Implementada interface premium para gestão de avatar, cargo e contatos, além de alteração segura de senha e sincronização de dados via AuthContext. |
+| 24/04/2026 | Conclusão da **Central de Tarefas (RF027)** e **Visualização em Calendário (RF031)**. Implementada gestão de `date_range` (campo `prazo`), drag-to-resize, filtros por listas inteligentes (Meu Dia, Importante, etc.) e migração completa para infraestrutura **Supabase/PostgreSQL**. |
 | 23/04/2026 | Inclusão do **RF031 (Visualização em Calendário)**. O objetivo é permitir o planejamento temporal de tarefas em grade mensal/semanal. |
 | 23/04/2026 | Conclusão do **RF030 (Tarefas Recorrentes)**. Implementada lógica de clonagem automática e interface de configuração no modal. |
 | 20/04/2026 | Inclusão do **RF029 (Alteração de Senha)**, permitindo que usuários já autenticados alterem sua credencial nas configurações de perfil. |

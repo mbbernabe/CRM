@@ -6,7 +6,8 @@ from src.infrastructure.repositories.sqlalchemy_team_repository import SqlAlchem
 from src.infrastructure.repositories.work_item_repository import WorkItemRepository
 from src.infrastructure.repositories.sqlalchemy_pipeline_repository import SqlAlchemyPipelineRepository
 from src.application.use_cases.auth_use_cases import RegisterUserUseCase, LoginUseCase
-from src.application.dtos.user_dto import UserCreateDTO, LoginRequestDTO, AuthResponseDTO, UserReadDTO
+from src.application.dtos.user_dto import UserCreateDTO, LoginRequestDTO, AuthResponseDTO, UserReadDTO, UserUpdateDTO, ChangePasswordDTO
+from src.application.use_cases.profile_use_cases import UpdateProfileUseCase, ChangePasswordUseCase
 from pydantic import BaseModel, EmailStr
 from src.application.use_cases.password_reset_use_case import RequestPasswordResetUseCase, ResetPasswordUseCase
 from src.infrastructure.repositories.sqlalchemy_settings_repository import SqlAlchemySettingsRepository
@@ -158,3 +159,34 @@ def switch_context(
     user.last_active_membership_id = membership.id
     user_repo.save(user)
     return {"status": "ok", "workspace_id": membership.workspace_id, "membership_id": membership.id}
+
+@router.put("/profile", response_model=UserReadDTO)
+def update_profile(
+    dto: UserUpdateDTO,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_user_id_optional)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    
+    user_repo = SqlAlchemyUserRepository(db)
+    try:
+        return UpdateProfileUseCase(user_repo).execute(user_id, dto)
+    except DomainException as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
+@router.post("/change-password")
+def change_password(
+    dto: ChangePasswordDTO,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_user_id_optional)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    
+    user_repo = SqlAlchemyUserRepository(db)
+    try:
+        ChangePasswordUseCase(user_repo).execute(user_id, dto)
+        return {"message": "Senha alterada com sucesso!"}
+    except DomainException as e:
+        raise HTTPException(status_code=400, detail=e.message)

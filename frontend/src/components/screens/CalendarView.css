@@ -124,27 +124,101 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow-y: auto;
-  max-height: 100px;
+  overflow-y: visible; /* Changed from auto to allow handles and spanning overflow */
 }
 
 .calendar-task-item {
+  position: relative;
   font-size: 11px;
   padding: 4px 8px;
-  border-radius: 4px;
   background: #eaf0f6;
   color: #33475b;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible; /* Allow handles to be visible */
   cursor: pointer;
   border-left: 3px solid #516f90;
-  transition: transform 0.1s;
+  transition: all 0.1s;
+  z-index: 1;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
 }
 
 .calendar-task-item:hover {
-  transform: translateX(2px);
   filter: brightness(0.95);
+  z-index: 5;
+}
+
+.calendar-task-item.is-resizing {
+  opacity: 0.8;
+  box-shadow: 0 0 0 2px rgba(255, 122, 89, 0.3);
+  z-index: 10;
+}
+
+.calendar-task-item.is-temp {
+  opacity: 0.6;
+  cursor: wait;
+  pointer-events: none; /* Block all interactions while creating */
+  background: #cbd5e0 !important;
+}
+
+/* Spanning logic */
+.calendar-task-item.span-start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-right: -9px; /* Connect to grid gap */
+  z-index: 2;
+}
+
+.calendar-task-item.span-middle {
+  border-radius: 0;
+  border-left: none;
+  margin-left: -9px;
+  margin-right: -9px;
+  z-index: 1;
+}
+
+.calendar-task-item.span-end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+  margin-left: -9px;
+  z-index: 2;
+}
+
+.task-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* Resize Handles */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  cursor: ew-resize;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: #ff7a59;
+}
+
+.handle-left {
+  left: -3px; /* overlap the border-left */
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.handle-right {
+  right: 0;
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
 }
 
 .calendar-task-item.important {
@@ -176,4 +250,43 @@
 .calendar-task-list::-webkit-scrollbar-thumb {
   background: #cbd6e2;
   border-radius: 10px;
+}
+
+/* Quick Add Popover */
+.calendar-quick-add-popover {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #eaf0f6;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.1s ease-out;
+}
+
+.calendar-quick-add-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd6e2;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.calendar-quick-add-input:focus {
+  border-color: #ff7a59;
+}
+
+.popover-hint {
+  font-size: 10px;
+  color: #7c98b6;
+  text-align: right;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }

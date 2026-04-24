@@ -24,6 +24,7 @@ const MyTasksCenter = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskPipeline, setTaskPipeline] = useState(null);
+  const [taskType, setTaskType] = useState(null);
   const [tasks, setTasks] = useState({
     meu_dia: [],
     importante: [],
@@ -62,27 +63,142 @@ const MyTasksCenter = () => {
     } finally {
       setLoading(false);
     }
+
+    // Busca configurações de tarefa em segundo plano se necessário
+    if (!taskType || !taskPipeline) {
+      try {
+        const typesRes = await fetchWithAuth('/workitems/types');
+        if (typesRes.ok) {
+          const types = await typesRes.json();
+          const tType = types.find(t => t.name === 'task_template' || t.label.toLowerCase().includes('tarefa'));
+          setTaskType(tType);
+          
+          if (tType) {
+            const pipelinesRes = await fetchWithAuth('/pipelines/');
+            if (pipelinesRes.ok) {
+              const pipelines = await pipelinesRes.json();
+              const tPipe = pipelines.find(p => p.name === 'Fluxo de Tarefas' || (p.stages && p.stages.length > 0));
+              setTaskPipeline(tPipe);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar configurações de tarefa:', err);
+      }
+    }
   };
 
   useEffect(() => {
     fetchTasks();
   }, [workspace]);
 
+  const createTask = async (title, customFields = {}) => {
+    const tempId = Date.now();
+    
+    const newTask = {
+      id: tempId,
+      title: title,
+      owner_id: user.id,
+      custom_fields: customFields,
+      is_temp: true,
+      workspace_name: workspace?.name || 'Geral'
+    };
+    
+    // Update Otimista: Adiciona na lista atual e nas listas globais
+    setTasks(prev => {
+      const update = {
+        ...prev,
+        atribuido: [newTask, ...prev.atribuido],
+        todas: [newTask, ...prev.todas]
+      };
+      // Se estiver em uma lista específica que não seja as globais, adiciona nela também
+      if (!['atribuido', 'todas', 'concluidas'].includes(activeList)) {
+        update[activeList] = [newTask, ...(prev[activeList] || [])];
+      }
+      return update;
+    });
+
+    try {
+      let currentTaskType = taskType;
+      let currentTaskPipeline = taskPipeline;
+
+      // Fallback: Se não estiver em cache, busca agora
+      if (!currentTaskType || !currentTaskPipeline) {
+        const typesRes = await fetchWithAuth('/workitems/types');
+        if (typesRes.ok) {
+          const types = await typesRes.json();
+          currentTaskType = types.find(t => t.name === 'task_template' || t.label.toLowerCase().includes('tarefa'));
+          setTaskType(currentTaskType);
+        }
+
+        const pipelinesRes = await fetchWithAuth('/pipelines/');
+        if (pipelinesRes.ok) {
+          const pipelines = await pipelinesRes.json();
+          currentTaskPipeline = pipelines.find(p => p.name === 'Fluxo de Tarefas' || (p.stages && p.stages.length > 0));
+          setTaskPipeline(currentTaskPipeline);
+        }
+      }
+      
+      if (!currentTaskType || !currentTaskPipeline || !currentTaskPipeline.stages || currentTaskPipeline.stages.length === 0) {
+        throw new Error('Configuração de Tarefas incompleta no workspace');
+      }
+
+      const res = await fetchWithAuth('/workitems', {
+        method: 'POST',
+        body: JSON.stringify({
+          title,
+          type_id: currentTaskType.id,
+          pipeline_id: currentTaskPipeline.id,
+          stage_id: currentTaskPipeline.stages[0].id,
+          owner_id: user.id,
+          custom_fields: customFields
+        })
+      });
+
+      if (!res.ok) throw new Error('Falha ao criar tarefa no servidor');
+      const resData = await res.json();
+      const realTask = resData.data || resData;
+
+      setTasks(prev => {
+        const update = (list) => (list || []).map(t => t.id === tempId ? { ...realTask, pipeline_id: taskPipeline.id, workspace_name: workspace?.name } : t);
+        return {
+          meu_dia: update(prev.meu_dia),
+          importante: update(prev.importante),
+          planejado: update(prev.planejado),
+          atribuido: update(prev.atribuido),
+          concluidas: update(prev.concluidas),
+          todas: update(prev.todas)
+        };
+      });
+      return realTask;
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+      addToast('Erro ao criar tarefa: ' + error.message, 'error');
+      setTasks(prev => {
+        const filterOut = (list) => (list || []).filter(t => t.id !== tempId);
+        return {
+          meu_dia: filterOut(prev.meu_dia),
+          importante: filterOut(prev.importante),
+          planejado: filterOut(prev.planejado),
+          atribuido: filterOut(prev.atribuido),
+          concluidas: filterOut(prev.concluidas),
+          todas: filterOut(prev.todas)
+        };
+      });
+    }
+  };
+
   const handleQuickAdd = async (e) => {
     if (e.key === 'Enter' && quickTitle.trim()) {
       const title = quickTitle.trim();
       setQuickTitle('');
       
-      const tempId = Date.now();
-      
-      // Prepara custom fields com base na lista ativa para o update otimista
       const customFields = {};
       const now = new Date();
       const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
       if (activeList === 'meu_dia') {
-        customFields.start_date = localDate;
-        customFields.due_date = localDate;
+        customFields.prazo = `${localDate};${localDate}`;
       }
       if (activeList === 'importante') {
         customFields.is_important = true;
@@ -91,92 +207,10 @@ const MyTasksCenter = () => {
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
         const tomorrowDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-        customFields.start_date = tomorrowDate;
+        customFields.prazo = `${tomorrowDate};`;
       }
 
-      const newTask = {
-        id: tempId,
-        title: title,
-        owner_id: user.id,
-        custom_fields: customFields,
-        is_temp: true,
-        workspace_name: workspace?.name || 'Geral'
-      };
-      
-      // Update Otimista: Adiciona na lista atual e nas listas globais
-      setTasks(prev => {
-        const update = {
-          ...prev,
-          atribuido: [newTask, ...prev.atribuido],
-          todas: [newTask, ...prev.todas]
-        };
-        // Se estiver em uma lista específica que não seja as globais, adiciona nela também
-        if (!['atribuido', 'todas', 'concluidas'].includes(activeList)) {
-          update[activeList] = [newTask, ...(prev[activeList] || [])];
-        }
-        return update;
-      });
-
-      try {
-        const typesRes = await fetchWithAuth('/workitems/types');
-        if (!typesRes.ok) throw new Error('Falha ao carregar tipos');
-        const types = await typesRes.json();
-        
-        const taskType = types.find(t => t.name === 'task_template' || t.label.toLowerCase().includes('tarefa'));
-        
-        const pipelinesRes = await fetchWithAuth('/pipelines/');
-        if (!pipelinesRes.ok) throw new Error('Falha ao carregar pipelines');
-        const pipelines = await pipelinesRes.json();
-        
-        const taskPipeline = pipelines.find(p => p.name === 'Fluxo de Tarefas' || (p.stages && p.stages.length > 0));
-        
-        if (!taskType || !taskPipeline || !taskPipeline.stages || taskPipeline.stages.length === 0) {
-          throw new Error('Configuração de Tarefas incompleta no workspace');
-        }
-
-        const res = await fetchWithAuth('/workitems', {
-          method: 'POST',
-          body: JSON.stringify({
-            title,
-            type_id: taskType.id,
-            pipeline_id: taskPipeline.id,
-            stage_id: taskPipeline.stages[0].id,
-            owner_id: user.id,
-            custom_fields: customFields
-          })
-        });
-
-        if (!res.ok) throw new Error('Falha ao criar tarefa no servidor');
-        const resData = await res.json();
-        const realTask = resData.data || resData;
-
-        // Ao receber a tarefa real, atualizamos o estado e garantimos que ela tenha o pipeline_id correto
-        setTasks(prev => {
-          const update = (list) => (list || []).map(t => t.id === tempId ? { ...realTask, pipeline_id: taskPipeline.id, workspace_name: workspace?.name } : t);
-          return {
-            meu_dia: update(prev.meu_dia),
-            importante: update(prev.importante),
-            planejado: update(prev.planejado),
-            atribuido: update(prev.atribuido),
-            concluidas: update(prev.concluidas),
-            todas: update(prev.todas)
-          };
-        });
-      } catch (error) {
-        console.error('Erro no Quick Add:', error);
-        addToast('Erro ao criar tarefa: ' + error.message, 'error');
-        setTasks(prev => {
-          const filterOut = (list) => (list || []).filter(t => t.id !== tempId);
-          return {
-            meu_dia: filterOut(prev.meu_dia),
-            importante: filterOut(prev.importante),
-            planejado: filterOut(prev.planejado),
-            atribuido: filterOut(prev.atribuido),
-            concluidas: filterOut(prev.concluidas),
-            todas: filterOut(prev.todas)
-          };
-        });
-      }
+      await createTask(title, customFields);
     }
   };
 
@@ -268,6 +302,37 @@ const MyTasksCenter = () => {
     }
   };
 
+  const handleTaskUpdate = async (taskId, customFields) => {
+    const previousTasks = { ...tasks };
+    
+    // Optimistic Update
+    const updateList = (list) => (list || []).map(t => 
+      t.id === taskId ? { ...t, custom_fields: { ...t.custom_fields, ...customFields } } : t
+    );
+    
+    setTasks(prev => ({
+      meu_dia: updateList(prev.meu_dia),
+      importante: updateList(prev.importante),
+      planejado: updateList(prev.planejado),
+      atribuido: updateList(prev.atribuido),
+      concluidas: updateList(prev.concluidas),
+      todas: updateList(prev.todas)
+    }));
+
+    try {
+      const res = await fetchWithAuth(`/workitems/${taskId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          custom_fields: customFields
+        })
+      });
+      if (!res.ok) throw new Error();
+    } catch (error) {
+      setTasks(previousTasks);
+      addToast('Erro ao atualizar prazo da tarefa', 'error');
+    }
+  };
+
   const getPriorityClass = (priority) => {
     if (!priority) return '';
     return `priority-${priority.toLowerCase()}`;
@@ -331,16 +396,18 @@ const MyTasksCenter = () => {
               </button>
             </div>
 
-            <div className="quick-add-container">
-              <input 
-                type="text" 
-                className="quick-add-input" 
-                placeholder="Adicionar uma tarefa..."
-                value={quickTitle}
-                onChange={(e) => setQuickTitle(e.target.value)}
-                onKeyDown={handleQuickAdd}
-              />
-            </div>
+            {viewMode === 'list' && (
+              <div className="quick-add-container">
+                <input 
+                  type="text" 
+                  className="quick-add-input" 
+                  placeholder="Adicionar uma tarefa..."
+                  value={quickTitle}
+                  onChange={(e) => setQuickTitle(e.target.value)}
+                  onKeyDown={handleQuickAdd}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -356,21 +423,22 @@ const MyTasksCenter = () => {
 
             {currentTasks.map(task => {
               const priority = task.custom_fields?.priority;
-              const dueDate = task.custom_fields?.due_date;
+              const prazo = task.custom_fields?.prazo;
+              const dueDate = (prazo && prazo.includes(';')) ? prazo.split(';')[1] : task.custom_fields?.due_date;
               const isImp = task.custom_fields?.is_important;
               const isCompleted = task.custom_fields?.is_completed;
 
               return (
                 <div 
                   key={task.id} 
-                  className={`task-row ${isCompleted ? 'completed' : ''}`}
-                  onClick={() => handleTaskClick(task)}
-                  title="Clique para editar detalhes"
+                  className={`task-row ${isCompleted ? 'completed' : ''} ${task.is_temp ? 'is-temp' : ''}`}
+                  onClick={() => !task.is_temp && handleTaskClick(task)}
+                  title={task.is_temp ? 'Criando tarefa...' : 'Clique para editar detalhes'}
                 >
                   <div className={`priority-indicator ${getPriorityClass(priority)}`}></div>
                   <div 
                     className={`task-check ${isCompleted ? 'completed' : ''}`} 
-                    onClick={(e) => handleToggleComplete(e, task)}
+                    onClick={(e) => !task.is_temp && handleToggleComplete(e, task)}
                   >
                     {isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                   </div>
@@ -389,7 +457,7 @@ const MyTasksCenter = () => {
                   </div>
                   <div 
                     className={`task-important ${isImp ? 'active' : ''}`}
-                    onClick={(e) => toggleImportant(e, task)}
+                    onClick={(e) => !task.is_temp && toggleImportant(e, task)}
                   >
                     <Star size={18} fill={isImp ? 'currentColor' : 'none'} />
                   </div>
@@ -400,11 +468,17 @@ const MyTasksCenter = () => {
         ) : (
           <div className="calendar-view-wrapper">
              <CalendarView 
-               tasks={tasks.todas} 
+               tasks={currentTasks} 
                onTaskClick={handleTaskClick} 
+               onTaskUpdate={handleTaskUpdate}
+               onAddTask={(title, date) => {
+                 const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                 createTask(title, { start_date: dateStr, due_date: dateStr, prazo: `${dateStr};${dateStr}` });
+               }}
              />
           </div>
         )}
+
       </div>
 
       {isModalOpen && (

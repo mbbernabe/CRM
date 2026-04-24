@@ -17,6 +17,7 @@ class RecurrenceService:
         config = work_item.recurrence_config
         freq = config.get("frequency") # daily, weekly, monthly, yearly
         interval = int(config.get("interval", 1))
+        weekdays = config.get("weekdays", [])
         
         # 1. Identificar a data base (preferencialmente due_date, senão hoje)
         custom = work_item.custom_fields or {}
@@ -31,7 +32,7 @@ class RecurrenceService:
             base_date = datetime.now()
 
         # 2. Calcular próxima data
-        next_date = self._calculate_next_date(base_date, freq, interval)
+        next_date = self._calculate_next_date(base_date, freq, interval, weekdays)
         if not next_date:
             return None
 
@@ -40,13 +41,12 @@ class RecurrenceService:
             title=work_item.title,
             description=work_item.description,
             pipeline_id=work_item.pipeline_id,
-            stage_id=work_item.stage_id, # Volta para o estágio inicial ou mantém? Geralmente volta para o início.
-            # Mas no My Tasks Center, o estágio é menos importante que os custom_fields.
+            stage_id=work_item.stage_id, 
             type_id=work_item.type_id,
             workspace_id=work_item.workspace_id,
             team_id=work_item.team_id,
             owner_id=work_item.owner_id,
-            recurrence_config=work_item.recurrence_config, # Mantém a regra no próximo
+            recurrence_config=work_item.recurrence_config, 
             custom_fields={**work_item.custom_fields}
         )
         
@@ -66,10 +66,28 @@ class RecurrenceService:
         # 5. Persistir
         return self.work_item_repo.create(next_item)
 
-    def _calculate_next_date(self, current_date: datetime, freq: str, interval: int) -> Optional[datetime]:
+    def _calculate_next_date(self, current_date: datetime, freq: str, interval: int, weekdays: Optional[list] = None) -> Optional[datetime]:
         if freq == "daily":
             return current_date + timedelta(days=interval)
         elif freq == "weekly":
+            if weekdays and len(weekdays) > 0:
+                # JS weekdays: 0=Sun, 1=Mon, ..., 6=Sat
+                # Python weekdays: 0=Mon, 1=Tue, ..., 6=Sun
+                # Conversion: Python = (JS + 6) % 7
+                python_weekdays = sorted([((d + 6) % 7) for d in weekdays])
+                current_wd = current_date.weekday()
+                
+                # Find next day in the same week
+                next_wd = next((wd for wd in python_weekdays if wd > current_wd), None)
+                
+                if next_wd is not None:
+                    return current_date + timedelta(days=next_wd - current_wd)
+                else:
+                    # Move to next week(s)
+                    first_wd = python_weekdays[0]
+                    days_to_sunday = 6 - current_wd
+                    return current_date + timedelta(days=days_to_sunday + 1 + (interval - 1) * 7 + first_wd)
+            
             return current_date + timedelta(weeks=interval)
         elif freq == "monthly":
             return current_date + relativedelta(months=interval)

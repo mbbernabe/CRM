@@ -87,11 +87,25 @@ class GetMyTasksUseCase:
                 if custom.get('is_important') is True:
                     result["importante"].append(task_dict)
                 
-                # Meu Dia (Hoje)
-                due_date = self._normalize_date(custom.get('due_date'))
+                # Meu Dia (Hoje ou dentro do prazo)
+                prazo = custom.get('prazo')
                 start_date = self._normalize_date(custom.get('start_date'))
+                due_date = self._normalize_date(custom.get('due_date'))
+
+                if prazo and ';' in str(prazo):
+                    p_start, p_end = str(prazo).split(';')
+                    start_date = self._normalize_date(p_start) or start_date
+                    due_date = self._normalize_date(p_end) or due_date
                 
-                if due_date == today_str or start_date == today_str:
+                is_in_range = False
+                if start_date and due_date:
+                    is_in_range = start_date <= today_str <= due_date
+                elif due_date:
+                    is_in_range = due_date == today_str
+                elif start_date:
+                    is_in_range = start_date == today_str
+                
+                if is_in_range:
                     result["meu_dia"].append(task_dict)
                     
                 # Planejado (Qualquer data futura ou passada)

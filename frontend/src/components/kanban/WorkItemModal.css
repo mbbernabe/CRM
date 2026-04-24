@@ -210,7 +210,7 @@
 
 .date-range-picker {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 12px;
     background: #fdfdfd;
     padding: 16px;
@@ -229,12 +229,13 @@
     font-size: 11px;
     text-transform: uppercase;
     font-weight: 600;
-    color: #7c98b6;
+    color: #516f90; /* Cor um pouco mais escura para garantir visibilidade */
     margin-bottom: 2px;
 }
 
 .range-separator {
-    padding-bottom: 10px;
+    align-self: center;
+    margin-top: 18px; /* Alinha com o centro dos inputs, considerando o label acima */
     color: #cbd6e2;
     font-weight: 600;
     font-size: 13px;
@@ -291,4 +292,50 @@
   color: #7c98b6;
   width: 100%;
   margin-top: 8px;
+}
+
+.weekday-selector {
+  width: 100%;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #cbd6e2;
+}
+
+.weekday-selector .sub-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #516f90;
+  margin-bottom: 8px;
+}
+
+.weekday-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.weekday-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #cbd6e2;
+  background: white;
+  color: #516f90;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.weekday-btn:hover {
+  border-color: #0091ae;
+  background: #f0f2f5;
+}
+
+.weekday-btn.selected {
+  background: #0091ae;
+  color: white;
+  border-color: #0091ae;
 }

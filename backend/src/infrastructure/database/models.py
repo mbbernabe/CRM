@@ -63,6 +63,11 @@ class UserModel(BaseModel):
     last_activity = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # RF028: Perfil do Usuário
+    avatar_url = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    position = Column(String, nullable=True)
+
     memberships = relationship("MembershipModel", back_populates="user", cascade="all, delete-orphan", foreign_keys="[MembershipModel.user_id]")
 
 class MembershipModel(BaseModel):

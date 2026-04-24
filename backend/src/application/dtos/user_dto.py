@@ -27,6 +27,9 @@ class UserReadDTO(BaseModel):
     memberships: Optional[List[MembershipReadDTO]] = []
     role: Optional[str] = None
     team_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    phone: Optional[str] = None
+    position: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,3 +50,13 @@ from src.application.dtos.workspace_dto import WorkspaceReadDTO
 class AuthResponseDTO(BaseModel):
     user: UserReadDTO
     workspace: Optional[WorkspaceReadDTO] = None
+
+class UserUpdateDTO(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class ChangePasswordDTO(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)

@@ -157,14 +157,21 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
           {showProfileMenu && (
             <div className="profile-dropdown">
               <div className="dropdown-header">
-                <div className="avatar">{userInitials}</div>
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="Avatar" className="avatar-img-small" />
+                ) : (
+                  <div className="avatar">{userInitials}</div>
+                )}
                 <div className="user-info">
                   <span className="user-name">{user?.name}</span>
                   <span className="user-email">{user?.email}</span>
                 </div>
               </div>
               <div className="dropdown-divider"></div>
-              <div className="dropdown-item" onClick={() => onNavigate('profile')}>
+              <div className="dropdown-item" onClick={() => {
+                onNavigate('profile');
+                setShowProfileMenu(false);
+              }}>
                 <UserIcon size={16} /> <span>Meu Perfil</span>
               </div>
               <div className="dropdown-divider"></div>
@@ -178,7 +185,11 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
             className="user-profile" 
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
-            <div className="avatar">{userInitials}</div>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="Avatar" className="avatar-img-small" />
+            ) : (
+              <div className="avatar">{userInitials}</div>
+            )}
             <div className="user-meta">
               <span className="user-name">{user?.name || 'Carregando...'}</span>
               <span className="user-role" style={{ textTransform: 'capitalize' }}>{user?.role || 'Usuário'}</span>
