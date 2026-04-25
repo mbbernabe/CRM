@@ -13,3 +13,6 @@ class IWorkspaceRepository(Protocol):
         
     def get_by_api_key(self, api_key: str) -> Optional[Workspace]:
         ...
+        
+    def delete(self, workspace_id: int):
+        ...

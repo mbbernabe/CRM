@@ -25,6 +25,7 @@ import AdminTemplates from './components/screens/AdminTemplates';
 import DeactivatedScreen from './components/auth/DeactivatedScreen';
 import MyTasksCenter from './components/screens/MyTasksCenter';
 import Profile from './components/screens/Profile';
+import Home from './components/screens/Home';
 
 
 
@@ -83,7 +84,7 @@ function App() {
 
 function AppInner() {
   const { isAuthenticated, loading, user, workspace } = useAuth();
-  const [activeScreen, setActiveScreen] = useState('dashboard');
+  const [activeScreen, setActiveScreen] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activePipelineId, setActivePipelineId] = useState('retail');
   const [deals, setDeals] = useState(INITIAL_DEALS);
@@ -180,6 +181,7 @@ function AppInner() {
 
   const getScreenTitle = () => {
     switch (activeScreen) {
+      case 'home': return 'Início';
       case 'dashboard': return 'Dashboard';
       case 'tasks': return 'Minhas Tarefas';
       case 'contacts': return 'Contatos';
@@ -202,6 +204,17 @@ function AppInner() {
 
   const renderScreen = () => {
     switch (activeScreen) {
+      case 'home': return (
+        <Home 
+          onOpenItem={(id) => {
+            if (id === 'personalize') {
+              setActiveScreen('workspace-settings');
+            } else {
+              console.log('Abrir item:', id);
+            }
+          }} 
+        />
+      );
       case 'dashboard': return <Dashboard />;
       case 'tasks': return <MyTasksCenter />;
       case 'contacts': return <GenericEntityScreen typeName="contact" />;

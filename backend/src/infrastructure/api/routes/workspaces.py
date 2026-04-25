@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from src.infrastructure.database.db import get_db
 from src.infrastructure.repositories.sqlalchemy_workspace_repository import SqlAlchemyWorkspaceRepository
-from src.application.use_cases.workspace_use_cases import GetWorkspaceUseCase, UpdateWorkspaceUseCase
+from src.application.use_cases.workspace_use_cases import GetWorkspaceUseCase, UpdateWorkspaceUseCase, DeleteWorkspaceUseCase
 from src.application.dtos.workspace_dto import WorkspaceReadDTO, WorkspaceUpdateDTO
 from src.domain.entities.workspace import Workspace
 from src.infrastructure.api.dependencies import get_workspace_id, get_user_id_optional
@@ -106,3 +106,25 @@ def update_workspace(workspace_id: int, data: WorkspaceUpdateDTO, db: Session = 
     except Exception as e:
         log_exception(logger, e, "update_workspace")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno ao atualizar workspace.")
+
+@router.delete("/{workspace_id}", status_code=status.HTTP_200_OK)
+def delete_workspace(
+    workspace_id: int, 
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_user_id_optional)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Usuário não autenticado.")
+        
+    workspace_repo = SqlAlchemyWorkspaceRepository(db)
+    from src.infrastructure.repositories.sqlalchemy_membership_repository import SqlAlchemyMembershipRepository
+    membership_repo = SqlAlchemyMembershipRepository(db)
+    
+    try:
+        next_workspace_id = DeleteWorkspaceUseCase(workspace_repo, membership_repo).execute(user_id, workspace_id)
+        return {"message": "Área de trabalho excluída com sucesso", "next_workspace_id": next_workspace_id}
+    except DomainException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+    except Exception as e:
+        log_exception(logger, e, "delete_workspace")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno ao excluir workspace.")

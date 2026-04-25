@@ -31,9 +31,15 @@ class WorkspaceModel(BaseModel):
     lead_stage_id = Column(Integer, ForeignKey("pipeline_stages.id"), nullable=True)
     lead_type_id = Column(Integer, ForeignKey("work_item_types.id"), nullable=True)
 
-    teams = relationship("TeamModel", back_populates="workspace")
-    memberships = relationship("MembershipModel", back_populates="workspace")
-    invitations = relationship("WorkspaceInvitationModel", back_populates="workspace")
+    teams = relationship("TeamModel", back_populates="workspace", cascade="all, delete-orphan")
+    memberships = relationship("MembershipModel", back_populates="workspace", cascade="all, delete-orphan")
+    invitations = relationship("WorkspaceInvitationModel", back_populates="workspace", cascade="all, delete-orphan")
+    pipelines = relationship("PipelineModel", cascade="all, delete-orphan", foreign_keys="[PipelineModel.workspace_id]")
+    work_item_types = relationship("WorkItemTypeModel", cascade="all, delete-orphan", foreign_keys="[WorkItemTypeModel.workspace_id]")
+    work_items = relationship("WorkItemModel", cascade="all, delete-orphan", overlaps="workspace")
+    field_groups = relationship("WorkItemFieldGroupModel", cascade="all, delete-orphan", foreign_keys="[WorkItemFieldGroupModel.workspace_id]")
+    history = relationship("WorkItemHistoryModel", cascade="all, delete-orphan")
+    links = relationship("WorkItemLinkModel", cascade="all, delete-orphan")
 
 class TeamModel(BaseModel):
     __tablename__ = "teams"
@@ -55,8 +61,8 @@ class UserModel(BaseModel):
     password = Column(String, nullable=False)
     
     # Contexto e Status
-    last_active_workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
-    last_active_membership_id = Column(Integer, ForeignKey("memberships.id"), nullable=True)
+    last_active_workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True)
+    last_active_membership_id = Column(Integer, ForeignKey("memberships.id", ondelete="SET NULL"), nullable=True)
     preferences = Column(JSON, nullable=True) # UI and user settings
     is_active = Column(Boolean, default=True)
     deactivated_at = Column(DateTime, nullable=True)

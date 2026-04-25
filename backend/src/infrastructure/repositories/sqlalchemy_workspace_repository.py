@@ -136,3 +136,9 @@ class SqlAlchemyWorkspaceRepository(IWorkspaceRepository):
             lead_type_id=model.lead_type_id,
             created_at=model.created_at
         )
+
+    def delete(self, workspace_id: int):
+        model = self.db.query(WorkspaceModel).filter(WorkspaceModel.id == workspace_id).first()
+        if model:
+            self.db.delete(model)
+            self.db.commit()

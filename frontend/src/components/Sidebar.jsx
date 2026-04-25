@@ -16,7 +16,8 @@ import {
   ChevronDown,
   ChevronRight,
   GitBranch,
-  CheckCircle2
+  CheckCircle2,
+  Home as HomeIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
@@ -37,6 +38,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
 
   // ... (menuItems definition)
   const menuItems = [
+    { icon: <HomeIcon size={20} />, label: 'Início', id: 'home' },
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', id: 'dashboard' },
     { icon: <CheckCircle2 size={20} />, label: 'Minhas Tarefas', id: 'tasks' },
     { icon: <GitBranch size={20} />, label: 'Processos', id: 'pipeline-board' },
@@ -106,13 +108,19 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="sidebar-header">
-        <WorkspaceSwitcher />
+        <div className="sidebar-logo">
+          <div className="logo-placeholder">C</div>
+          <span className="logo-text">CRM Premium</span>
+        </div>
         <button className="close-sidebar show-on-mobile" onClick={onClose}>
           <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
         </button>
       </div>
       
       <nav className="sidebar-nav">
+        <div className="sidebar-section-label">Contexto</div>
+        <WorkspaceSwitcher />
+        <div className="sidebar-divider" />
         {menuItems.map((item) => (
           <div key={item.id} className="menu-group">
             <div 

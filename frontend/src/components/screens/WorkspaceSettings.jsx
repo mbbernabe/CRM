@@ -21,15 +21,20 @@ import {
     Code,
     Cpu,
     Copy,
-    ExternalLink
+    ExternalLink,
+    Trash2,
+    AlertTriangle
 } from 'lucide-react';
 import './WorkspaceSettings.css';
 
 const WorkspaceSettings = () => {
-    const { workspace, fetchWithAuth, refreshWorkspace } = useAuth();
+    const { user, workspace, fetchWithAuth, refreshWorkspace, refreshUser, switchWorkspace } = useAuth();
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmName, setDeleteConfirmName] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -203,6 +208,51 @@ const WorkspaceSettings = () => {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteWorkspace = () => {
+        if (user?.memberships?.length <= 1) {
+            alert('Você não pode excluir sua única área de trabalho.');
+            return;
+        }
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteConfirmName !== workspace.name) {
+            alert('O nome digitado não coincide.');
+            return;
+        }
+
+        setIsDeleting(true);
+        setError(null);
+
+        try {
+            const res = await fetchWithAuth(`http://localhost:8000/workspaces/${workspace.id}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.detail || 'Erro ao excluir área de trabalho');
+            }
+
+            const data = await res.json();
+            
+            // 1. Atualizar a lista de memberships do usuário
+            await refreshUser();
+            
+            // 2. Redirecionar/Trocar de contexto
+            if (data.next_workspace_id) {
+                await switchWorkspace(data.next_workspace_id);
+            }
+            
+            window.location.href = '/';
+        } catch (err) {
+            setError(err.message);
+            setIsDeleting(false);
+            setShowDeleteModal(false);
         }
     };
 
@@ -596,6 +646,40 @@ Body:
                 </form>
             </div>
 
+            <div className="settings-card danger-section animate-in" style={{ marginTop: '30px', borderTop: '4px solid #ff4d4d' }}>
+                <div className="card-header">
+                    <AlertTriangle className="header-icon danger-icon" style={{ color: '#ff4d4d' }} />
+                    <div>
+                        <h2 style={{ color: '#ff4d4d' }}>Zona de Perigo</h2>
+                        <p>Ações irreversíveis que afetam permanentemente sua conta.</p>
+                    </div>
+                </div>
+                
+                <div className="danger-content">
+                    <div className="danger-item">
+                        <div className="danger-info">
+                            <h4>Excluir esta Área de Trabalho</h4>
+                            <p>Ao excluir uma área de trabalho, todos os dados, configurações e membros associados serão removidos permanentemente. Esta ação não pode ser desfeita.</p>
+                        </div>
+                        <button 
+                            className={`hs-button-danger ${user?.memberships?.length <= 1 ? 'disabled' : ''}`}
+                            onClick={handleDeleteWorkspace}
+                            disabled={loading || user?.memberships?.length <= 1}
+                        >
+                            <Trash2 size={18} />
+                            Excluir Área de Trabalho
+                        </button>
+                    </div>
+                    
+                    {user?.memberships?.length <= 1 && (
+                        <div className="danger-warning">
+                            <AlertCircle size={14} />
+                            <span>Esta é sua única área de trabalho e não pode ser excluída.</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {showPreview && (
                 <div className="email-preview-overlay animate-in" onClick={() => setShowPreview(false)}>
                     <div className="email-preview-modal" onClick={e => e.stopPropagation()}>
@@ -650,6 +734,77 @@ Body:
                             <p className="preview-note">As cores e o logotipo visualizados acima podem variar de acordo com as configurações da área de trabalho.</p>
                             <button className="hs-button-primary" onClick={() => setShowPreview(false)}>
                                 Fechar Visualização
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteModal && (
+                <div className="email-preview-overlay animate-in" onClick={() => setShowDeleteModal(false)}>
+                    <div className="email-preview-modal delete-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="header-title">
+                                <AlertTriangle size={24} style={{ color: '#ff4d4d' }} />
+                                <h3 style={{ color: '#ff4d4d' }}>Excluir Área de Trabalho</h3>
+                            </div>
+                            <button className="close-btn" onClick={() => setShowDeleteModal(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="modal-body" style={{ padding: '32px' }}>
+                            <div className="warning-box" style={{ 
+                                backgroundColor: '#fff5f5', 
+                                borderLeft: '4px solid #ff4d4d', 
+                                padding: '16px', 
+                                borderRadius: '4px',
+                                marginBottom: '24px'
+                            }}>
+                                <p style={{ color: '#c53030', fontWeight: '600', margin: '0 0 8px 0', fontSize: '15px' }}>
+                                    ESTA AÇÃO É PERMANENTE E IRREVERSÍVEL.
+                                </p>
+                                <p style={{ color: '#742a2a', fontSize: '14px', margin: 0, lineHeight: '1.5' }}>
+                                    Todos os dados associados à área <strong>"{workspace.name}"</strong>, incluindo tarefas, 
+                                    leads, pipelines e membros da equipe serão excluídos definitivamente.
+                                </p>
+                            </div>
+
+                            <div className="hs-form-group">
+                                <label className="hs-label" style={{ fontWeight: '600' }}>
+                                    Para confirmar, digite o nome da área de trabalho abaixo:
+                                </label>
+                                <input 
+                                    type="text" 
+                                    className="hs-input"
+                                    placeholder={workspace.name}
+                                    value={deleteConfirmName}
+                                    onChange={(e) => setDeleteConfirmName(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <p style={{ marginTop: '20px', fontSize: '13px', color: 'var(--hs-text-secondary)' }}>
+                                <AlertCircle size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                                Após a exclusão, você será automaticamente redirecionado para outra de suas áreas de trabalho.
+                            </p>
+                        </div>
+
+                        <div className="modal-footer" style={{ justifyContent: 'flex-end', gap: '12px' }}>
+                            <button 
+                                className="hs-button-secondary" 
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={isDeleting}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                className="hs-button-danger" 
+                                onClick={confirmDelete}
+                                disabled={isDeleting || deleteConfirmName !== workspace.name}
+                            >
+                                {isDeleting ? <RefreshCw className="spinner" size={18} /> : <Trash2 size={18} />}
+                                {isDeleting ? 'Excluindo...' : 'Entendo o risco, excluir permanentemente'}
                             </button>
                         </div>
                     </div>

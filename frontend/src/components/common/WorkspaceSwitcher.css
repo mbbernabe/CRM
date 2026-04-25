@@ -8,17 +8,18 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  padding: 10px;
+  background: var(--hs-sidebar-hover);
+  border-radius: 10px;
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
+  border: 1px solid var(--hs-border-light);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ws-trigger:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--hs-white);
+  border-color: var(--hs-blue);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .ws-current-logo {
@@ -57,8 +58,8 @@
 }
 
 .ws-name {
-  font-weight: 600;
-  color: white;
+  font-weight: 700;
+  color: var(--hs-text-primary);
   font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
@@ -67,7 +68,7 @@
 
 .ws-role {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--hs-text-secondary);
   text-transform: capitalize;
 }
 
@@ -88,13 +89,13 @@
 .ws-dropdown {
   position: absolute;
   top: 100%;
-  left: 12px;
-  right: 12px;
+  left: 0;
+  right: 0;
   margin-top: 8px;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: white;
+  border: 1px solid var(--hs-border);
   border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   overflow: hidden;
 }
@@ -103,9 +104,11 @@
   padding: 12px 16px;
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--hs-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--hs-border-light);
 }
 
 .ws-list {
@@ -123,11 +126,11 @@
 }
 
 .ws-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #f1f5f9;
 }
 
 .ws-item.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: #f8fafc;
 }
 
 .ws-item-logo {
@@ -151,13 +154,13 @@
 
 .ws-item-name {
   font-size: 13px;
-  color: white;
-  font-weight: 500;
+  color: var(--hs-text-primary);
+  font-weight: 600;
 }
 
 .ws-item-role {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--hs-text-secondary);
   text-transform: capitalize;
 }
 
@@ -182,15 +185,16 @@
   padding: 12px 16px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--hs-blue);
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .ws-add-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: #f1f5f9;
+  color: var(--hs-blue-dark, #007a8f);
 }
 
 .ws-overlay {
@@ -209,26 +213,26 @@
   transform: translate(-50%, -50%);
   width: 90%;
   max-width: 400px;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: white;
+  border: 1px solid var(--hs-border);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
   z-index: 1001;
 }
 
 .ws-modal h3 {
   margin: 0 0 16px 0;
-  color: white;
+  color: var(--hs-text-primary);
   font-size: 18px;
 }
 
 .ws-modal .hs-input {
   width: 100%;
   margin-bottom: 20px;
-  background: rgba(15, 23, 42, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: white;
+  border-color: var(--hs-border);
+  color: var(--hs-text-primary);
 }
 
 .ws-modal-actions {
