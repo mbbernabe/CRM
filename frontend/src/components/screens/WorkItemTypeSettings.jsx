@@ -836,6 +836,7 @@ const WorkItemTypeSettings = () => {
             group_id: group ? group.id : null,
             order: formData.field_definitions.length + i,
             required: false,
+            is_default: false,
             options: []
         };
     });
