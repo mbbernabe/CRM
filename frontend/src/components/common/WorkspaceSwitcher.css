@@ -100,6 +100,21 @@
   overflow: hidden;
 }
 
+.ws-container.collapsed .ws-trigger {
+  padding: 8px;
+  justify-content: center;
+}
+
+.ws-container.collapsed .ws-dropdown {
+  left: 100%;
+  top: 0;
+  right: auto;
+  width: 240px;
+  margin-left: 12px;
+  margin-top: 0;
+  box-shadow: var(--hs-shadow-lg);
+}
+
 .ws-dropdown-header {
   padding: 12px 16px;
   font-size: 11px;

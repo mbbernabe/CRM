@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from src.domain.entities.workspace import Workspace
-from src.infrastructure.database.models import WorkspaceModel
+from src.infrastructure.database.models import WorkspaceModel, UserModel, MembershipModel
 from src.domain.repositories.workspace_repository import IWorkspaceRepository
 
 class SqlAlchemyWorkspaceRepository(IWorkspaceRepository):
@@ -138,6 +138,22 @@ class SqlAlchemyWorkspaceRepository(IWorkspaceRepository):
         )
 
     def delete(self, workspace_id: int):
+        # 1. Limpar referências na tabela de usuários antes de excluir
+        # Limpa last_active_workspace_id
+        self.db.query(UserModel).filter(UserModel.last_active_workspace_id == workspace_id).update(
+            {UserModel.last_active_workspace_id: None},
+            synchronize_session=False
+        )
+        
+        # Limpa last_active_membership_id para memberships deste workspace
+        membership_ids = [m.id for m in self.db.query(MembershipModel).filter(MembershipModel.workspace_id == workspace_id).all()]
+        if membership_ids:
+            self.db.query(UserModel).filter(UserModel.last_active_membership_id.in_(membership_ids)).update(
+                {UserModel.last_active_membership_id: None},
+                synchronize_session=False
+            )
+            
+        # 2. Executar a exclusão do workspace (os cascades do SQLAlchemy cuidarão do resto)
         model = self.db.query(WorkspaceModel).filter(WorkspaceModel.id == workspace_id).first()
         if model:
             self.db.delete(model)

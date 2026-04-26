@@ -4,7 +4,7 @@ import { ChevronDown, Plus, Globe, Building2, User } from 'lucide-react';
 import { useToast } from '../common/Toast';
 import './WorkspaceSwitcher.css';
 
-const WorkspaceSwitcher = () => {
+const WorkspaceSwitcher = ({ isCollapsed }) => {
   const { user, workspace, activeMembershipId, switchMembership, switchWorkspace, fetchWithAuth, refreshUser } = useAuth();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -55,11 +55,12 @@ const WorkspaceSwitcher = () => {
   };
 
   return (
-    <div className="ws-container">
+    <div className={`ws-container ${isCollapsed ? 'collapsed' : ''}`}>
       <div 
         className="ws-trigger" 
         onClick={() => setIsOpen(!isOpen)}
         style={{ borderColor: workspace?.primary_color || 'var(--hs-blue)' }}
+        data-tooltip={isCollapsed ? workspace?.name : undefined}
       >
         <div className="ws-current-logo" style={{ backgroundColor: workspace?.primary_color || 'var(--hs-blue)' }}>
           {workspace?.logo_url ? (
@@ -68,16 +69,20 @@ const WorkspaceSwitcher = () => {
             <span>{workspace?.name?.charAt(0).toUpperCase() || 'W'}</span>
           )}
         </div>
-        <div className="ws-current-info">
-          <span className="ws-name">{workspace?.name || 'Carregando...'}</span>
-          <span className="ws-role">
-            {memberships.find(m => m.workspace_id === workspace?.id)?.role || 'Membro'}
-            {memberships.find(m => m.workspace_id === workspace?.id)?.team_name && (
-              <span className="ws-team-tag"> • {memberships.find(m => m.workspace_id === workspace?.id)?.team_name}</span>
-            )}
-          </span>
-        </div>
-        <ChevronDown size={14} className={`ws-chevron ${isOpen ? 'open' : ''}`} />
+        {!isCollapsed && (
+          <>
+            <div className="ws-current-info">
+              <span className="ws-name">{workspace?.name || 'Carregando...'}</span>
+              <span className="ws-role">
+                {memberships.find(m => m.workspace_id === workspace?.id)?.role || 'Membro'}
+                {memberships.find(m => m.workspace_id === workspace?.id)?.team_name && (
+                  <span className="ws-team-tag"> • {memberships.find(m => m.workspace_id === workspace?.id)?.team_name}</span>
+                )}
+              </span>
+            </div>
+            <ChevronDown size={14} className={`ws-chevron ${isOpen ? 'open' : ''}`} />
+          </>
+        )}
       </div>
 
       {isOpen && (

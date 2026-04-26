@@ -238,17 +238,21 @@ const WorkspaceSettings = () => {
                 throw new Error(data.detail || 'Erro ao excluir área de trabalho');
             }
 
-            const data = await res.json();
+            const responseData = await res.json();
             
-            // 1. Atualizar a lista de memberships do usuário
+            // 1. Atualizar o usuário (para refletir a remoção da membership)
             await refreshUser();
             
-            // 2. Redirecionar/Trocar de contexto
-            if (data.next_workspace_id) {
-                await switchWorkspace(data.next_workspace_id);
+            // 2. Redirecionar/Trocar de contexto se houver um próximo workspace
+            if (responseData.next_workspace_id) {
+                await switchWorkspace(responseData.next_workspace_id);
+                // switchWorkspace já faz o reload/update necessário em muitos casos,
+                // mas garantimos o redirecionamento para a Home
+                window.location.href = '/';
+            } else {
+                // Se não houver próximo (não deveria acontecer pela validação do backend)
+                window.location.href = '/login';
             }
-            
-            window.location.href = '/';
         } catch (err) {
             setError(err.message);
             setIsDeleting(false);

@@ -99,6 +99,8 @@ function AppInner() {
   const [isDeactivated, setIsDeactivated] = useState(false);
   const [inactiveInfo, setInactiveInfo] = useState(null);
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   const currentMembership = user?.memberships?.find(m => m.workspace_id === workspace?.id);
   const teamName = currentMembership?.team_name || 'Geral';
 
@@ -251,7 +253,7 @@ function AppInner() {
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {isSidebarOpen && (
         <div className="sidebar-overlay show-on-mobile" onClick={() => setIsSidebarOpen(false)}></div>
       )}
@@ -264,7 +266,10 @@ function AppInner() {
         }} 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
+
 
       <div className="main-wrapper">
         {/* Mobile Header (Fixed) */}
