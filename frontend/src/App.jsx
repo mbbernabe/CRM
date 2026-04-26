@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import GlobalHeader from './components/GlobalHeader';
 import './App.css';
 import KanbanBoard from './components/KanbanBoard';
 import Dashboard from './components/screens/Dashboard';
 import GenericEntityScreen from './components/screens/GenericEntityScreen';
 import Reports from './components/screens/Reports';
-import PropertySettings from './components/screens/PropertySettings';
 import AdminUsers from './components/screens/AdminUsers';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/auth/Login';
@@ -190,14 +190,13 @@ function AppInner() {
       case 'companies': return 'Empresas';
       case 'deals': return 'Negócios';
       case 'reports': return 'Relatórios';
-      case 'settings': return 'Configurações de Propriedades';
       case 'pipeline-settings': return 'Configuração de Pipelines';
       case 'workspace-settings': return 'Personalização';
       case 'system-settings': return 'Configurações Globais';
       case 'pipeline-board': return 'Quadro de Pipelines';
       case 'admin': return 'Administração';
       case 'admin-templates': return 'Biblioteca Global';
-      case 'object-types': return 'Tipos de Objetos';
+      case 'object-types': return 'Objetos & Propriedades';
       case 'workspace-members': return 'Membros & Convites';
       case 'profile': return 'Meu Perfil';
       default: return 'CRM';
@@ -238,7 +237,6 @@ function AppInner() {
         </>
       );
       case 'reports': return <Reports />;
-      case 'settings': return <PropertySettings />;
       case 'system-settings': return <SystemSettings />;
       case 'pipeline-settings': return <PipelineSettings />;
       case 'workspace-settings': return <WorkspaceSettings />;
@@ -258,50 +256,40 @@ function AppInner() {
         <div className="sidebar-overlay show-on-mobile" onClick={() => setIsSidebarOpen(false)}></div>
       )}
 
-      <Sidebar 
-        activeScreen={activeScreen} 
-        onNavigate={(screen) => {
-          setActiveScreen(screen);
-          setIsSidebarOpen(false);
-        }} 
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+      <GlobalHeader 
+        title={getScreenTitle()}
         isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onMobileOpen={() => setIsSidebarOpen(true)}
       />
 
+      <div className="app-body">
+        <Sidebar 
+          activeScreen={activeScreen} 
+          onNavigate={(screen) => {
+            setActiveScreen(screen);
+            setIsSidebarOpen(false);
+          }} 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
 
-      <div className="main-wrapper">
-        {/* Mobile Header (Fixed) */}
-        <div className="mobile-header show-on-mobile">
-          <button className="menu-toggle" onClick={() => setIsSidebarOpen(true)}>
-            <span className="hamburger"></span>
-          </button>
-          <span className="mobile-title">{getScreenTitle()}</span>
-        </div>
+        <div className="main-wrapper">
+          {/* Mobile Header (Fixed) */}
+          <div className="mobile-header show-on-mobile">
+            <button className="menu-toggle" onClick={() => setIsSidebarOpen(true)}>
+              <span className="hamburger"></span>
+            </button>
+            <span className="mobile-title">{getScreenTitle()}</span>
+          </div>
 
-        <div className="content-area">
-          {activeScreen !== 'deals' && (
-            <header className="simple-header hide-on-mobile">
-              <div className="header-title-container">
-                <h1>{getScreenTitle()}</h1>
-                {workspace && (
-                  <p className="context-meta">
-                    <strong>{workspace.name}</strong> 
-                    <span className="separator">•</span> 
-                    Equipe: <span className="team-badge-inline">{teamName}</span>
-                  </p>
-                )}
-              </div>
-              <div className="header-actions">
-              </div>
-            </header>
-          )}
-          {renderScreen()}
+          <div className="content-area">
+            {renderScreen()}
+          </div>
         </div>
       </div>
-
-      </div>
+    </div>
   );
 }
 

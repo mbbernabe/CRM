@@ -28,7 +28,7 @@ import WorkspaceSwitcher from './common/WorkspaceSwitcher';
 
 const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState({ 'settings-group': true });
+  const [expandedMenus, setExpandedMenus] = useState({});
   const { user, workspace, logout } = useAuth();
   
   const userInitials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
@@ -54,9 +54,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose, isCollapsed, onTog
     label: 'Configuração',
     id: 'settings-group',
     children: [
-      { label: 'Propriedades', id: 'settings' },
-      { label: 'Pipelines', id: 'pipeline-settings' },
-      { label: 'Tipos de Objetos', id: 'object-types' },
+      { label: 'Objetos & Propriedades', id: 'object-types' },
     ]
   };
 
@@ -110,25 +108,14 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose, isCollapsed, onTog
 
   return (
     <aside className={sidebarClasses}>
-      <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <div className="logo-placeholder">C</div>
-          {!isCollapsed && <span className="logo-text">CRM Premium</span>}
-        </div>
-        
-        <button 
-          className="collapse-toggle hide-on-mobile" 
-          onClick={onToggleCollapse}
-          title={isCollapsed ? "Expandir menu" : "Recolher menu"}
-        >
-          {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-        </button>
+      <button 
+        className="collapse-toggle hide-on-mobile" 
+        onClick={onToggleCollapse}
+        title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+      >
+        {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+      </button>
 
-        <button className="close-sidebar show-on-mobile" onClick={onClose}>
-          <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
-        </button>
-      </div>
-      
       <nav className="sidebar-nav">
         {!isCollapsed && <div className="sidebar-section-label">Contexto</div>}
         <WorkspaceSwitcher isCollapsed={isCollapsed} />

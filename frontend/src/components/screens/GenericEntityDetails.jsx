@@ -41,6 +41,16 @@ const GenericEntityDetails = ({
     }));
   };
 
+  const handleAutofill = (updates) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_fields: {
+        ...prev.custom_fields,
+        ...updates
+      }
+    }));
+  };
+
   const toggleGroup = (groupId) => {
     setExpandedGroups(prev => 
       prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
@@ -119,6 +129,7 @@ const GenericEntityDetails = ({
                         prop={field} 
                         value={formData.custom_fields[field.name]} 
                         onChange={handleFieldChange} 
+                        onAutofill={handleAutofill}
                       />
                   ))}
                   {(!fieldsByGroup[group.id] || fieldsByGroup[group.id].length === 0) && (
@@ -148,6 +159,7 @@ const GenericEntityDetails = ({
                                 prop={field} 
                                 value={formData.custom_fields[field.name]} 
                                 onChange={handleFieldChange} 
+                                onAutofill={handleAutofill}
                             />
                         ))}
                     </div>

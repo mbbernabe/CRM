@@ -3,8 +3,9 @@ import {
   Calendar, Mail, Phone, MapPin, Hash, DollarSign, Info
 } from 'lucide-react';
 import { formatters } from '../../utils/formatters';
+import { fetchAddressFromCEP } from '../../utils/cepService';
 
-const DynamicFormField = ({ prop, value, onChange }) => {
+const DynamicFormField = ({ prop, value, onChange, onAutofill }) => {
   const label = prop.label || prop.name;
   const isRequired = prop.is_required || prop.required;
   const type = prop.type || prop.field_type;
@@ -123,6 +124,7 @@ const DynamicFormField = ({ prop, value, onChange }) => {
             />
           </div>
         );
+      case 'cnpj':
       case 'cpf':
       case 'phone':
       case 'cep':
@@ -131,6 +133,28 @@ const DynamicFormField = ({ prop, value, onChange }) => {
                      type === 'cep' ? MapPin : 
                      type === 'currency' ? DollarSign : Hash;
         const formatter = formatters[type];
+        
+        const handleChange = async (e) => {
+          const rawValue = e.target.value;
+          const formatted = formatter(rawValue);
+          onChange(prop.name, formatted);
+          
+          if (type === 'cep' && onAutofill) {
+             const cleanCEP = rawValue.replace(/\D/g, '');
+             if (cleanCEP.length === 8) {
+                const address = await fetchAddressFromCEP(cleanCEP);
+                if (address) {
+                   onAutofill({
+                      logradouro: address.logradouro,
+                      bairro: address.bairro,
+                      cidade: address.localidade,
+                      estado: address.uf
+                   });
+                }
+             }
+          }
+        };
+
         return (
           <div className="input-with-icon">
             <Icon size={16} className="field-icon" />
@@ -138,7 +162,7 @@ const DynamicFormField = ({ prop, value, onChange }) => {
               type="text"
               className="hs-input w-full"
               value={value || ''}
-              onChange={e => onChange(prop.name, formatter(e.target.value))}
+              onChange={handleChange}
               required={isRequired}
               placeholder={label}
             />

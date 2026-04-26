@@ -1,11 +1,27 @@
 /* Main layout defined in index.css */
 
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--hs-bg-main);
+  position: relative;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  position: relative;
+}
+
 .main-wrapper {
   flex: 1 1 0%;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100vh;
   position: relative;
   background-color: var(--hs-bg-main);
   overflow: hidden;
@@ -20,23 +36,7 @@
   background-color: var(--hs-bg-main);
 }
 
-.simple-header {
-  height: var(--header-height);
-  background: var(--hs-white);
-  border-bottom: 1px solid var(--hs-border);
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  flex-shrink: 0;
-  z-index: 10; /* Abaixo da sidebar */
-}
-
-.simple-header h1 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--hs-text-primary);
-  line-height: 1.2;
-}
+/* .simple-header was removed and replaced by GlobalHeader */
 
 /* Mobile Header Styles */
 .mobile-header {

@@ -14,6 +14,7 @@ class FieldType(str, Enum):
     CURRENCY = "currency"
     EMAIL = "email"
     CPF = "cpf"
+    CNPJ = "cnpj"
     CEP = "cep"
     PHONE = "phone"
 

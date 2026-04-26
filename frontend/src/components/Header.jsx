@@ -11,17 +11,6 @@ const Header = ({ pipelines, activePipeline, onPipelineChange }) => {
   return (
     <header className="header">
       <div className="header-left">
-        <div className="header-title-container">
-          <h1 className="header-title">Negócios</h1>
-          {workspace && (
-            <p className="context-meta">
-              <strong>{workspace.name}</strong> 
-              <span className="separator">•</span> 
-              Equipe: <span className="team-badge-inline">{teamName}</span>
-            </p>
-          )}
-        </div>
-        
         <div className="pipeline-selector">
           <select 
             value={activePipeline.id} 

@@ -42,7 +42,13 @@
     - Botão "Editar Home" que entra em modo de edição.
     - Drag-and-drop para reordenar widgets.
     - Toggle para esconder/mostrar widgets específicos.
+- [ ] **Biblioteca de Cards (Widgets)**: Menu lateral (Drawer) permitindo ao usuário visualizar um catálogo de cards disponíveis para compor sua Home. Deve ser construído de forma expansível para fácil adição de novos widgets no futuro.
 - [ ] **Persistência de Preferências**: Salvar o JSON de configuração no campo `preferences` do `UserModel`.
+
+## 🌐 Funcionalidades Globais (Cross-Workspace)
+- [ ] **Calendário Unificado**: Uma visão global que agrega tarefas e compromissos de *todas* as Áreas de Trabalho que o usuário pertence em um único painel.
+- [ ] **Caixa de Entrada/Mensagens Unificada**: Painel central para o usuário visualizar notificações, menções e mensagens advindas de diversos Workspaces.
+- [ ] **Mensageria P2P (Direct Messages)**: Chat interno permitindo que os usuários troquem mensagens diretas entre si.
 
 ## 🎯 Produtividade & Tarefas (My Tasks Center)
 - [x] **Provisionamento Mandatório de Tarefas (RF026)**: Ao criar um novo Workspace, o sistema deve injetar automaticamente o `WorkItemType` "Tarefa" e uma pipeline de 3 estágios (A fazer, Fazendo, Feito).
@@ -110,6 +116,16 @@
 ## 📅 Notas de Brainstorming [20/04/2026]
 - **Conquista Recente**: Implementação da **Central de Tarefas (RF027)**, **Calendário (RF031)** e **Módulo de Perfil e Segurança (RF028/RF029)** com suporte a avatar, cargo e alteração segura de senha.
 - **Pendência Importante**: Atualizar os dados de contato (Chat/Telefone) na `DeactivatedScreen.jsx`. Atualmente estão com placeholders ("0800 123 4567").
+
+---
+
+## 📅 Notas de Brainstorming [26/04/2026]
+- **Home Personalizável (Refinamento)**: A funcionalidade de personalização foi muito bem recebida. O próximo passo é criar uma "Biblioteca de Cards", um menu lateral onde o usuário possa escolher quais widgets deseja arrastar/adicionar na sua Home. **Ação:** Manter atenção constante durante o desenvolvimento para identificar novos "cards" em potencial que agreguem valor à Home.
+- **Ecossistema Unificado (Cross-Workspace)**: Como a Home é o ambiente principal e "acima" do Workspace logado, é o local ideal para features que cruzam as fronteiras do tenant. Foram sugeridas:
+    1.  **Calendário Unificado**: Ver tudo (tarefas, reuniões) de todas as empresas ao mesmo tempo.
+    2.  **Inbox/Mensagens Unificadas**: Um centralizador de notificações.
+    3.  **Chat (P2P)**: Permitir conversas diretas entre os usuários dentro da plataforma.
+- **Métricas & NFR**: A Home, agora como agregador Global, precisará ser extremamente rápida. Consultas Cross-Workspace exigirão índices otimizados por `user_id` e cache inteligente para não comprometer a performance (NFR-P003).
 
 ---
 

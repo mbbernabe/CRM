@@ -52,6 +52,10 @@ Sistema de Operação de Negócios (SaaS) modular para indivíduos e times organ
 | RF031 | **Visualização em Calendário**: Interface visual de calendário (mês/semana) para visualização de prazos e agendamentos de tarefas e compromissos. | **P1 (Alta)** | **✅ Concluído** |
 | RF032 | **Página Inicial Personalizável (Home)**: Criar uma tela de entrada rápida (Quartel General) com "cards" de atalho para funcionalidades frequentes, substituindo o Dashboard como página inicial padrão. | **P1 (Alta)** | **Pendente** |
 | RF033 | **Gestão de Widgets da Home**: Permitir que o usuário adicione, remova e reordene os cards/atonalhos da sua página inicial através de um painel de configuração, salvando as preferências no perfil. | **P2 (Média)** | **Pendente** |
+| RF034 | **Biblioteca de Widgets (Home)**: Catálogo (Drawer lateral) de cards disponíveis para customização da tela inicial. Arquitetura extensível para fácil adição de novos widgets. | **P2 (Média)** | **Pendente** |
+| RF035 | **Calendário Global (Cross-Workspace)**: Visão unificada de tarefas e compromissos, mesclando dados de todos os Workspaces aos quais o usuário tem acesso. | **P2 (Média)** | **Pendente** |
+| RF036 | **Central de Mensagens Unificada**: Caixa de entrada agregando mensagens, notificações e menções de múltiplas Áreas de Trabalho em um único local. | **P2 (Média)** | **Pendente** |
+| RF037 | **Mensageria Interna (P2P)**: Sistema de chat direto (Direct Messages) permitindo comunicação ágil entre usuários do sistema, independente do Workspace. | **P3 (Baixa)** | **Pendente** |
 
 ---
 
@@ -198,6 +202,7 @@ frontend/src/
 196: 
 197: ## 8. Changelog de Atualizações do PRD
 
+| 26/04/2026 | Brainstorming de funcionalidades **Cross-Workspace** e expansão da Home. Adicionados **RF034 (Biblioteca de Widgets)**, **RF035 (Calendário Global)**, **RF036 (Mensagens Unificadas)** e **RF037 (Chat P2P)**. O foco futuro da Home será agregar contexto de todos os Workspaces do usuário. |
 | 24/04/2026 | Conclusão do **Módulo de Perfil e Segurança (RF028 e RF029)**. Implementada interface premium para gestão de avatar, cargo e contatos, além de alteração segura de senha e sincronização de dados via AuthContext. |
 | 24/04/2026 | Conclusão da **Central de Tarefas (RF027)** e **Visualização em Calendário (RF031)**. Implementada gestão de `date_range` (campo `prazo`), drag-to-resize, filtros por listas inteligentes (Meu Dia, Importante, etc.) e migração completa para infraestrutura **Supabase/PostgreSQL**. |
 | 23/04/2026 | Inclusão do **RF031 (Visualização em Calendário)**. O objetivo é permitir o planejamento temporal de tarefas em grade mensal/semanal. |

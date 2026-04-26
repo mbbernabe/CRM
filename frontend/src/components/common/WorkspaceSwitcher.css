@@ -50,8 +50,8 @@
   transition: opacity 0.2s ease;
 }
 
-.sidebar:not(.expanded) .ws-current-info,
-.sidebar:not(.expanded) .ws-chevron {
+.sidebar.collapsed .ws-current-info,
+.sidebar.collapsed .ws-chevron {
   opacity: 0;
   pointer-events: none;
   display: none;

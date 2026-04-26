@@ -93,6 +93,7 @@ const SortableField = ({ id, field, onRemove, onChange, groups }) => {
             <option value="multiselect">Seleção Múltipla</option>
             <option value="email">E-mail</option>
             <option value="cpf">CPF</option>
+            <option value="cnpj">CNPJ</option>
             <option value="cep">CEP</option>
             <option value="phone">Telefone</option>
             <option value="boolean">Sim/Não (Toggle)</option>

@@ -1,0 +1,98 @@
+.global-header {
+  height: var(--header-height, 64px);
+  background: var(--hs-white);
+  border-bottom: 1px solid var(--hs-border);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 1000;
+  position: sticky;
+  top: 0;
+  width: 100%;
+}
+
+.global-header-brand {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-right: 1px solid var(--hs-border);
+  position: relative;
+  transition: width 0.2s ease-in-out, min-width 0.2s ease-in-out;
+}
+
+.global-header-brand.collapsed {
+  /* Não reduz a largura para manter o logo expandido */
+}
+
+.global-header-brand .sidebar-logo {
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* O logo sempre se mantém expandido no topo */
+
+.logo-placeholder {
+  width: 32px;
+  height: 32px;
+  background: var(--hs-orange);
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-weight: 700;
+  color: var(--hs-text-primary);
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+/* Collapse toggle moved to sidebar */
+
+.global-header-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 100%;
+}
+
+.header-title-container h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--hs-text-primary);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.context-meta {
+  font-size: 12px;
+  color: var(--hs-text-secondary);
+  margin: 4px 0 0 0;
+}
+
+.separator {
+  margin: 0 6px;
+  opacity: 0.5;
+}
+
+.team-badge-inline {
+  background: var(--hs-bg-main);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  color: var(--hs-text-primary);
+  border: 1px solid var(--hs-border);
+}

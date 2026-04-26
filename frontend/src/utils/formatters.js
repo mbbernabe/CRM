@@ -12,6 +12,17 @@ export const maskCPF = (value) => {
       .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
   };
   
+  export const maskCNPJ = (value) => {
+    if (!value) return '';
+    return value
+      .replace(/\D/g, '') // Remove tudo que não é dígito
+      .replace(/(\d{2})(\d)/, '$1.$2') // Coloca ponto após os 2 primeiros dígitos
+      .replace(/(\d{3})(\d)/, '$1.$2') // Coloca ponto após os 3 dígitos
+      .replace(/(\d{3})(\d)/, '$1/$2') // Coloca barra após os 3 dígitos
+      .replace(/(\d{4})(\d{1,2})/, '$1-$2') // Coloca hífen após os 4 dígitos
+      .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+  };
+  
   export const maskPhone = (value) => {
     if (!value) return '';
     const digits = value.replace(/\D/g, '');
@@ -61,6 +72,7 @@ export const maskCPF = (value) => {
   
   export const formatters = {
     cpf: maskCPF,
+    cnpj: maskCNPJ,
     phone: maskPhone,
     cep: maskCEP,
     currency: maskCurrency

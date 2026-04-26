@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Save, AlertCircle, ChevronDown, Check, X, Star, Calendar } from 'lucide-react';
 import WorkItemHistoryPanel from './WorkItemHistoryPanel';
 import WorkItemLinksPanel from './WorkItemLinksPanel';
-import { validateEmail, validateCPF, maskCPF, maskPhone, maskCEP, validateCEP } from '../../utils/validation';
+import { validateEmail, validateCPF, maskCPF, maskPhone, maskCEP, validateCEP, validateCNPJ, maskCNPJ } from '../../utils/validation';
+import { fetchAddressFromCEP } from '../../utils/cepService';
 import './WorkItemModal.css';
 
 // --- Sub-component: MultiSelect Tags ---
@@ -167,6 +168,29 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
     }));
   };
 
+  const handleCEPChange = async (name, value) => {
+    const masked = maskCEP(value);
+    handleFieldChange(name, masked);
+    
+    const cleanCEP = masked.replace(/\D/g, '');
+    if (cleanCEP.length === 8) {
+      const address = await fetchAddressFromCEP(cleanCEP);
+      if (address) {
+        setFormData(prev => ({
+          ...prev,
+          custom_fields: {
+            ...prev.custom_fields,
+            [name]: masked,
+            logradouro: address.logradouro,
+            bairro: address.bairro,
+            cidade: address.localidade,
+            estado: address.uf
+          }
+        }));
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -192,6 +216,9 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
            }
            if (field.field_type === 'cpf' && !validateCPF(val)) {
              throw new Error(`O campo ${field.label} deve conter um CPF válido.`);
+           }
+           if (field.field_type === 'cnpj' && !validateCNPJ(val)) {
+             throw new Error(`O campo ${field.label} deve conter um CNPJ válido.`);
            }
            if (field.field_type === 'cep' && !validateCEP(val)) {
              throw new Error(`O campo ${field.label} deve conter um CEP válido.`);
@@ -336,13 +363,22 @@ const WorkItemModal = ({ isOpen, onClose, pipeline, onSave, addToast, initialDat
               onChange={e => handleFieldChange(field.name, maskCPF(e.target.value))}
               placeholder="000.000.000-00"
             />
+          ) : field.field_type === 'cnpj' ? (
+            <input 
+              type="text"
+              className="hs-input"
+              required={field.required}
+              value={maskCNPJ(val)}
+              onChange={e => handleFieldChange(field.name, maskCNPJ(e.target.value))}
+              placeholder="00.000.000/0000-00"
+            />
           ) : field.field_type === 'cep' ? (
             <input 
               type="text"
               className="hs-input"
               required={field.required}
               value={maskCEP(val)}
-              onChange={e => handleFieldChange(field.name, maskCEP(e.target.value))}
+              onChange={e => handleCEPChange(field.name, e.target.value)}
               placeholder="00000-000"
             />
           ) : field.field_type === 'phone' ? (
