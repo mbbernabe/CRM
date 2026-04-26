@@ -16,7 +16,10 @@
 .home-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+  margin-bottom: 8px;
 }
 
 .welcome-text h1 {
@@ -317,4 +320,178 @@
 
 .text-blue {
   color: var(--hs-blue);
+}
+
+/* --- Home Personalization (Edit Mode) --- */
+
+.home-container.is-editing-home {
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: 24px;
+  padding: 32px;
+  min-height: calc(100vh - 100px);
+}
+
+.home-section-wrapper {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  border-radius: 24px;
+}
+
+.home-section-wrapper.is-editing {
+  border: 2px dashed #cbd5e1;
+  padding: 16px;
+  margin: -16px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  z-index: 1;
+}
+
+.home-section-wrapper.is-editing:hover {
+  border-color: var(--hs-blue);
+  background: #f0f9ff;
+}
+
+.home-section-wrapper.is-hidden {
+  opacity: 0.4;
+  filter: grayscale(0.8);
+}
+
+.section-edit-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.home-section-wrapper.is-editing:hover .section-edit-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #94a3b8;
+  padding: 6px;
+  background: white;
+  border: 1px solid var(--hs-border-light);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.drag-handle:hover {
+  color: var(--hs-blue);
+  background: #f8fafc;
+  transform: scale(1.05);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.visibility-toggle {
+  background: white;
+  border: 1px solid var(--hs-border-light);
+  border-radius: 8px;
+  padding: 6px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.visibility-toggle:hover {
+  color: var(--hs-blue);
+  background: #f8fafc;
+  transform: scale(1.05);
+}
+
+.visibility-toggle.off {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.visibility-toggle.off:hover {
+  color: #ef4444;
+}
+
+/* Header Actions */
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 14px;
+  height: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.home-date {
+  font-size: 13px;
+  color: var(--hs-text-secondary);
+  font-weight: 600;
+  background: #f1f5f9;
+  padding: 6px 14px;
+  border-radius: 99px;
+  letter-spacing: 0.2px;
+}
+
+.personalize-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--hs-text-secondary);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.personalize-btn:hover {
+  background: rgba(0, 145, 174, 0.08);
+  color: var(--hs-blue);
+}
+
+.personalize-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.personalize-btn:hover svg {
+  transform: rotate(30deg);
+}
+
+/* Animation for reordering */
+.home-section-wrapper {
+  transform-origin: 50% 50%;
 }

@@ -30,6 +30,7 @@ class UserReadDTO(BaseModel):
     avatar_url: Optional[str] = None
     phone: Optional[str] = None
     position: Optional[str] = None
+    preferences: Optional[dict] = None
     
     model_config = ConfigDict(from_attributes=True)
 

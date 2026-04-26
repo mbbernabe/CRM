@@ -6,6 +6,7 @@ from src.infrastructure.database.models import WorkItemModel, WorkItemTypeModel,
 from sqlalchemy import func, and_, or_
 from typing import List, Dict, Any
 from datetime import datetime, date
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter(prefix="/home", tags=["Home"])
 
@@ -110,9 +111,14 @@ def update_home_preferences(
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
-    current_prefs = user.preferences or {}
+    current_prefs = dict(user.preferences or {})
     current_prefs.update(prefs)
     user.preferences = current_prefs
+    
+    # Notificar SQLAlchemy que o campo JSON foi modificado
+    flag_modified(user, "preferences")
+    
     db.commit()
+    db.refresh(user)
     
     return {"status": "success", "preferences": user.preferences}
