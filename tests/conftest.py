@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Adiciona o diretório raiz do backend ao sys.path para que os testes encontrem os módulos
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend")))
 
 from main import app
 from src.infrastructure.database.db import get_db

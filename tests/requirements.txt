@@ -1,0 +1,8 @@
+pytest>=8.0.0
+pytest-asyncio
+pytest-playwright
+httpx
+sqlalchemy
+pydantic
+bcrypt
+faker

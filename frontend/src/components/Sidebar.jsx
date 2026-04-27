@@ -55,6 +55,7 @@ const Sidebar = ({ activeScreen, onNavigate, isOpen, onClose, isCollapsed, onTog
     id: 'settings-group',
     children: [
       { label: 'Objetos & Propriedades', id: 'object-types' },
+      { label: 'Pipelines', id: 'pipeline-settings' },
     ]
   };
 

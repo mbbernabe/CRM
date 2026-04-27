@@ -9,16 +9,16 @@ description: Especialista em garantir a qualidade do código através de testes 
 Garantir a confiabilidade do sistema através da criação e manutenção de suítes de testes unitários que foquem no comportamento do domínio e na lógica dos casos de uso, seguindo as melhores práticas de **Test-Driven Development (TDD)** e **Clean Architecture**.
 
 ## 🏗️ Estrutura de Testes
-Os testes devem ser organizados para espelhar a estrutura do código-fonte:
-- `tests/unit/domain/`: Testes para Entidades (sempre validando `workspace_id`) e Value Objects.
-- `tests/unit/application/`: Testes para Use Cases (validando isolamento por workspace e mensagens amigáveis).
-- `resources/csv/`: Massa de dados estática para testes.
-- `scripts/testing/`: Scripts determinísticos de suporte, mocks reutilizáveis e massa de dados em `backend/scripts/`.
+Os testes devem ser organizados centralizadamente na raiz:
+- `tests/backend/unit/domain/`: Testes para Entidades (sempre validando `workspace_id`) e Value Objects.
+- `tests/backend/unit/application/`: Testes para Use Cases (validando isolamento por workspace e mensagens amigáveis).
+- `tests/data/`: Massa de dados estática para testes.
+- `tests/scripts/`: Scripts determinísticos de suporte, mocks reutilizáveis e massa de dados.
 
 ## 📐 Regras Técnicas de Implementação (Foco em Workspace)
 1. **Contexto de Workspace**: Todo teste deve garantir que o `workspace_id` correto está sendo passado e utilizado nos repositórios.
 2. **Mensagens Amigáveis**: Validar que exceções de domínio (`DomainException`) retornam as mensagens esperadas em Português para o usuário.
-3. **Scripts de Suporte**: Se um teste exige um cenário complexo, crie um script auxiliar em `backend/scripts/testing/`.
+3. **Scripts de Suporte**: Se um teste exige um cenário complexo, crie um script auxiliar em `tests/scripts/`.
 
 ## 🛠️ Frameworks e Ferramentas
 - **Python**: Use `pytest` e `unittest.mock`.

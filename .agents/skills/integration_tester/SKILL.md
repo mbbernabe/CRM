@@ -9,11 +9,12 @@ description: Especialista em garantir que os componentes do sistema funcionem ju
 Validar fluxos de ponta a ponta (API -> Use Case -> Repo -> DB) garantindo a integridade dos dados, isolamento entre times (Multi-Tenancy) e conformidade com as regras de negócio em um ambiente controlado e determinístico.
 
 ## 🏗️ Estrutura de Testes
-Os testes de integração devem ser organizados em:
-- `tests/integration/`: Testes que envolvem rotas da API e persistência real (ou em memória).
-- `tests/integration/flows/`: Testes de processos complexos que envolvem múltiplos passos ou entidades interdependentes.
-- `resources/csv/`: Massa de dados estática para testes de importação e preenchimento.
-- `scripts/testing/`: Scripts de massa de dados complexa, automações de testes e ferramentas auxiliares de diagnóstico de integração.
+Os testes de integração devem ser organizados centralizadamente na raiz:
+- `tests/backend/integration/`: Testes que envolvem rotas da API e persistência real (ou em memória).
+- `tests/backend/integration/flows/`: Testes de processos complexos que envolvem múltiplos passos ou entidades interdependentes.
+- `tests/security/`: Testes de segurança (IDOR, Bypass) em colaboração com o `security_specialist`.
+- `tests/data/`: Massa de dados estática para testes de importação e preenchimento.
+- `tests/scripts/`: Scripts de massa de dados complexa, automações de testes e ferramentas auxiliares de diagnóstico de integração.
 
 ## 🛠️ Frameworks e Ferramentas
 - **Backend (Python)**: Use `pytest`, `httpx` e `FastAPI TestClient`.
@@ -29,7 +30,7 @@ Os testes de integração devem ser organizados em:
 ### 2. Validação Multi-Tenancy (Workspace Context)
 - **Obrigatoriedade**: Todo teste de integração DEVE validar que o `workspace_id` foi injetado via header ou contexto.
 - **Teste de Vazamento**: SEMPRE valide que um usuário do Workspace X NÃO acessa dados do Workspace Y.
-- **Scripts de Fluxo**: Use `backend/scripts/testing/` para scripts de integração de ponta a ponta (como cadastro -> login).
+- **Scripts de Fluxo**: Use `tests/scripts/` para scripts de integração de ponta a ponta (como cadastro -> login).
 
 ### 3. Padrão de Chamada e Diagnóstico
 - Use o `client` (TestClient) para rotas individuais.
@@ -40,7 +41,7 @@ Os testes de integração devem ser organizados em:
 Ao atuar como Especialista em Testes de Integração, a skill deve fornecer:
 1. O **Arquivo de Teste** (ex: `test_complex_flow.py`).
 2. Atualização de **Fixtures** se necessário.
-3. Comando para **Executar os Testes**: `python run_tests.py` ou `pytest tests/integration`.
+3. Comando para **Executar os Testes**: `pytest tests/backend/integration`.
 
 ## 💡 Melhores Práticas
 - **Mocks Externos**: Se o sistema consome APIs externas, use `httpx-mock` ou similar para isolar o teste de rede.

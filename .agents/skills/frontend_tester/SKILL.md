@@ -12,7 +12,7 @@ Garantir que a experiência do usuário (UX) seja impecável, validando cada flu
 5. **Colaboração em Design**: Reportar inconsistências diretamente ao `ui_ux_specialist` para correções estéticas.
 
 - `tests/e2e/`: Scripts de teste automatizados (Playwright).
-- `scripts/ui/`: Scripts determinísticos de geração de massa de dados visual para prototipagem real e testes de componentes em `backend/scripts/`.
+- `tests/scripts/`: Scripts determinísticos de geração de massa de dados visual para prototipagem real e testes de componentes.
 
 ## 📐 Protocolos de Teste (Foco em Workspace)
 

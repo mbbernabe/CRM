@@ -243,7 +243,7 @@ function AppInner() {
       case 'pipeline-board': return <PipelineBoardScreen />;
       case 'admin': return <AdminUsers />;
       case 'admin-templates': return <AdminTemplates />;
-      case 'object-types': return <WorkItemTypeSettings />;
+      case 'object-types': return <WorkItemTypeSettings onNavigate={setActiveScreen} />;
       case 'workspace-members': return <WorkspaceMembers />;
       case 'profile': return <Profile />;
       default: return <Dashboard />;

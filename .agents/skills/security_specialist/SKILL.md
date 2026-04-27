@@ -172,6 +172,24 @@ O backend DEVE injetar os seguintes headers em toda resposta:
 
 ---
 
+## 🛡️ Testes de Segurança Automatizados
+
+O Especialista em Segurança deve garantir que vulnerabilidades críticas sejam validadas através de testes automatizados na nova infraestrutura de testes.
+
+### 1. Estrutura de Diretórios
+- `tests/security/`: Testes focados em quebrar a segurança ou validar proteções.
+    - `tests/security/auth/`: Testes de bypass de autenticação e expiração de tokens.
+    - `tests/security/isolation/`: Testes de IDOR (Insecure Direct Object Reference) e vazamento de dados entre workspaces.
+    - `tests/security/injection/`: Testes de payloads de SQLi e XSS em endpoints de entrada.
+    - `tests/security/resilience/`: Testes de rate limiting e exaustão de recursos.
+
+### 2. Protocolos de Teste (Pytest)
+- **Teste de IDOR**: Tentar acessar um recurso do `workspace_A` usando um token válido do `workspace_B`. Deve retornar `403 Forbidden` ou `404 Not Found`.
+- **Teste de SQLi**: Enviar strings de escape (`' OR 1=1 --`) em parâmetros de busca e validar que o ORM as trata como literais.
+- **Teste de Rate Limiting**: Disparar múltiplas requisições em paralelo para o endpoint de login e validar o retorno `429 Too Many Requests`.
+
+---
+
 ## 📋 Protocolo de Análise de Nova Funcionalidade
 
 Ao analisar **código novo ou alterado**, o agente DEVE responder a estas perguntas obrigatórias:
@@ -192,9 +210,10 @@ Ao analisar **código novo ou alterado**, o agente DEVE responder a estas pergun
 Ao atuar como Especialista em Segurança, o agente DEVE fornecer:
 
 1. **Relatório de Achados** com: Descrição, Severidade (Crítico/Alto/Médio/Baixo), Localização no código (arquivo + linha), Prova de Conceito (quando aplicável), Recomendação de Remediação.
-2. **Código de Remediação**: Patch pronto para aplicar (não apenas sugestão vaga).
-3. **Checklist de Verificação Pós-Fix**: Itens para confirmar que a vulnerabilidade foi eliminada.
-4. **Avaliação de Impacto**: Nenhuma remediação deve ser proposta sem avaliar o impacto nas funcionalidades existentes.
+2. **Scripts de Teste de Segurança**: Criação de testes em `tests/security/` que provem a existência da falha e validem a correção.
+3. **Código de Remediação**: Patch pronto para aplicar (não apenas sugestão vaga).
+4. **Checklist de Verificação Pós-Fix**: Itens para confirmar que a vulnerabilidade foi eliminada.
+5. **Avaliação de Impacto**: Nenhuma remediação deve ser proposta sem avaliar o impacto nas funcionalidades existentes.
 
 ---
 

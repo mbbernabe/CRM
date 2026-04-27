@@ -4,7 +4,7 @@ import {
   Plus, Edit, Trash2, Save, X, Settings2, Code, 
   Palette, Type, List as ListIcon, CheckSquare, 
   AlignLeft, Hash, Calendar, DollarSign, GripVertical, AlertCircle, RefreshCw, ChevronDown, ChevronRight,
-  BookOpen, Download, Table, Search, ArrowUpDown, ArrowUp, ArrowDown
+  BookOpen, Download, Table, Search, ArrowUpDown, ArrowUp, ArrowDown, GitBranch
 } from 'lucide-react';
 import {
   DndContext,
@@ -283,7 +283,7 @@ const OptionsManager = ({ value, onChange }) => {
   );
 };
 
-const WorkItemTypeSettings = () => {
+const WorkItemTypeSettings = ({ onNavigate }) => {
   const { addToast } = useToast();
   const { fetchWithAuth } = useAuth();
   const [types, setTypes] = useState([]);
@@ -1076,7 +1076,10 @@ const WorkItemTypeSettings = () => {
                            <RefreshCw size={16} color="#f97316" />
                         </button>
                     )}
-                   <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
+                    <button className="icon-button" onClick={() => onNavigate('pipeline-settings')} title="Configurar Pipelines">
+                      <GitBranch size={16} />
+                    </button>
+                    <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={16} /></button>
                    {!type.is_system && (
                      <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={16} /></button>
                    )}
@@ -1177,6 +1180,9 @@ const WorkItemTypeSettings = () => {
                                                <RefreshCw size={14} color="#f97316" />
                                             </button>
                                         )}
+                                        <button className="icon-button" onClick={() => onNavigate('pipeline-settings')} title="Configurar Pipelines">
+                                            <GitBranch size={14} />
+                                        </button>
                                         <button className="icon-button" onClick={() => handleOpenEdit(type)} title="Editar"><Edit size={14} /></button>
                                         {!type.is_system && (
                                             <button className="icon-button delete" onClick={() => { setSelectedType(type); setIsDeleteModalOpen(true); }} title="Excluir"><Trash2 size={14} /></button>

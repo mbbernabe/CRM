@@ -121,3 +121,11 @@ class SqlAlchemyUserRepository(IUserRepository):
         if workspace_id is not None:
             query = query.join(MembershipModel).filter(MembershipModel.workspace_id == workspace_id)
         return query.count()
+
+    def is_member_of_workspace(self, user_id: int, workspace_id: int) -> bool:
+        """Verifica se o usuário possui um membership ativo no workspace solicitado."""
+        return self.db.query(MembershipModel).filter(
+            MembershipModel.user_id == user_id,
+            MembershipModel.workspace_id == workspace_id,
+            MembershipModel.is_active == True
+        ).first() is not None
